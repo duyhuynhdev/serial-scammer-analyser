@@ -1,0 +1,8 @@
+pandas
+numpy
+requests
+web3
+tqdm
+regex
+networkx
+Crypto
