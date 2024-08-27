@@ -174,4 +174,4 @@ if __name__ == '__main__':
     # pancakeswap_pools_download(job)
     # # download_popular_tokens()
     # collector =  PoolDataCollector()
-    # collector.merge_all_pools(uni_chunks)
+    # collector.merge_all_pools(pancake_chunks, "panv2")
