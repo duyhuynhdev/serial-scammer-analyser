@@ -9,18 +9,27 @@ class Path(object):
 
     def __init__(self):
         # GLOBAL DATA
+        ROOT_FOLDER = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        self.resource_root_path = os.path.join(ROOT_FOLDER, "resources")
         self.data_root_path = os.path.join("/media", "dustin", "Storage", "Data", "blockchain", "DEX")
+        if not os.path.exists(self.data_root_path):
+            self.data_root_path = os.path.join(self.resource_root_path, "data")
+        print("ENVIRONMENT VARIABLES")
+        print("DATA PATH:", self.data_root_path)
+        self.popular_tokens = os.path.join(self.data_root_path, "popular_tokens")
         self.univ2_base_path = os.path.join(self.data_root_path, "uniswap")
         self.univ2_tokens_path = os.path.join(self.univ2_base_path, "token")
-        self.univ2_pools_path = os.path.join(self.univ2_base_path, "pool")
-        self.univ2_address_path = os.path.join(self.univ2_pools_path, "address")
-        self.univ2_pool_events_path = os.path.join(self.univ2_pools_path, "events")
+        self.univ2_pool_path = os.path.join(self.univ2_base_path, "pool")
+        self.univ2_address_path = os.path.join(self.univ2_pool_path, "address")
+        self.univ2_info_path = os.path.join(self.univ2_pool_path, "info")
+        self.univ2_pool_events_path = os.path.join(self.univ2_pool_path, "events")
         self.univ2_token_events_path = os.path.join(self.univ2_tokens_path, "events")
 
         self.panv2_base_path = os.path.join(self.data_root_path, "pancakeswap")
-        self.panv2_pools_path = os.path.join(self.panv2_base_path, "pool")
-        self.panv2_address_path = os.path.join(self.panv2_pools_path, "address")
-        self.panv2_pool_events_path = os.path.join(self.panv2_pools_path, "events")
+        self.panv2_pool_path = os.path.join(self.panv2_base_path, "pool")
+        self.panv2_address_path = os.path.join(self.panv2_pool_path, "address")
+        self.panv2_info_path = os.path.join(self.panv2_pool_path, "info")
+        self.panv2_pool_events_path = os.path.join(self.panv2_pool_path, "events")
         self.panv2_tokens_path = os.path.join(self.panv2_base_path, "token")
         self.panv2_token_events_path = os.path.join(self.panv2_tokens_path, "events")
 

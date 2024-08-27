@@ -1,17 +1,5 @@
 [
   {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "_feeToSetter",
-        "type": "address"
-      }
-    ],
-    "payable": false,
-    "stateMutability": "nonpayable",
-    "type": "constructor"
-  },
-  {
     "anonymous": false,
     "inputs": [
       {
@@ -55,7 +43,7 @@
     "outputs": [
       {
         "internalType": "address",
-        "name": "",
+        "name": "pair",
         "type": "address"
       }
     ],
@@ -65,7 +53,8 @@
   },
   {
     "constant": true,
-    "inputs": [],
+    "inputs": [
+    ],
     "name": "allPairsLength",
     "outputs": [
       {
@@ -106,7 +95,8 @@
   },
   {
     "constant": true,
-    "inputs": [],
+    "inputs": [
+    ],
     "name": "feeTo",
     "outputs": [
       {
@@ -121,7 +111,8 @@
   },
   {
     "constant": true,
-    "inputs": [],
+    "inputs": [
+    ],
     "name": "feeToSetter",
     "outputs": [
       {
@@ -139,12 +130,12 @@
     "inputs": [
       {
         "internalType": "address",
-        "name": "",
+        "name": "tokenA",
         "type": "address"
       },
       {
         "internalType": "address",
-        "name": "",
+        "name": "tokenB",
         "type": "address"
       }
     ],
@@ -152,7 +143,7 @@
     "outputs": [
       {
         "internalType": "address",
-        "name": "",
+        "name": "pair",
         "type": "address"
       }
     ],
@@ -165,12 +156,13 @@
     "inputs": [
       {
         "internalType": "address",
-        "name": "_feeTo",
+        "name": "",
         "type": "address"
       }
     ],
     "name": "setFeeTo",
-    "outputs": [],
+    "outputs": [
+    ],
     "payable": false,
     "stateMutability": "nonpayable",
     "type": "function"
@@ -180,12 +172,13 @@
     "inputs": [
       {
         "internalType": "address",
-        "name": "_feeToSetter",
+        "name": "",
         "type": "address"
       }
     ],
     "name": "setFeeToSetter",
-    "outputs": [],
+    "outputs": [
+    ],
     "payable": false,
     "stateMutability": "nonpayable",
     "type": "function"

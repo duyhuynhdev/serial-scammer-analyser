@@ -10,5 +10,10 @@ The Contract Application Binary Interface (ABI) is the standard way to interact 
 ## UniswapV2 Pool Contract ABI
 **ABI:** https://unpkg.com/@uniswap/v2-core@1.0.1/build/UniswapV2Pair.json
 
-## Pancake Swap V2 ABIs
-https://github.com/joshstevens19/simple-pancakeswap-sdk/blob/master/src/ABI/pancakeswap-pair-v2.json
+## PancakeSwapV2 Factory Contract
+**Contract:** [0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f](https://etherscan.io/address/0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f)
+
+**ABI:** https://github.com/pancakeswap/pancake-smart-contracts/blob/master/projects/exchange-protocol/data/abi/contracts/PancakeFactory.sol/PancakeFactory.json
+
+## PancakeSwapV2 Pool Contract ABI
+**ABI:** https://github.com/pancakeswap/pancake-smart-contracts/blob/master/projects/exchange-protocol/data/abi/contracts/PancakePair.sol/PancakePair.json

@@ -44,4 +44,4 @@ def get_latest_crypto_listing(start):
 
 
 if __name__ == '__main__':
-    get_top_crypto_ranking(1)
+    print(get_top_crypto_ranking(1))

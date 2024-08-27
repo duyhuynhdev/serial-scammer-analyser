@@ -101,6 +101,15 @@ def read_json(file_path):
     return json_object
 
 
+def save_or_append_if_exist(data, output_path):
+    save_df = pd.DataFrame.from_records(data)
+    if os.path.isfile(output_path):
+        print("APPEND ", len(data), "RECORDS")
+        save_df.to_csv(output_path, mode='a', header=False, index=False)
+    else:
+        print("SAVE", len(data), "RECORDS")
+        save_df.to_csv(output_path, index=False)
+
 def get_abi_function_signatures(abi, type):
     functions = []
     for function in abi:
@@ -118,82 +127,7 @@ def get_abi_function_inputs(abi, type):
             functions[function["name"]] = input_names
     return functions
 
-
-def count_uppercase(words):
-    count = 0
-    for w in words:
-        if w.isupper():
-            count += 1
-    return count
-
-
-def smart_split_words(str):
-    results = []
-    words = str.split()
-    for word in words:
-        # case ABC, abc or Abc => no split more
-        if len(word) == count_uppercase(word) or count_uppercase(word) < 2:
-            results.append(word)
-        else:
-            # case AbcDef => Abc, Def
-            results.extend(re.findall('[A-Z][^A-Z]*', word))
-    return results
-
-
-def last_index(list, value):
-    return len(list) - list[::-1].index(value) - 1
-
-
-def find_min_max_indexes(list):
-    distances = np.maximum.accumulate(list) - list
-    idx_min = np.argmax(distances)
-    if idx_min == 0:
-        return 0, 0
-    idx_max = last_index(list[:idx_min], max(list[:idx_min]))
-
-    return idx_min, idx_max
-
-def contract_code_line_numbering(token_name, start_number=1):
-    path = Path()
-    input_file = os.path.join(path.example_tokens_path, token_name + ".sol")
-    output_file = os.path.join(path.example_tokens_after_numbering_path, token_name + ".txt")
-
-    with open(input_file, 'r') as f_in:
-        lines = f_in.readlines()
-
-    with open(output_file, 'w') as f_out:
-        for i, line in enumerate(lines, start=start_number):
-            f_out.write(f"{i}: {line}")
-
-    print(f"Line numbers added successfully. Output written to {output_file}")
-
-
 def hex_to_dec(hex_val):
     return int(hex_val, 16)
 
 
-def get_origin_address(address: str):
-    pth = os.path.join(path.univ2_base_path, "address_sensitive_case_mapping.csv")
-    if os.path.exists(pth):
-        addresses = pd.read_csv(pth)
-        return addresses[addresses["lower"] == address.lower()]["origin"].values[0]
-    else:
-        return address
-
-
-if __name__ == '__main__':
-    # ROOT_FOLDER = os.path.dirname(os.path.dirname(__file__))
-    # ETH_TOKEN_ABI = json.load(open(ROOT_FOLDER + "/abi/eth_token_abi.json"))
-    # UNIV2_FACTORY_ABI = json.load(open(ROOT_FOLDER + "/abi/uniswap_v2_factory_abi.json"))
-    # UNIV2_POOL_ABI = json.load(open(ROOT_FOLDER + "/abi/uniswap_v2_pool_abi.json"))
-    # print(get_abi_function_signatures(UNIV2_POOL_ABI, "event"))
-    # print(get_abi_function_signatures(ETH_TOKEN_ABI, "event"))
-    # print(smart_split_words("abc"))
-    # print(smart_split_words("Abc"))
-    # print(smart_split_words("ABC"))
-    # print(smart_split_words("AbcDef"))
-    # print(smart_split_words("abc ABC Def ZZab ZxyBceDgh"))
-    # print(find_min_max_indexes([5, 7, 5, 2, 5]))
-    tokens = ["AquaDrop", "CPP4U", "DollarMillionaire", "LGT", "Sepuku", "SquidX"]
-    for token_name in tokens:
-        contract_code_line_numbering(token_name)

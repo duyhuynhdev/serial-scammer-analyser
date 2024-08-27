@@ -24,13 +24,15 @@ class Setting(object):
         self.INFURA_API_MAIN_KEY = self.INFURA_API_KEYS[0]
 
         self.ETHERSCAN_BASE_URL = config.get("ETHERSCAN", "ETHERSCAN_BASE_URL")
-        self.ETHERSCAN_API_KEY = config.get("ETHERSCAN", "API_KEY")
+        self.ETHERSCAN_API_KEYS = config.get("ETHERSCAN", "API_KEYS").split(" ")
+        self.ETHERSCAN_API_KEY = self.ETHERSCAN_API_KEYS[0]
+
+        self.BSCSCAN_BASE_URL = config.get("BSCSCAN", "BSCSCAN_BASE_URL")
+        self.BSCSCAN_API_KEYS = config.get("BSCSCAN", "API_KEYS").split(" ")
+        self.BSCSCAN_API_KEY = self.ETHERSCAN_API_KEYS[0]
 
         self.MORALIS_BASE_URL = config.get("MORALIS", "MORALIS_BASE_URL")
         self.MORALIS_API_KEY = config.get("MORALIS", "API_KEY")
-
-        self.BSCSCAN_BASE_URL = config.get("BSCSCAN", "BSCSCAN_BASE_URL")
-        self.BSCSCAN_API_KEY = config.get("BSCSCAN", "API_KEY")
 
         self.CMC_BASE_URL = config.get("CMC", "CMC_BASE_URL")
         self.CMC_API_KEY = config.get("CMC", "API_KEY")
