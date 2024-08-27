@@ -24,3 +24,7 @@
   * Blockchain DTO: [blockchain](main/entity/blockchain)
   * Our DTO: [entity](main/entity)
 * Others: [utils](main/utils)
+
+### Run multiple instances
+ If you use Pycharm see this [instruction](https://www.jetbrains.com/help/pycharm/run-debug-multiple.html)
+ If not please refer [Python MultiThreading](https://www.geeksforgeeks.org/multithreading-python-set-1/)
