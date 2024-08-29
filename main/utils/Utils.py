@@ -53,8 +53,27 @@ def partitioning(from_idx, to_idx, chunk_size):
     """
     num_partitions = math.ceil((to_idx - from_idx) / chunk_size)
     partitions = [{"from": from_idx + i * chunk_size, "to": from_idx + (i + 1) * chunk_size - 1} for i in range(0, num_partitions)]
+    partitions[-1]["to"] = to_idx
     return partitions
 
+def last_index(arr, value):
+    return len(arr) - arr[::-1].index(value) - 1
+
+
+def find_min_max_indexes(arr):
+    acc_max = np.maximum.accumulate(arr) - arr
+    idx_min = np.argmax(acc_max)
+    if idx_min == 0:
+        return 0, 0
+    idx_max = last_index(arr[:idx_min], max(arr[:idx_min]))
+
+    return idx_min, idx_max
+
+def try_except_assigning(func, failure_value):
+    try:
+        return func()
+    except:
+        return failure_value
 
 def write_list_to_file(file_path, list):
     with open(file_path, 'w') as f:

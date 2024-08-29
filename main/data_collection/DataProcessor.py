@@ -38,16 +38,14 @@ class PoolLogDecoder:
         parsed_log = {
             "address": result['address'],
             "event": self.event,
-            "data": dict(zip(self.names, normalized)),
             "blockNumber": ut.hex_to_dec(result['blockNumber']),
             "blockHash": result['blockHash'],
             "timeStamp": ut.hex_to_dec(result['timeStamp']),
-            "gasPrice": ut.hex_to_dec(result['gasPrice']),
-            "gasUsed": ut.hex_to_dec(result['gasUsed']),
-            "logIndex": ut.hex_to_dec(result['logIndex']),
+            "gasPrice": ut.hex_to_dec(result['gasPrice']) if result['gasPrice'] != "0x" else None,
+            "gasUsed": ut.hex_to_dec(result['gasUsed']) if result['gasUsed'] != "0x" else None,
             "transactionHash": result['transactionHash'],
-            "transactionIndex":  ut.hex_to_dec(result['transactionIndex']),
         }
+        parsed_log.update(dict(zip(self.names, normalized)))
         return parsed_log
 
 

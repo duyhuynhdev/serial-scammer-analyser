@@ -2,8 +2,10 @@ import os
 
 
 class Path(object):
+    instance = None
+
     def __new__(cls):
-        if not hasattr(cls, 'instance'):
+        if not hasattr(cls, 'instance') or cls.instance is None:
             cls.instance = super(Path, cls).__new__(cls)
         return cls.instance
 
@@ -18,20 +20,26 @@ class Path(object):
         print("DATA PATH:", self.data_root_path)
         self.popular_tokens = os.path.join(self.data_root_path, "popular_tokens")
         self.univ2_base_path = os.path.join(self.data_root_path, "uniswap")
-        self.univ2_tokens_path = os.path.join(self.univ2_base_path, "token")
+        self.univ2_account_path = os.path.join(self.univ2_base_path, "account")
+        self.univ2_normal_tx_path = os.path.join(self.univ2_account_path, "normal_tx")
+        self.univ2_internal_tx_path = os.path.join(self.univ2_account_path, "internal_tx")
         self.univ2_pool_path = os.path.join(self.univ2_base_path, "pool")
         self.univ2_address_path = os.path.join(self.univ2_pool_path, "address")
         self.univ2_info_path = os.path.join(self.univ2_pool_path, "info")
         self.univ2_pool_events_path = os.path.join(self.univ2_pool_path, "events")
-        self.univ2_token_events_path = os.path.join(self.univ2_tokens_path, "events")
+        self.univ2_token_path = os.path.join(self.univ2_base_path, "token")
+        self.univ2_token_events_path = os.path.join(self.univ2_token_path, "events")
 
         self.panv2_base_path = os.path.join(self.data_root_path, "pancakeswap")
+        self.panv2_account_path = os.path.join(self.panv2_base_path, "account")
+        self.panv2_normal_tx_path = os.path.join(self.panv2_account_path, "normal_tx")
+        self.panv2_internal_tx_path = os.path.join(self.panv2_account_path, "internal_tx")
         self.panv2_pool_path = os.path.join(self.panv2_base_path, "pool")
         self.panv2_address_path = os.path.join(self.panv2_pool_path, "address")
         self.panv2_info_path = os.path.join(self.panv2_pool_path, "info")
         self.panv2_pool_events_path = os.path.join(self.panv2_pool_path, "events")
-        self.panv2_tokens_path = os.path.join(self.panv2_base_path, "token")
-        self.panv2_token_events_path = os.path.join(self.panv2_tokens_path, "events")
+        self.panv2_token_path = os.path.join(self.panv2_base_path, "token")
+        self.panv2_token_events_path = os.path.join(self.panv2_token_path, "events")
 
         # LOCAL DATA
         ROOT_FOLDER = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))

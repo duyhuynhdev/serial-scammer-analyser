@@ -8,7 +8,8 @@ setting = Setting()
 Reference: https://docs.bscscan.com/
 """
 
-def build_url(module, action, params, apikey = setting.BSCSCAN_API_KEY):
+
+def build_url(module, action, params, apikey=setting.BSCSCAN_API_KEY):
     url = setting.ETHERSCAN_BASE_URL
     url = url + '?module=' + module
     url = url + '&action=' + action
@@ -18,13 +19,39 @@ def build_url(module, action, params, apikey = setting.BSCSCAN_API_KEY):
     return url
 
 
-def call_api(module, action, params, apikey = setting.BSCSCAN_API_KEY):
+def get_normal_transactions(address, fromBlock, toBlock, page=1, offset=10000, apikey=setting.ETHERSCAN_API_KEY):
+    module = "account"
+    action = "txlist"
+    params = {"address": address,
+              "startblock": str(fromBlock),
+              "endblock": str(toBlock),
+              "page": str(page),
+              "offset": str(offset),
+              "sort": "asc"}
+    return call_api(module, action, params, apikey)
+
+
+def get_internal_transactions(address, fromBlock, toBlock, page=1, offset=10000, apikey=setting.ETHERSCAN_API_KEY):
+    module = "account"
+    action = "txlistinternal"
+    params = {"address": address,
+              "startblock": str(fromBlock),
+              "endblock": str(toBlock),
+              "page": str(page),
+              "offset": str(offset),
+              "sort": "asc"}
+    return call_api(module, action, params, apikey)
+
+
+def call_api(module, action, params, apikey=setting.BSCSCAN_API_KEY):
     api_url = build_url(module, action, params, apikey)
     response = requests.get(api_url, headers={"Content-Type": "application/json"})
-    return response.json()["result"]
+    response_data = response.json()
+    assert response_data["status"] == "1"
+    return response_data["result"]
 
 
-def get_contract_creation_info(address_list, apikey = setting.BSCSCAN_API_KEY):
+def get_contract_creation_info(address_list, apikey=setting.BSCSCAN_API_KEY):
     addresses = ",".join(address_list)
     module = "contract"
     action = "getcontractcreation"
@@ -32,13 +59,14 @@ def get_contract_creation_info(address_list, apikey = setting.BSCSCAN_API_KEY):
     return call_api(module, action, params, apikey)
 
 
-def get_contract_verified_source_code(address, apikey = setting.BSCSCAN_API_KEY):
+def get_contract_verified_source_code(address, apikey=setting.BSCSCAN_API_KEY):
     module = "contract"
     action = "getsourcecode"
     params = {"address": address}
     return call_api(module, action, params, apikey)
 
-def get_event_logs(address, fromBlock, toBlock, topic, page=1, offset=1000, apikey = setting.BSCSCAN_API_KEY):
+
+def get_event_logs(address, fromBlock, toBlock, topic, page=1, offset=1000, apikey=setting.BSCSCAN_API_KEY):
     module = "logs"
     action = "getLogs"
     params = {"address": address,
@@ -48,4 +76,3 @@ def get_event_logs(address, fromBlock, toBlock, topic, page=1, offset=1000, apik
               "page": str(page),
               "offset": str(offset)}
     return call_api(module, action, params, apikey)
-

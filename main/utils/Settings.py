@@ -38,15 +38,9 @@ class Setting(object):
         self.CMC_API_KEY = config.get("CMC", "API_KEY")
 
         self.UNIV2_FACTORY_ADDRESS = config.get("UNISWAPV2", "FACTORY_ADDRESS")
-        self.UNIV2_FROM_BLOCK = int(config.get("UNISWAPV2", "FROM_BLOCK"))
-        self.UNIV2_TO_BLOCK = int(config.get("UNISWAPV2", "TO_BLOCK"))
-        self.UNIV2_CHUNK_SIZE = int(config.get("UNISWAPV2", "CHUNK_SIZE"))
         self.UNIV2_NUM_OF_PAIRS = int(config.get("UNISWAPV2", "NUM_OF_PAIRS"))
 
         self.PANV2_FACTORY_ADDRESS = config.get("PANCAKESWAP", "FACTORY_ADDRESS")
-        self.PANV2_FROM_BLOCK = int(config.get("PANCAKESWAP", "FROM_BLOCK")) #Apr-23-2021
-        self.PANV2_TO_BLOCK = int(config.get("PANCAKESWAP", "TO_BLOCK")) # Jul-28-2024
-        self.PANV2_CHUNK_SIZE = int(config.get("PANCAKESWAP", "CHUNK_SIZE"))
         self.PANV2_NUM_OF_PAIRS  = int(config.get("PANCAKESWAP", "NUM_OF_PAIRS"))
 
         self.ETH_TOKEN_ABI = open(os.path.join(path.abi_path, "eth_token_abi.json")).read()
