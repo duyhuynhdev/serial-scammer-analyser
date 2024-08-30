@@ -48,7 +48,7 @@ class PoolDataCollector:
             df = pd.read_csv(output_path)
             downloaded_idxs = set(df["id"])
         data = []
-        factory = node_web3.eth.contract(factory_address, abi=factory_abi)
+        factory = node_web3.eth.contract(Web3.to_checksum_address(factory_address), abi=factory_abi)
         for i in tqdm(range(chunk["from"], chunk["to"] + 1)):
             if i in downloaded_idxs:
                 # print("DOWNLOADED ALREADY: ", i)
@@ -129,7 +129,7 @@ class PoolInfoCollector:
             if address in downloaded_addresses:
                 # print("DOWNLOADED ALREADY: ", address)
                 continue
-            pool = node_web3.eth.contract(address, abi=pool_abi)
+            pool = node_web3.eth.contract(Web3.to_checksum_address(address), abi=pool_abi)
             token0 = pool.functions.token0().call()
             token1 = pool.functions.token1().call()
             data.append({"pool": address, "token0": token0, "token1": token1})
@@ -148,7 +148,7 @@ class PoolInfoCollector:
         while key_idx < len(setting.INFURA_API_KEYS):
             try:
                 node_web3 = Web3(Web3.HTTPProvider(node_url + setting.INFURA_API_KEYS[key_idx]))
-                pool = node_web3.eth.contract(pool_address, abi=pool_abi)
+                pool = node_web3.eth.contract(Web3.to_checksum_address(pool_address), abi=pool_abi)
                 token0 = pool.functions.token0().call()
                 token1 = pool.functions.token1().call()
                 info = {"pool": pool_address, "token0": token0, "token1": token1}
@@ -217,7 +217,7 @@ class TokenInfoCollector:
             if token_address in downloaded_addresses:
                 # print("DOWNLOADED ALREADY: ", address)
                 continue
-            token = node_web3.eth.contract(token_address, abi=token_abi)
+            token = node_web3.eth.contract(Web3.to_checksum_address(token_address), abi=token_abi)
             info = {
                 'token': token_address,
                 'name': ut.try_except_assigning(token.functions.name().call, "").rstrip('\x00'),
@@ -252,7 +252,7 @@ class TokenInfoCollector:
         while key_idx < len(setting.INFURA_API_KEYS):
             try:
                 node_web3 = Web3(Web3.HTTPProvider(node_url + setting.INFURA_API_KEYS[key_idx]))
-                token = node_web3.eth.contract(token_address, abi=token_abi)
+                token = node_web3.eth.contract(Web3.to_checksum_address(token_address), abi=token_abi)
 
                 info = {
                     'token': token_address,

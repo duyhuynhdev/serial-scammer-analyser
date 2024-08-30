@@ -7,3 +7,4 @@ regex
 wordcloud
 networkx
 Crypto
+dune-client

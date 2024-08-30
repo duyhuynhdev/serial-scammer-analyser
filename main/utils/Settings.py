@@ -37,6 +37,8 @@ class Setting(object):
         self.CMC_BASE_URL = config.get("CMC", "CMC_BASE_URL")
         self.CMC_API_KEY = config.get("CMC", "API_KEY")
 
+        self.DUNE_API_KEY = config.get("DUNE", "API_KEY")
+
         self.UNIV2_FACTORY_ADDRESS = config.get("UNISWAPV2", "FACTORY_ADDRESS")
         self.UNIV2_NUM_OF_PAIRS = int(config.get("UNISWAPV2", "NUM_OF_PAIRS"))
 

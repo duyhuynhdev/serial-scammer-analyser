@@ -128,12 +128,14 @@ class TransactionCollector:
 if __name__ == '__main__':
     dex = 'univ2'
     job = 7
-    pool_path = os.path.join(eval('path.{}_pool_path'.format(dex)), "pool_addresses.csv")
-    pools = pd.read_csv(pool_path)["pool"].values
-    collectors = CreatorCollector()
-    collectors.get_creators(addresses=pools, job=job, contract_type='pool', dex=dex)
-
-    # token_path = os.path.join(eval('path.{}_token_path'.format(dex)), "pool_addresses.csv")
+    # pool_path = os.path.join(eval('path.{}_pool_path'.format(dex)), "pool_addresses.csv")
     # pools = pd.read_csv(pool_path)["pool"].values
     # collectors = CreatorCollector()
     # collectors.get_creators(addresses=pools, job=job, contract_type='pool', dex=dex)
+    pool_info_path = os.path.join(eval('path.{}_pool_path'.format(dex)), "pool_info.csv")
+    df = pd.read_csv(pool_info_path)
+    token_addresses = df["token0"].to_list()
+    token_addresses.extend(df["token1"].to_list())
+    token_addresses = list(dict.fromkeys(token_addresses))
+    collectors = CreatorCollector()
+    collectors.get_creators(addresses=token_addresses, job=job, contract_type='token', dex=dex)

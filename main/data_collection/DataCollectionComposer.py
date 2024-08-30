@@ -189,6 +189,6 @@ def test_rug_pull(pool_address, dex='univ2'):
 
 if __name__ == '__main__':
     # data_collection()
-    print(test_rug_pull(pool_address='0xA886F2c269Be3a8C04511C6c23c95E09bB459949'))
+    print(test_rug_pull(pool_address='0x1a32c5c41734a9dba412499aef2cac1c17de075a'))
     # print(test_rug_pull(pool_address='0xF0A3C6787Ff0c6d912060fa156E2Fd925974f93F'))
     # print(test_rug_pull(pool_address='0xB6909B960DbbE7392D405429eB2b3649752b4838'))
