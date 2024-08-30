@@ -4,5 +4,6 @@ requests
 web3
 tqdm
 regex
+wordcloud
 networkx
 Crypto

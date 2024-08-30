@@ -1,3 +1,5 @@
+from time import sleep
+
 import requests
 
 from utils.Settings import Setting
@@ -22,10 +24,20 @@ def build_url(module, action, params, apikey=setting.ETHERSCAN_API_KEY):
 
 def call_api(module, action, params, apikey=setting.ETHERSCAN_API_KEY):
     api_url = build_url(module, action, params, apikey)
-    response = requests.get(api_url, headers={"Content-Type": "application/json"})
-    response_data = response.json()
-    print(response_data)
-    assert response_data["status"] == "1" or isinstance(response_data["result"], list)
+    retry = 3
+    response_data = None
+    while retry > 0:
+        try:
+            response = requests.get(api_url, headers={"Content-Type": "application/json"})
+            response_data = response.json()
+            print(response_data)
+            break
+        except Exception as e:
+            print(e)
+            print("SLEEP 10 SECONDS AND RETRY")
+            sleep(10)
+            retry -= 1
+    assert (response_data is not None) and (response_data["status"] == "1" or isinstance(response_data["result"], list))
     return response_data["result"]
 
 

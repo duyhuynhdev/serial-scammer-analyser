@@ -22,18 +22,24 @@ key_idx = 0
 
 
 class CreatorCollector:
-    def get_creators(self, addresses, job, output_path, dex='univ2'):
+    def get_creators(self, addresses, job, contract_type ='pool', dex='univ2'):
         data = []
         five_patch = []
         downloaded_addresses = []
         api = explorer_api[dex]["explorer"]
-        key = explorer_api[dex]["keys"][job]
+        keys = explorer_api[dex]["keys"]
+        key = keys[(job % len(keys))+ 5]
+        output_path = os.path.join(eval(f'path.{dex}_{contract_type}_path'), f"{contract_type}_creation_info.csv")
         if os.path.isfile(output_path):
             df = pd.read_csv(output_path)
-            downloaded_addresses = df["contractAddress"].values
-        print(f'START DOWNLOADING DATA (JOB {job})')
-        for address in addresses:
-            if address in downloaded_addresses:
+            downloaded_addresses = df["contractAddress"].str.lower().values
+        chunks = ut.partitioning(0, len(addresses), 50000)
+        chunk = chunks[job]
+        chunk_addresses = addresses[chunk["from"]:(chunk["to"] + 1)]
+        print(f'START DOWNLOADING DATA (JOB {job}):{chunk["from"]}_{chunk["to"]} (size: {len(chunk_addresses)})')
+        print(f'WITH KEY {key}')
+        for address in tqdm(chunk_addresses):
+            if address.lower() in downloaded_addresses:
                 continue
             five_patch.append(address)
             if len(five_patch) < 5:
@@ -120,5 +126,14 @@ class TransactionCollector:
 
 
 if __name__ == '__main__':
-    for i in tqdm(range(0, 12, 5)):
-        print(i)
+    dex = 'univ2'
+    job = 7
+    pool_path = os.path.join(eval('path.{}_pool_path'.format(dex)), "pool_addresses.csv")
+    pools = pd.read_csv(pool_path)["pool"].values
+    collectors = CreatorCollector()
+    collectors.get_creators(addresses=pools, job=job, contract_type='pool', dex=dex)
+
+    # token_path = os.path.join(eval('path.{}_token_path'.format(dex)), "pool_addresses.csv")
+    # pools = pd.read_csv(pool_path)["pool"].values
+    # collectors = CreatorCollector()
+    # collectors.get_creators(addresses=pools, job=job, contract_type='pool', dex=dex)
