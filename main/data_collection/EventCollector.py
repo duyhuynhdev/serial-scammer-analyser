@@ -48,14 +48,14 @@ class PoolEventCollector:
         return logs
 
     def download_pool_event(self, pool_address, event, dex="univ2", explorer=EtherscanAPI, apikey=setting.ETHERSCAN_API_KEY):
-        self.download_event_logs(pool_address, eval('self.{}_last_block'.format(dex)), event, explorer=explorer, apikey=apikey)
+        self.download_event_logs(pool_address, eval('self.{}_last_block'.format(dex)), event, explorer=explorer, apikey=apikey, dex=dex)
 
     def download_pool_events(self, event, dex="univ2", explorer=EtherscanAPI, apikey=setting.ETHERSCAN_API_KEY):
         print("DOWNLOAD EVENT {} WITH KEY {}".format(event, apikey))
         pool_path = os.path.join(eval('path.{}_pool_path'.format(dex)), "pool_addresses.csv")
         pools = pd.read_csv(pool_path)["pool"].values
         for pool in tqdm(pools):
-            self.download_event_logs(pool, eval('self.{}_last_block'.format(dex)), event, explorer=explorer, apikey=apikey)
+            self.download_event_logs(pool, eval('self.{}_last_block'.format(dex)), event, explorer=explorer, apikey=apikey, dex=dex)
 
     def parse_event(self, event, event_logs_path):
         decoder = DataProcessor.PoolLogDecoder(event)
@@ -77,7 +77,7 @@ class PoolEventCollector:
                     collector = PoolEventCollector()
                     explorer = explorer_api[dex]["explorer"]
                     api_key = explorer_api[dex]["keys"][key_index]
-                    collector.download_pool_event(pool_address, event, dex="univ2", explorer=explorer, apikey=api_key)
+                    collector.download_pool_event(pool_address, event, dex, explorer=explorer, apikey=api_key)
                     break
                 except Exception as e:
                     # try other key if error occurs

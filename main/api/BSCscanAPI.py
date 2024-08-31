@@ -10,7 +10,7 @@ Reference: https://docs.bscscan.com/
 
 
 def build_url(module, action, params, apikey=setting.BSCSCAN_API_KEY):
-    url = setting.ETHERSCAN_BASE_URL
+    url = setting.BSCSCAN_BASE_URL
     url = url + '?module=' + module
     url = url + '&action=' + action
     for key, value in params.items():
@@ -47,6 +47,7 @@ def call_api(module, action, params, apikey=setting.BSCSCAN_API_KEY):
     api_url = build_url(module, action, params, apikey)
     response = requests.get(api_url, headers={"Content-Type": "application/json"})
     response_data = response.json()
+    print(response_data)
     assert response_data["status"] == "1"
     return response_data["result"]
 

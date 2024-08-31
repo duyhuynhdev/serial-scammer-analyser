@@ -136,11 +136,11 @@ def data_collection(pool_addresses=None, dex='univ2'):
     transaction_collector = TransactionCollector()
     pool_labels = []
     for pool_address in tqdm(pool_addresses):
-        pool_info = pool_info_collector.get_pool_info(pool_address)
+        pool_info = pool_info_collector.get_pool_info(pool_address, dex=dex)
         token0 = pool_info["token0"]
         token1 = pool_info["token1"]
-        token0_info = token_info_collector.get_token_info(token0)
-        token1_info = token_info_collector.get_token_info(token1)
+        token0_info = token_info_collector.get_token_info(token0, dex=dex)
+        token1_info = token_info_collector.get_token_info(token1, dex=dex)
         swaps = pool_event_collector.get_event(pool_address, "Swap", event_path, dex)
         burns = pool_event_collector.get_event(pool_address, "Burn", event_path, dex)
         mints = pool_event_collector.get_event(pool_address, "Mint", event_path, dex)
@@ -188,7 +188,7 @@ def test_rug_pull(pool_address, dex='univ2'):
 
 
 if __name__ == '__main__':
-    # data_collection()
-    print(test_rug_pull(pool_address='0xA886F2c269Be3a8C04511C6c23c95E09bB459949'))
+    data_collection(dex='panv2')
+    # print(test_rug_pull(pool_address='0xA886F2c269Be3a8C04511C6c23c95E09bB459949'))
     # print(test_rug_pull(pool_address='0xF0A3C6787Ff0c6d912060fa156E2Fd925974f93F'))
     # print(test_rug_pull(pool_address='0xB6909B960DbbE7392D405429eB2b3649752b4838'))
