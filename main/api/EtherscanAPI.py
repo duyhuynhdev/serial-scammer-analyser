@@ -30,15 +30,16 @@ def call_api(module, action, params, apikey=setting.ETHERSCAN_API_KEY):
         try:
             response = requests.get(api_url, headers={"Content-Type": "application/json"})
             response_data = response.json()
-            print(response_data)
+            # print(response_data)
             break
         except Exception as e:
             print(e)
+            print(api_url)
             print("SLEEP 10 SECONDS AND RETRY")
             sleep(10)
             retry -= 1
-    assert (response_data is not None) and (response_data["status"] == "1" or isinstance(response_data["result"], list))
-    return response_data["result"]
+    assert (response_data is not None) and (response_data["status"] == "1" or isinstance(response_data["result"], list) or response_data["message"] == 'No data found')
+    return response_data["result"] if response_data["result"] is not None else []
 
 
 def get_normal_transactions(address, fromBlock, toBlock, page=1, offset=10000, apikey=setting.ETHERSCAN_API_KEY):
@@ -93,4 +94,6 @@ def get_event_logs(address, fromBlock, toBlock, topic, page=1, offset=1000, apik
 
 
 if __name__ == '__main__':
-    print(get_event_logs("0xB4e16d0168e52d35CaCD2c6185b44281Ec28C9Dc", 0, 15074139, "0x1c411e9a96e071241c2f21f7726b17ae89e3cab4c78be50e062b03a9fffbbad1"))
+    # print(get_event_logs("0xc3Db44ADC1fCdFd5671f555236eae49f4A8EEa18", 0, 99999999999, "0x1c411e9a96e071241c2f21f7726b17ae89e3cab4c78be50e062b03a9fffbbad1"))
+    # print(len(get_normal_transactions("0x48f0fc8dfc672dd45e53b6c53cd5b09c71d9fbd6", 0, 99999999999, 2,5000, apikey=setting.ETHERSCAN_API_KEY)))
+    get_contract_creation_info(["0x2ba15ad55b85d67407142e9a92503b945f729aef"])

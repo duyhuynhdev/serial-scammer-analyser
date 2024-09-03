@@ -237,7 +237,7 @@ class TokenInfoCollector:
         info_path = os.path.join(eval('path.{}_token_path'.format(dex)), "token_info.csv")
         if not os.path.isfile(info_path):
             return self.download_token_info(token_address, dex)
-        existed_infos = pd.read_csv(info_path)
+        existed_infos = pd.read_csv(info_path, low_memory=False)
         if not token_address in existed_infos["token"].values:
             return self.download_token_info(token_address, dex)
         existed_infos.set_index("token", inplace=True)

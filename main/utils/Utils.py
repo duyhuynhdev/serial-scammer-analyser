@@ -5,10 +5,14 @@ import json
 import re
 import pandas as pd
 import numpy as np
+from web3 import Web3
+
 from utils.Path import Path
 from utils.Settings import Setting
+
 setting = Setting()
 path = Path()
+
 
 def keccak_hash(value):
     """
@@ -20,6 +24,12 @@ def keccak_hash(value):
     hash_func.update(bytes(value, encoding='utf-8'))
     return '0x' + hash_func.hexdigest()
 
+
+def is_contract_address(address):
+    if address is None or address == "":
+        return False
+    code = setting.infura_web3.eth.get_code(Web3.to_checksum_address(address))
+    return len(code) > 0
 
 def get_functions_from_ABI(abi, function_type='event'):
     """
@@ -56,6 +66,7 @@ def partitioning(from_idx, to_idx, chunk_size):
     partitions[-1]["to"] = to_idx
     return partitions
 
+
 def last_index(arr, value):
     return len(arr) - arr[::-1].index(value) - 1
 
@@ -69,11 +80,13 @@ def find_min_max_indexes(arr):
 
     return idx_min, idx_max
 
+
 def try_except_assigning(func, failure_value):
     try:
         return func()
     except:
         return failure_value
+
 
 def write_list_to_file(file_path, list):
     with open(file_path, 'w') as f:
@@ -123,11 +136,18 @@ def read_json(file_path):
 def save_or_append_if_exist(data, output_path):
     save_df = pd.DataFrame.from_records(data)
     if os.path.isfile(output_path):
-        print("APPEND ", len(data), "RECORDS")
+        # print("APPEND ", len(data), "RECORDS")
         save_df.to_csv(output_path, mode='a', header=False, index=False)
     else:
-        print("SAVE", len(data), "RECORDS")
+        # print("SAVE", len(data), "RECORDS")
         save_df.to_csv(output_path, index=False)
+
+
+def save_overwrite_if_exist(data, output_path):
+    save_df = pd.DataFrame.from_records(data)
+    # print("SAVE", len(data), "RECORDS")
+    save_df.to_csv(output_path, index=False)
+
 
 def get_abi_function_signatures(abi, type):
     functions = []
@@ -146,7 +166,6 @@ def get_abi_function_inputs(abi, type):
             functions[function["name"]] = input_names
     return functions
 
+
 def hex_to_dec(hex_val):
     return int(hex_val, 16)
-
-

@@ -1,7 +1,3 @@
-import json
-import math
-
-from numpy.ma.core import argmin
 
 import utils.Utils as ut
 from tqdm import tqdm
@@ -85,10 +81,10 @@ def get_balance_of_high_value_token_before_sell_rug(mints, burns, swaps, hv_toke
 
 
 def is_sell_rug_pull(mints, burns, swaps, hv_token_position, hv_token_decimals):
-    # TODO value token is token that has lower reserve --> will check later by scanning popular tokens,
+    # value token is token that has lower reserve --> will check later by scanning popular tokens,
     # calculate balance of high value token before 99% swap event
     if len(swaps) == 0:
-        return False,[]
+        return False, []
     swaps_df = pd.DataFrame(swaps)
     hv_swap_amounts = swaps_df[f"amount{hv_token_position}Out"].astype(float) / 10 ** hv_token_decimals
     max_swap_amount = np.max(hv_swap_amounts)
@@ -103,16 +99,16 @@ def is_sell_rug_pull(mints, burns, swaps, hv_token_position, hv_token_decimals):
 
 def is_1d_rug_pull(transfers, mints, burns, swaps, token0_info, token1_info):
     if len(mints) < 1:
-        return False, []
+        return False, [], None
     first_mint = mints[0]
-    mints = extract_1d_events(mints,  int(first_mint["timeStamp"]))
+    mints = extract_1d_events(mints, int(first_mint["timeStamp"]))
     transfers = extract_1d_events(transfers, int(first_mint["timeStamp"]))
     swaps = extract_1d_events(swaps, int(first_mint["timeStamp"]))
     burns = extract_1d_events(burns, int(first_mint["timeStamp"]))
     token_0_decimals = int(token0_info["decimals"])
     token_1_decimals = int(token1_info["decimals"])
     lv_token_position = 0
-    if (first_mint["amount0"]/ 10**token_0_decimals) < (first_mint["amount1"]/10**token_1_decimals):
+    if (first_mint["amount0"] / 10 ** token_0_decimals) < (first_mint["amount1"] / 10 ** token_1_decimals):
         lv_token_position = 1
     hv_token_position = 1 - lv_token_position
     hv_token_decimals = int(eval(f'token{hv_token_position}_info["decimals"]'))
@@ -121,7 +117,7 @@ def is_1d_rug_pull(transfers, mints, burns, swaps, token0_info, token1_info):
     result, sell_scammers = is_sell_rug_pull(mints, burns, swaps, hv_token_position, hv_token_decimals)
     if result:
         return 2, sell_scammers, eval(f"token{lv_token_position}_info")
-    return 0, [], eval(f"token{lv_token_position}_info")
+    return 0, [], None
 
 
 def data_collection(pool_addresses=None, dex='univ2'):
@@ -135,6 +131,9 @@ def data_collection(pool_addresses=None, dex='univ2'):
     creator_collector = CreatorCollector()
     transaction_collector = TransactionCollector()
     pool_labels = []
+    scam_tokens = []
+
+    # TODO Using multithreading for running X pools in parallel
     for pool_address in tqdm(pool_addresses):
         pool_info = pool_info_collector.get_pool_info(pool_address)
         token0 = pool_info["token0"]
@@ -145,28 +144,40 @@ def data_collection(pool_addresses=None, dex='univ2'):
         burns = pool_event_collector.get_event(pool_address, "Burn", event_path, dex)
         mints = pool_event_collector.get_event(pool_address, "Mint", event_path, dex)
         transfers = pool_event_collector.get_event(pool_address, "Transfer", event_path, dex)
-        is_rp, sell_scammers = is_1d_rug_pull(transfers, mints, burns, swaps, token0_info, token1_info)
-        pool_labels.append({"address": pool_address, "is_rp": is_rp})
+        is_rp, sell_scammers, scam_token = is_1d_rug_pull(transfers, mints, burns, swaps, token0_info, token1_info)
+        pool_labels.append({"pool": pool_address, "is_rp": is_rp})
         scammers = []
+        if scam_token:
+            scam_tokens.append(scam_token)
         if is_rp >= 1:
-            scammers.append(creator_collector.get_pool_creator(pool_address, dex))
-            scammers.extend(pd.DataFrame(mints)["sender"].tolist())
-            scammers.extend(pd.DataFrame(burns)["sender"].tolist())
-            scammers.extend(pd.DataFrame(burns)["to"].tolist())
-            scammers.extend(pd.DataFrame(transfers)["from"].tolist())
-            scammers.extend(pd.DataFrame(transfers)["to"].tolist())
+            pool_creator = creator_collector.get_pool_creator(pool_address, dex)["contractCreator"]
+            scammers.append(pool_creator)
+            if scam_token:
+                token_creator = creator_collector.get_token_creator(scam_token["token"], dex)["contractCreator"]
+                scammers.append(token_creator)
+            if len(mints) > 0:
+                scammers.extend(pd.DataFrame(mints)["sender"].tolist())
+            if len(burns) > 0:
+                scammers.extend(pd.DataFrame(burns)["sender"].tolist())
+                scammers.extend(pd.DataFrame(burns)["to"].tolist())
+            if len(transfers) > 0:
+                scammers.extend(pd.DataFrame(transfers)["from"].tolist())
+                scammers.extend(pd.DataFrame(transfers)["to"].tolist())
             if is_rp == 2:
                 scammers.extend(sell_scammers)
-            scammers = set(scammers) - set(special_addresses)
-        if len(scammers) > 0:
-            for scammer in scammers:
-                transaction_collector.download_transactions(scammer, dex)
+            if len(scammers) > 0:
+                scammers = set(scammers) - set(special_addresses)
+                for scammer in scammers:
+                    transaction_collector.download_transactions(scammer, dex)
+            scammer_dict = [{"pool": pool_address, "scammer": s} for s in scammers]
+            ut.save_or_append_if_exist(scammer_dict, os.path.join(eval('path.{}_account_path'.format(dex)), "scammers.csv"))
         if len(pool_labels) >= 10:
             ut.save_or_append_if_exist(pool_labels, os.path.join(eval('path.{}_pool_path'.format(dex)), "pool_labels.csv"))
+            ut.save_or_append_if_exist(scam_tokens, os.path.join(eval('path.{}_token_path'.format(dex)), "scam_tokens.csv"))
+            scam_tokens = []
             pool_labels = []
     if len(pool_labels) > 0:
         ut.save_or_append_if_exist(pool_labels, os.path.join(eval('path.{}_pool_path'.format(dex)), "pool_labels.csv"))
-
 
 def test_rug_pull(pool_address, dex='univ2'):
     pool_info_collector = PoolInfoCollector()
@@ -188,7 +199,8 @@ def test_rug_pull(pool_address, dex='univ2'):
 
 
 if __name__ == '__main__':
-    # data_collection()
-    print(test_rug_pull(pool_address='0x1a32c5c41734a9dba412499aef2cac1c17de075a'))
+    data_collection()
+    # print(test_rug_pull(pool_address='0xF0A3C6787Ff0c6d912060fa156E2Fd925974f93F'))
     # print(test_rug_pull(pool_address='0xF0A3C6787Ff0c6d912060fa156E2Fd925974f93F'))
     # print(test_rug_pull(pool_address='0xB6909B960DbbE7392D405429eB2b3649752b4838'))
+    # print(is_contract_address("0x9aa99c23f67c81701c772b106b4f83f6e858dd2e"))
