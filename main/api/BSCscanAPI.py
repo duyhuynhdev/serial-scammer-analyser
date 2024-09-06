@@ -19,7 +19,7 @@ def build_url(module, action, params, apikey=setting.BSCSCAN_API_KEY):
     return url
 
 
-def get_normal_transactions(address, fromBlock, toBlock, page=1, offset=10000, apikey=setting.ETHERSCAN_API_KEY):
+def get_normal_transactions(address, fromBlock, toBlock, page=1, offset=10000, apikey=setting.BSCSCAN_API_KEY):
     module = "account"
     action = "txlist"
     params = {"address": address,
@@ -31,7 +31,7 @@ def get_normal_transactions(address, fromBlock, toBlock, page=1, offset=10000, a
     return call_api(module, action, params, apikey)
 
 
-def get_internal_transactions(address, fromBlock, toBlock, page=1, offset=10000, apikey=setting.ETHERSCAN_API_KEY):
+def get_internal_transactions(address, fromBlock, toBlock, page=1, offset=10000, apikey=setting.BSCSCAN_API_KEY):
     module = "account"
     action = "txlistinternal"
     params = {"address": address,
@@ -48,7 +48,7 @@ def call_api(module, action, params, apikey=setting.BSCSCAN_API_KEY):
     response = requests.get(api_url, headers={"Content-Type": "application/json"})
     response_data = response.json()
     print(response_data)
-    assert response_data["status"] == "1"
+    assert response_data["status"] == "1" or isinstance(response_data["result"], list)
     return response_data["result"]
 
 

@@ -103,7 +103,7 @@ def is_sell_rug_pull(mints, burns, swaps, hv_token_position, hv_token_decimals):
 
 def is_1d_rug_pull(transfers, mints, burns, swaps, token0_info, token1_info):
     if len(mints) < 1:
-        return False, []
+        return False, [], ""
     first_mint = mints[0]
     mints = extract_1d_events(mints,  int(first_mint["timeStamp"]))
     transfers = extract_1d_events(transfers, int(first_mint["timeStamp"]))
@@ -139,24 +139,36 @@ def data_collection(pool_addresses=None, dex='univ2'):
         pool_info = pool_info_collector.get_pool_info(pool_address, dex=dex)
         token0 = pool_info["token0"]
         token1 = pool_info["token1"]
+        if token0 == "" or token1 == "":  # If data fails to retrieve, silently continue
+            continue
+
         token0_info = token_info_collector.get_token_info(token0, dex=dex)
         token1_info = token_info_collector.get_token_info(token1, dex=dex)
         swaps = pool_event_collector.get_event(pool_address, "Swap", event_path, dex)
         burns = pool_event_collector.get_event(pool_address, "Burn", event_path, dex)
         mints = pool_event_collector.get_event(pool_address, "Mint", event_path, dex)
         transfers = pool_event_collector.get_event(pool_address, "Transfer", event_path, dex)
-        is_rp, sell_scammers = is_1d_rug_pull(transfers, mints, burns, swaps, token0_info, token1_info)
+        is_rp, sell_scammers, rp_token_info = is_1d_rug_pull(transfers, mints, burns, swaps, token0_info, token1_info)
         pool_labels.append({"address": pool_address, "is_rp": is_rp})
         scammers = []
+        is_rp = 0  # TODO - Remove
         if is_rp >= 1:
-            scammers.append(creator_collector.get_pool_creator(pool_address, dex))
+            # print(scammers)
+            _scammers = creator_collector.get_pool_creator(pool_address, dex)
+            # print(_scammers)
+            scammers.append(_scammers["contractAddress"])
+            scammers.append(_scammers["contractCreator"])
+            # print(scammers)
             scammers.extend(pd.DataFrame(mints)["sender"].tolist())
             scammers.extend(pd.DataFrame(burns)["sender"].tolist())
             scammers.extend(pd.DataFrame(burns)["to"].tolist())
             scammers.extend(pd.DataFrame(transfers)["from"].tolist())
             scammers.extend(pd.DataFrame(transfers)["to"].tolist())
+            # print(scammers)
             if is_rp == 2:
                 scammers.extend(sell_scammers)
+                # print(scammers)
+            print(scammers)
             scammers = set(scammers) - set(special_addresses)
         if len(scammers) > 0:
             for scammer in scammers:

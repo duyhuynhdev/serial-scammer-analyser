@@ -142,6 +142,8 @@ class PoolInfoCollector:
 
     def download_pool_info(self, pool_address, dex="univ2"):
         global key_idx
+        key_idx = 0
+        info = {"pool": pool_address, "token0": "", "token1": ""}
         node_url = infura_api[dex]["node_url"]
         pool_abi = infura_api[dex]["pool_abi"]
         output_path = os.path.join(eval('path.{}_pool_path'.format(dex)), "pool_info.csv")
@@ -156,6 +158,8 @@ class PoolInfoCollector:
                 return info
             except Exception as e:
                 print(e)
+                key_idx += 1
+        return info
 
     def get_pool_info(self, pool_address, dex="univ2"):
         info_path = os.path.join(eval('path.{}_pool_path'.format(dex)), "pool_info.csv")
@@ -246,6 +250,14 @@ class TokenInfoCollector:
 
     def download_token_info(self, token_address, dex="univ2"):
         global key_idx
+        key_idx = 0
+        info = {
+            'token': None,
+            'name': None,
+            'symbol': None,
+            'decimals': 0,
+            'totalSupply': 0
+        }
         node_url = infura_api[dex]["node_url"]
         token_abi = infura_api[dex]["token_abi"]
         output_path = os.path.join(eval('path.{}_token_path'.format(dex)), "token_info.csv")
@@ -264,7 +276,10 @@ class TokenInfoCollector:
                 ut.save_or_append_if_exist([info], output_path)
                 return info
             except Exception as e:
+                key_idx += 1
                 print(e)
+                print(token_address)
+        return info
 
 
 class PopularTokenDataCollector:
