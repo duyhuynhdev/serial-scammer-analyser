@@ -1,3 +1,5 @@
+from time import sleep
+
 import requests
 
 from utils.Settings import Setting
@@ -10,7 +12,7 @@ Reference: https://docs.bscscan.com/
 
 
 def build_url(module, action, params, apikey=setting.BSCSCAN_API_KEY):
-    url = setting.ETHERSCAN_BASE_URL
+    url = setting.BSCSCAN_BASE_URL
     url = url + '?module=' + module
     url = url + '&action=' + action
     for key, value in params.items():
@@ -47,8 +49,9 @@ def call_api(module, action, params, apikey=setting.BSCSCAN_API_KEY):
     api_url = build_url(module, action, params, apikey)
     response = requests.get(api_url, headers={"Content-Type": "application/json"})
     response_data = response.json()
-    assert response_data["status"] == "1"
-    return response_data["result"]
+    print(response_data["message"])
+    assert (response_data is not None) and (response_data["status"] == "1" or isinstance(response_data["result"], list) or response_data["message"] == 'No data found')
+    return response_data["result"] if response_data["result"] is not None else []
 
 
 def get_contract_creation_info(address_list, apikey=setting.BSCSCAN_API_KEY):

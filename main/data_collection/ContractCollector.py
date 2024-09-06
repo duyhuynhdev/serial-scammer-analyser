@@ -204,8 +204,8 @@ class TokenInfoCollector:
             token_addresses = list(dict.fromkeys(token_addresses))
         chunks = ut.partitioning(0, len(token_addresses), 50000)
         chunk = chunks[job]
-        output_path = os.path.join(eval('path.{}_token_path'.format(dex)), "token_info.csv")
         chunk_addresses = list(token_addresses)[chunk["from"]:(chunk["to"] + 1)]
+        output_path = os.path.join(eval('path.{}_token_path'.format(dex)), "token_info.csv")
         print(f'START DOWNLOADING DATA (JOB {job}):{chunk["from"]}_{chunk["to"]} (size: {len(chunk_addresses)})')
         print(f'WITH KEY {key}')
         downloaded_addresses = []
@@ -240,6 +240,7 @@ class TokenInfoCollector:
         existed_infos = pd.read_csv(info_path, low_memory=False)
         if not token_address in existed_infos["token"].values:
             return self.download_token_info(token_address, dex)
+        existed_infos.drop_duplicates(inplace=True)
         existed_infos.set_index("token", inplace=True)
         record = existed_infos.loc[token_address]
         return {"token": token_address, "name": record["name"], "symbol": record["symbol"], "decimals": record["decimals"], "totalSupply": record["totalSupply"]}
@@ -293,9 +294,9 @@ class PopularTokenDataCollector:
 
 
 if __name__ == '__main__':
-    # collector = PoolInfoCollector()
-    # job = 0
-    # collector.uniswap_token_download(job)
+    collector = PoolInfoCollector()
+    job = 0
+    collector.uniswap_token_download(job)
     # pancakeswap_pools_download(job)
     # # download_popular_tokens()
     # collector =  PoolDataCollector()

@@ -13,7 +13,7 @@ class Path(object):
         # GLOBAL DATA
         ROOT_FOLDER = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         self.resource_root_path = os.path.join(ROOT_FOLDER, "resources")
-        self.data_root_path = os.path.join("/media", "dustin", "Storage", "Data", "blockchain", "DEX")
+        self.data_root_path = os.path.join("/mnt", "8058AA3958AA2E3A", "Data", "blockchain", "DEX")
         if not os.path.exists(self.data_root_path):
             self.data_root_path = os.path.join(self.resource_root_path, "data")
         print("ENVIRONMENT VARIABLES")
