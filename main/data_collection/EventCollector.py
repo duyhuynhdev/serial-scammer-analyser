@@ -131,7 +131,7 @@ def clean_fail_data(event, dex="univ2"):
 
 
 if __name__ == '__main__':
-    job = 17
+    job = 0
     collector = PoolEventCollector()
     collector.download_download_pool_events_by_patch(job, dex="panv2")
 
