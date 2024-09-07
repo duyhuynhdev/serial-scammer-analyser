@@ -50,6 +50,26 @@ class PoolEventCollector:
     def download_pool_event(self, pool_address, event, dex="univ2", explorer=EtherscanAPI, apikey=setting.ETHERSCAN_API_KEY):
         self.download_event_logs(pool_address, eval('self.{}_last_block'.format(dex)), event, explorer=explorer, apikey=apikey, dex=dex)
 
+    def download_all_pool_events(self, pool_addresses, dex="univ2", explorer=EtherscanAPI,
+                                 apikey=setting.ETHERSCAN_API_KEY):
+        events = ["Burn", "Mint", "Swap", "Transfer", "Sync"]
+        for pool_address in tqdm(pool_addresses):
+            for event in events:
+                self.download_event_logs(pool_address, eval('self.{}_last_block'.format(dex)), event, dex=dex, explorer=explorer,
+                                         apikey=apikey)
+
+    def download_download_pool_events_by_patch(self, job, dex="univ2"):
+        explorer = explorer_api[dex]["explorer"]
+        keys = explorer_api[dex]["keys"]
+        pool_path = os.path.join(eval('path.{}_pool_path'.format(dex)), "pool_addresses.csv")
+        pools = pd.read_csv(pool_path)["pool"].values
+        chunks = ut.partitioning(0, len(pools), int(len(pools) / len(keys)))
+        print("Num Keys: ", len(keys))
+        chunk = chunks[job]
+        chunk_addresses = pools[chunk["from"]:(chunk["to"] + 1)]
+        print(f"DOWNLOAD ALL POOL EVENTS FROM {chunk['from']} TO {chunk['to']} WITH KEY {keys[job]}")
+        self.download_all_pool_events(chunk_addresses, dex=dex, explorer=explorer, apikey=keys[job])
+
     def download_pool_events(self, event, dex="univ2", explorer=EtherscanAPI, apikey=setting.ETHERSCAN_API_KEY):
         print("DOWNLOAD EVENT {} WITH KEY {}".format(event, apikey))
         pool_path = os.path.join(eval('path.{}_pool_path'.format(dex)), "pool_addresses.csv")
@@ -108,11 +128,17 @@ def clean_fail_data(event, dex="univ2"):
     print(len(log_lists))
     print(count)
     print(set(log_lists))
+
+
 if __name__ == '__main__':
+    job = 17
     collector = PoolEventCollector()
-    # collector.download_pool_events("Burn", "univ2", EtherscanAPI, setting.ETHERSCAN_API_KEYS[5])
-    # collector.download_pool_events("Mint", "univ2", EtherscanAPI, setting.ETHERSCAN_API_KEYS[6])
-    collector.download_pool_events("Swap", "univ2", EtherscanAPI, setting.ETHERSCAN_API_KEYS[7])
-    # collector.download_pool_events("Transfer", "univ2", EtherscanAPI, setting.ETHERSCAN_API_KEYS[8])
-    # collector.download_pool_events("Sync", "univ2", EtherscanAPI, setting.ETHERSCAN_API_KEYS[9])
-    # clean_fail_data("Sync")
+    collector.download_download_pool_events_by_patch(job, dex="panv2")
+
+    # collector = PoolEventCollector()
+    # # collector.download_pool_events("Burn", "univ2", EtherscanAPI, setting.ETHERSCAN_API_KEYS[5])
+    # # collector.download_pool_events("Mint", "univ2", EtherscanAPI, setting.ETHERSCAN_API_KEYS[6])
+    # collector.download_pool_events("Swap", "univ2", EtherscanAPI, setting.ETHERSCAN_API_KEYS[7])
+    # # collector.download_pool_events("Transfer", "univ2", EtherscanAPI, setting.ETHERSCAN_API_KEYS[8])
+    # # collector.download_pool_events("Sync", "univ2", EtherscanAPI, setting.ETHERSCAN_API_KEYS[9])
+    # # clean_fail_data("Sync")
