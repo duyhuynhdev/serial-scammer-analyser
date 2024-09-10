@@ -7,7 +7,7 @@ from data_collection.AccountCollector import TransactionCollector
 from utils.Settings import Setting
 from utils.Path import Path
 from api import EtherscanAPI, BSCscanAPI
-from EventCollector import PoolEventCollector
+from EventCollector import ContractEventCollector
 from ContractCollector import PoolInfoCollector, TokenInfoCollector
 from AccountCollector import CreatorCollector
 import numpy as np
@@ -127,7 +127,7 @@ def data_collection(job, pool_addresses=None, dex='univ2'):
     if pool_addresses is None:
         pool_path = os.path.join(eval('path.{}_pool_path'.format(dex)), "pool_addresses.csv")
         pool_addresses = pd.read_csv(pool_path)["pool"].values
-    pool_event_collector = PoolEventCollector()
+    pool_event_collector = ContractEventCollector()
     pool_info_collector = PoolInfoCollector()
     token_info_collector = TokenInfoCollector()
     creator_collector = CreatorCollector()
@@ -172,9 +172,9 @@ def data_collection(job, pool_addresses=None, dex='univ2'):
                 if is_rp == 2:
                     scammers.extend(sell_scammers)
                 if len(scammers) > 0:
-                    scammers = set([Web3.to_checksum_address(s) for s in scammers]) - set(special_addresses)
-                    # for scammer in scammers:
-                    #     transaction_collector.download_transactions(scammer, dex)
+                    scammers = set([str(Web3.to_checksum_address(s)) for s in scammers]) - set(special_addresses)
+                    for scammer in scammers:
+                        transaction_collector.download_transactions(scammer, dex)
                     scammer_dict = [{"pool": pool_address, "scammer": s} for s in scammers]
                     ut.save_or_append_if_exist(scammer_dict, os.path.join(eval('path.{}_account_path'.format(dex)), "scammers.csv"))
             else:
@@ -194,7 +194,7 @@ def data_collection(job, pool_addresses=None, dex='univ2'):
 def test_rug_pull(pool_address, dex='univ2'):
     pool_info_collector = PoolInfoCollector()
     token_info_collector = TokenInfoCollector()
-    pool_event_collector = PoolEventCollector()
+    pool_event_collector = ContractEventCollector()
 
     pool_info = pool_info_collector.get_pool_info(pool_address)
     token0 = pool_info["token0"]
@@ -211,7 +211,7 @@ def test_rug_pull(pool_address, dex='univ2'):
 
 
 if __name__ == '__main__':
-    data_collection(15)
+    data_collection(25)
     # print(test_rug_pull(pool_address='0xF0A3C6787Ff0c6d912060fa156E2Fd925974f93F'))
     # print(test_rug_pull(pool_address='0xF0A3C6787Ff0c6d912060fa156E2Fd925974f93F'))
     # print(test_rug_pull(pool_address='0xB6909B960DbbE7392D405429eB2b3649752b4838'))

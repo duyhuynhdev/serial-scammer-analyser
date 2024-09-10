@@ -12,7 +12,7 @@ import utils.Utils as ut
 path = Path()
 setting = Setting()
 
-class PoolLogDecoder:
+class EventLogDecoder:
     pool_events = {
         "Sync": {"types": ["uint112", "uint112"], "names": ['reserve0', 'reserve1']},
         "Swap": {"types": ["address", "address", "uint256", "uint256", "uint256", "uint256"], "names": ['sender', 'to', 'amount0In', 'amount1In', 'amount0Out', 'amount1Out']},
@@ -61,6 +61,6 @@ if __name__ == '__main__':
               'logIndex': '0xdf',
               'transactionHash': '0x9b75d8c0225dfc7e65586da9c485ef6dbebb4913be3ecbfe2a7c8300706f9042',
               'transactionIndex': '0x87'}
-    decoder = PoolLogDecoder("Mint")
+    decoder = EventLogDecoder("Mint")
     out = decoder.decode_event(result)
     print(out)

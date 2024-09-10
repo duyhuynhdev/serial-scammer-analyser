@@ -29,6 +29,9 @@ class Path(object):
         self.univ2_pool_events_path = os.path.join(self.univ2_pool_path, "events")
         self.univ2_token_path = os.path.join(self.univ2_base_path, "token")
         self.univ2_token_events_path = os.path.join(self.univ2_token_path, "events")
+        self.univ2_processed_path = os.path.join(self.univ2_base_path, "processed")
+        self.univ2_public_addresses_path = os.path.join(self.univ2_base_path, "public_addresses")
+        self.univ2_cluster_path = os.path.join(self.univ2_base_path, "cluster")
 
         self.panv2_base_path = os.path.join(self.data_root_path, "pancakeswap")
         self.panv2_account_path = os.path.join(self.panv2_base_path, "account")
@@ -40,7 +43,9 @@ class Path(object):
         self.panv2_pool_events_path = os.path.join(self.panv2_pool_path, "events")
         self.panv2_token_path = os.path.join(self.panv2_base_path, "token")
         self.panv2_token_events_path = os.path.join(self.panv2_token_path, "events")
-
+        self.panv2_processed_path = os.path.join(self.panv2_base_path, "processed")
+        self.panv2_public_addresses_path = os.path.join(self.panv2_base_path, "public_addresses")
+        self.panv2_cluster_path = os.path.join(self.panv2_base_path, "cluster")
         # LOCAL DATA
         ROOT_FOLDER = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
         # Resource

@@ -1,10 +1,17 @@
+import networkx as nx
 from networkx import DiGraph, has_path
 from entity import Node
 from entity.Node import NodeLabel
+from utils import Utils as ut
+import os
+import itertools
 
 
 class Cluster:
+    id_iter = itertools.count()
+
     def __init__(self):
+        self.id = next(self.id_iter)
         self.nodes = dict()
         self.network = DiGraph()
 
@@ -35,3 +42,9 @@ class Cluster:
                 if i != j and has_path(self.network, i.address, j.address):
                     scammer_network.add_edge(i.address, j.address)
         return scammers, scammer_network
+
+    def export(self, outpath):
+        node_list_file = os.path.join(outpath, f"C{self.id}.node")
+        graph_file = os.path.join(outpath, f"C{self.id}.nw")
+        ut.write_list_to_file(node_list_file, self.nodes.keys())
+        nx.write_adjlist(self.network, graph_file)

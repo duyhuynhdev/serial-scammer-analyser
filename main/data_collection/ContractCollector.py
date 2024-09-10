@@ -159,11 +159,11 @@ class PoolInfoCollector:
 
     def get_pool_info(self, pool_address, dex="univ2"):
         info_path = os.path.join(eval('path.{}_pool_path'.format(dex)), "pool_info.csv")
-        if not os.path.isfile(info_path):
-            return self.download_pool_info(pool_address, dex)
+        # if not os.path.isfile(info_path):
+        #     return self.download_pool_info(pool_address, dex)
         existed_infos = pd.read_csv(info_path)
-        if not pool_address in existed_infos["pool"].values:
-            return self.download_pool_info(pool_address, dex)
+        # if not pool_address in existed_infos["pool"].values:
+        #     return self.download_pool_info(pool_address, dex)
         existed_infos.set_index("pool", inplace=True)
         record = existed_infos.loc[pool_address]
         return {"pool": pool_address, "token0": record["token0"], "token1": record["token1"]}
@@ -235,11 +235,11 @@ class TokenInfoCollector:
 
     def get_token_info(self, token_address, dex="univ2"):
         info_path = os.path.join(eval('path.{}_token_path'.format(dex)), "token_info.csv")
-        if not os.path.isfile(info_path):
-            return self.download_token_info(token_address, dex)
+        # if not os.path.isfile(info_path):
+        #     return self.download_token_info(token_address, dex)
         existed_infos = pd.read_csv(info_path, low_memory=False)
-        if not token_address in existed_infos["token"].values:
-            return self.download_token_info(token_address, dex)
+        # if not token_address in existed_infos["token"].values:
+        #     return self.download_token_info(token_address, dex)
         existed_infos.drop_duplicates(inplace=True)
         existed_infos.set_index("token", inplace=True)
         record = existed_infos.loc[token_address]
@@ -295,13 +295,13 @@ class PopularTokenDataCollector:
 
 if __name__ == '__main__':
     collector = PoolInfoCollector()
-    job = 0
-    collector.uniswap_token_download(job)
+    job = 18
+    collector.pancakeswap_token_download(job)
     # pancakeswap_pools_download(job)
     # # download_popular_tokens()
     # collector =  PoolDataCollector()
     # collector.merge_all_pools(pancake_chunks, "panv2")
     # collector.merge_all_pool_infos(uni_chunks, dex="univ2")
-    collector = TokenInfoCollector()
-    collector.download_tokens_info(6)
+    # collector = TokenInfoCollector()
+    # collector.download_tokens_info(6)
 

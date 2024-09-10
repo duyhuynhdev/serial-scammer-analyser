@@ -1,3 +1,5 @@
+from marshmallow.orderedset import OrderedSet
+
 import utils.Utils
 from data_collection.AccountCollector import TransactionCollector
 
@@ -73,7 +75,7 @@ def get_neighbours_from_transactions(scammer_address, normal_txs, internal_txs):
         # receiver in internal txs of an eoa is always itself
         contract_prev_neighbours.extend(internal_txs["from"].tolist())
         in_txs_list.extend(internal_txs.to_dict(orient="records"))
-    return set(eoa_prev_neighbours), set(eoa_next_neighbours), set(contract_prev_neighbours), set(contract_next_neighbours), in_txs_list, out_txs_list
+    return OrderedSet(eoa_prev_neighbours), OrderedSet(eoa_next_neighbours), OrderedSet(contract_prev_neighbours), OrderedSet(contract_next_neighbours), in_txs_list, out_txs_list
 
 
 class Node:
@@ -84,12 +86,12 @@ class Node:
         self.tag_name = tag_name
         self.parent = parent
         # below data field are used in scammer clustering only (network construction)
-        self.eoa_next_neighbours = set(eoa_next_neighbours) if eoa_next_neighbours is not None else set()
-        self.eoa_prev_neighbours = set(eoa_prev_neighbours) if eoa_prev_neighbours is not None else set()
-        self.contract_next_neighbours = set(contract_next_neighbours) if contract_next_neighbours is not None else set()
-        self.contract_prev_neighbours = set(contract_prev_neighbours) if contract_prev_neighbours is not None else set()
-        self.in_txs = in_txs if in_txs is not None else set()
-        self.out_txs = out_txs if out_txs is not None else set()
+        self.eoa_next_neighbours = OrderedSet(eoa_next_neighbours) if eoa_next_neighbours is not None else OrderedSet()
+        self.eoa_prev_neighbours = OrderedSet(eoa_prev_neighbours) if eoa_prev_neighbours is not None else OrderedSet()
+        self.contract_next_neighbours = OrderedSet(contract_next_neighbours) if contract_next_neighbours is not None else OrderedSet()
+        self.contract_prev_neighbours = OrderedSet(contract_prev_neighbours) if contract_prev_neighbours is not None else OrderedSet()
+        self.in_txs = in_txs if in_txs is not None else []
+        self.out_txs = out_txs if out_txs is not None else []
         self.in_degree = len(self.in_txs) if in_txs is not None else 0
         self.out_degree = len(self.out_txs) if out_txs is not None else 0
 
