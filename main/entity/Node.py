@@ -9,6 +9,8 @@ class NodeLabel:
     S = "scammer"
     D = "deposit"
     C = "coordinator"
+    T = "transfer"
+    P = "pool"
     SF = "scammer_funder"
     SB = "scammer_beneficiary"
     WT = "wash_trading"
@@ -18,6 +20,36 @@ class NodeLabel:
     BRIDGE = "bridge"
     CEX = "cex_public_address"
     MIXER = "mixer_public_address"
+
+    def is_scammer(self, node):
+        return self.S in node.labels
+
+class Node:
+    def __init__(self, address, parent, eoa_next_neighbours=None, eoa_prev_neighbours=None, contract_next_neighbours=None, contract_prev_neighbours=None, in_txs=None, out_txs=None, labels=[],
+                 tag_name=""):
+        self.address = address
+        self.labels = labels
+        self.tag_name = tag_name
+        self.parent = parent
+        # below data field are used in scammer clustering only (network construction)
+        self.eoa_next_neighbours = OrderedSet(eoa_next_neighbours) if eoa_next_neighbours is not None else OrderedSet()
+        self.eoa_prev_neighbours = OrderedSet(eoa_prev_neighbours) if eoa_prev_neighbours is not None else OrderedSet()
+        self.contract_next_neighbours = OrderedSet(contract_next_neighbours) if contract_next_neighbours is not None else OrderedSet()
+        self.contract_prev_neighbours = OrderedSet(contract_prev_neighbours) if contract_prev_neighbours is not None else OrderedSet()
+        self.in_txs = in_txs if in_txs is not None else []
+        self.out_txs = out_txs if out_txs is not None else []
+        self.in_degree = len(self.in_txs) if in_txs is not None else 0
+        self.out_degree = len(self.out_txs) if out_txs is not None else 0
+
+    def path(self):
+        path = list()
+        path.append(self.address)
+        parent = self.parent
+        while parent is not None:
+            path.append(parent.address)
+            parent = parent.parent
+        path = list(reversed(path))
+        return path
 
 def create_end_node(address, parent):
     node = Node(address, parent)
@@ -42,7 +74,7 @@ def get_neighbours_from_transactions(scammer_address, normal_txs, internal_txs):
     eoa_prev_neighbours, eoa_next_neighbours, contract_prev_neighbours, contract_next_neighbours = [], [], [], []
     in_txs_list, out_txs_list = [], []
     if normal_txs is not None and len(normal_txs) > 0:
-        # normal_txs.fillna("", inplace=True)
+        normal_txs.fillna(None, inplace=True)
         in_txs = normal_txs[normal_txs["to"] == scammer_address]
         if len(in_txs) > 0:
             # all senders in normal txs must be EOA
@@ -53,17 +85,8 @@ def get_neighbours_from_transactions(scammer_address, normal_txs, internal_txs):
             contract_next_neighbours = contract_creation_txs["contractAddress"].tolist()
         out_txs = normal_txs[(normal_txs["from"] == scammer_address) & (~normal_txs["to"].isna())]
         if len(out_txs) > 0:
-            # identify type of address based on functionName
-            # out_txs_to_maybe_contract = out_txs[~out_txs["functionName"].isna()]
-            # out_txs_to_eoa = out_txs[out_txs["functionName"].isna()]
-            # if len(out_txs_to_maybe_contract) > 0:
-            #     for address in set(out_txs_to_maybe_contract["to"].tolist()):
-            #         if utils.Utils.is_contract_address(address):
-            #             contract_next_neighbours.append(address)
-            #         else:
-            #             eoa_next_neighbours.append(address)
-            out_txs_to_contract = out_txs[~out_txs["functionName"].isna()]
-            out_txs_to_eoa = out_txs[out_txs["functionName"].isna()]
+            out_txs_to_contract = out_txs[~out_txs["functionName"].isnull()]
+            out_txs_to_eoa = out_txs[out_txs["functionName"].isnull()]
             if len(out_txs_to_contract) > 0:
                 contract_next_neighbours.extend(out_txs_to_contract["to"].tolist())
             if len(out_txs_to_eoa) > 0:
@@ -71,36 +94,8 @@ def get_neighbours_from_transactions(scammer_address, normal_txs, internal_txs):
         in_txs_list = in_txs.to_dict(orient="records")
         out_txs_list = out_txs.to_dict(orient="records")
     if internal_txs is not None and len(internal_txs) > 0:
-        # internal_txs.fillna("", inplace=True)
         # receiver in internal txs of an eoa is always itself
         contract_prev_neighbours.extend(internal_txs["from"].tolist())
         in_txs_list.extend(internal_txs.to_dict(orient="records"))
     return OrderedSet(eoa_prev_neighbours), OrderedSet(eoa_next_neighbours), OrderedSet(contract_prev_neighbours), OrderedSet(contract_next_neighbours), in_txs_list, out_txs_list
 
-
-class Node:
-    def __init__(self, address, parent, eoa_next_neighbours=None, eoa_prev_neighbours=None, contract_next_neighbours=None, contract_prev_neighbours=None, in_txs=None, out_txs=None, label=NodeLabel.U,
-                 tag_name=""):
-        self.address = address
-        self.label = label
-        self.tag_name = tag_name
-        self.parent = parent
-        # below data field are used in scammer clustering only (network construction)
-        self.eoa_next_neighbours = OrderedSet(eoa_next_neighbours) if eoa_next_neighbours is not None else OrderedSet()
-        self.eoa_prev_neighbours = OrderedSet(eoa_prev_neighbours) if eoa_prev_neighbours is not None else OrderedSet()
-        self.contract_next_neighbours = OrderedSet(contract_next_neighbours) if contract_next_neighbours is not None else OrderedSet()
-        self.contract_prev_neighbours = OrderedSet(contract_prev_neighbours) if contract_prev_neighbours is not None else OrderedSet()
-        self.in_txs = in_txs if in_txs is not None else []
-        self.out_txs = out_txs if out_txs is not None else []
-        self.in_degree = len(self.in_txs) if in_txs is not None else 0
-        self.out_degree = len(self.out_txs) if out_txs is not None else 0
-
-    def path(self):
-        path = list()
-        path.append(self.address)
-        parent = self.parent
-        while parent is not None:
-            path.append(parent.address)
-            parent = parent.parent
-        path = list(reversed(path))
-        return path

@@ -24,7 +24,7 @@ class Cluster:
     def add_node(self, node: Node):
         self.nodes[node.address] = node
         self.network.add_node(node.address, data=node)
-
+    #TODO: accumulate amount & fee
     def add_connection(self, node_from, node_to, weight, transaction):
         if not self.network.has_node(node_from) or not self.network.has_node(node_to):
             return False
