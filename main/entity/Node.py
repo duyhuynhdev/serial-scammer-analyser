@@ -1,5 +1,5 @@
 from marshmallow.orderedset import OrderedSet
-
+import json
 import utils.Utils
 from data_collection.AccountCollector import TransactionCollector
 
@@ -36,6 +36,8 @@ class Node:
         self.eoa_prev_neighbours = OrderedSet(eoa_prev_neighbours) if eoa_prev_neighbours is not None else OrderedSet()
         self.contract_next_neighbours = OrderedSet(contract_next_neighbours) if contract_next_neighbours is not None else OrderedSet()
         self.contract_prev_neighbours = OrderedSet(contract_prev_neighbours) if contract_prev_neighbours is not None else OrderedSet()
+        self.normal_txs = []
+        self.internal_txs = []
         self.in_txs = in_txs if in_txs is not None else []
         self.out_txs = out_txs if out_txs is not None else []
         self.in_degree = len(self.in_txs) if in_txs is not None else 0
@@ -74,7 +76,7 @@ def get_neighbours_from_transactions(scammer_address, normal_txs, internal_txs):
     eoa_prev_neighbours, eoa_next_neighbours, contract_prev_neighbours, contract_next_neighbours = [], [], [], []
     in_txs_list, out_txs_list = [], []
     if normal_txs is not None and len(normal_txs) > 0:
-        normal_txs.fillna(None, inplace=True)
+        # normal_txs.fillna(None, inplace=True)
         in_txs = normal_txs[normal_txs["to"] == scammer_address]
         if len(in_txs) > 0:
             # all senders in normal txs must be EOA
@@ -85,8 +87,8 @@ def get_neighbours_from_transactions(scammer_address, normal_txs, internal_txs):
             contract_next_neighbours = contract_creation_txs["contractAddress"].tolist()
         out_txs = normal_txs[(normal_txs["from"] == scammer_address) & (~normal_txs["to"].isna())]
         if len(out_txs) > 0:
-            out_txs_to_contract = out_txs[~out_txs["functionName"].isnull()]
-            out_txs_to_eoa = out_txs[out_txs["functionName"].isnull()]
+            out_txs_to_contract = out_txs[~out_txs["functionName"].isna()]
+            out_txs_to_eoa = out_txs[out_txs["functionName"].isna()]
             if len(out_txs_to_contract) > 0:
                 contract_next_neighbours.extend(out_txs_to_contract["to"].tolist())
             if len(out_txs_to_eoa) > 0:
@@ -99,3 +101,6 @@ def get_neighbours_from_transactions(scammer_address, normal_txs, internal_txs):
         in_txs_list.extend(internal_txs.to_dict(orient="records"))
     return OrderedSet(eoa_prev_neighbours), OrderedSet(eoa_next_neighbours), OrderedSet(contract_prev_neighbours), OrderedSet(contract_next_neighbours), in_txs_list, out_txs_list
 
+
+if __name__ == '__main__':
+    create_node("0x48f0fc8dfc672dd45e53b6c53cd5b09c71d9fbd6",None,dex='univ2')
