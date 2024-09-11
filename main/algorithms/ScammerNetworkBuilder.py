@@ -62,7 +62,8 @@ def get_base_datasets(dex='univ2'):
     scam_pools = scam_pools[scam_pools["is_rp"] > 0]["pool"].str.lower().values
     return end_nodes, scam_tokens, scammers, scam_pools
 
-def get_rug_pull_creators (dex='univ2'):
+
+def get_rug_pull_creators(dex='univ2'):
     pool_labels_path = os.path.join(eval('path.{}_processed_path'.format(dex)), "pool_labels.csv")
     pool_labels_df = pd.read_csv(pool_labels_path)
     pool_labels_df.fillna("", inplace=True)
@@ -73,6 +74,7 @@ def get_rug_pull_creators (dex='univ2'):
     pool_creations.drop_duplicates(inplace=True)
     scam_pool_full_info = pd.merge(scam_pools, pool_creations, left_on='pool', right_on='contractAddress', how='inner')
     return scam_pool_full_info["contractCreator"].str.lower().values
+
 
 def scammer_clustering(dex='univ2'):
     scammers = get_rug_pull_creators(dex=dex)
@@ -101,19 +103,17 @@ def explore_scammer_network(scammer_address, dex='univ2'):
     cluster.add_node(node)
     # start exploring
     while not queue.empty():
-        root = queue.get()
+        root: Node.Node = queue.get()
         print("ROOT ADDRESS", root.address)
         print("PATH", "->".join(root.path()))
 
         if root.address in traversed_nodes or root.address in dead_nodes:
             continue
         traversed_nodes.add(root.address)
-        eoa_nodes = (root.eoa_prev_neighbours | root.eoa_next_neighbours)
-        contract_nodes = (root.contract_prev_neighbours | root.contract_next_neighbours)
-        print("EOA NODES", len(eoa_nodes))
-        print("CONTRACT NODES", len(contract_nodes))
+        print("EOA NODES", len(root.eoa_neighbours))
+        print("CONTRACT NODES", len(root.contract_neighbours))
         # EOA neighbours
-        for eoa_neighbour_address in eoa_nodes:
+        for eoa_neighbour_address in root.eoa_neighbours:
             eoa_neighbour_address = eoa_neighbour_address.lower()
             if eoa_neighbour_address not in traversed_nodes:
                 if eoa_neighbour_address.lower() in end_nodes:
@@ -129,7 +129,7 @@ def explore_scammer_network(scammer_address, dex='univ2'):
                         # put unvisited neighbours into queue
                         queue.put(eoa_node)
         # Contract neighbours
-        for contract_neighbour_address in contract_nodes:
+        for contract_neighbour_address in root.contract_neighbours:
             contract_neighbour_address = contract_neighbour_address.lower()
             if contract_neighbour_address not in traversed_nodes:
                 if contract_neighbour_address.lower() in end_nodes:
@@ -162,10 +162,10 @@ def explore_scammer_network(scammer_address, dex='univ2'):
                             # put unvisited neighbours into queue
                             queue.put(eoa_node)
         # add connections
-        for tx in root.in_txs:
-            cluster.add_connection(tx["from"], tx["to"], float(tx["value"]) / 10 ** 18, tx)
-        for tx in root.out_txs:
-            cluster.add_connection(tx["from"], tx["to"], float(tx["value"]) / 10 ** 18, tx)
+        for tx in root.normal_txs:
+            cluster.add_connection(tx.sender, tx.to, float(tx.value) / 10 ** 18, tx)
+        for tx in root.internal_txs:
+            cluster.add_connection(tx.sender, tx.to, float(tx.value) / 10 ** 18, tx)
         print("QUEUE LEN", queue.qsize())
         print("SCANNED NODES", len(traversed_nodes))
         print("DEAD NODES", len(dead_nodes))

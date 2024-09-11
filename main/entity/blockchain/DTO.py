@@ -2,8 +2,7 @@ class DTO:
     def __init__(self):
         pass
 
-    def export(self):
-        pass
+    def from_dict(self, data):
+        for name, value in data.items():
+            setattr(self, name, value)
 
-    def load(self):
-        pass
