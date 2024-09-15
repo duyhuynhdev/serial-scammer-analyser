@@ -140,7 +140,7 @@ def get_neighbours_from_transactions(scammer_address, normal_txs, internal_txs, 
                                     # scam_pool_creator = dataloader.creators[scam_pool]
                                     if scammers is not None:
                                         eoa_neighbours.extend(scammers)
-                        if scam_count == 0:
+                        if scam_count == 0 and scammer_address.lower() not in dataloader.scammers:
                             print(f"\t\t FOUND BENIGN SWAP TX {contract_call_tx.hash} TOKEN 0 {path[0]} TOKEN 1 {path[1]}")
                             return OrderedSet(), OrderedSet(), True
     if internal_txs is not None and len(internal_txs) > 0:

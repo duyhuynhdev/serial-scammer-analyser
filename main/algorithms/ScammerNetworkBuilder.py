@@ -120,7 +120,7 @@ def explore_scammer_network(scammer_address, dex='univ2'):
 
 
 if __name__ == '__main__':
-    # explore_scammer_network("0x19fad4791c1459961ef15cca2db31a49f8ab0dcb")
+    explore_scammer_network("0x287e3428d2846e30a4a0bab0b3682ce8b6ce6f0d")
     # explore_scammer_network("0x43e129c47dfd4abcf48a24f6b2d8ba6f49261f39")
     # explore_scammer_network_by_ignoring_creator("0x48f0fc8dfc672dd45e53b6c53cd5b09c71d9fbd6")
     # explore_scammer_network("0x81cfe8efdb6c7b7218ddd5f6bda3aa4cd1554fd2")
@@ -128,4 +128,4 @@ if __name__ == '__main__':
     # explore_scammer_network("0xb16a24e954739a2bbc68c5d7fbbe2e27f17dfff9")
     # print(is_contract_address("0x81cfe8efdb6c7b7218ddd5f6bda3aa4cd1554fd2"))
     # print(len(collect_end_nodes()))
-    scammer_clustering()
+    # scammer_clustering()
