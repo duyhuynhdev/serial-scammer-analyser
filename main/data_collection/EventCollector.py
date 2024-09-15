@@ -5,7 +5,7 @@ from tqdm import tqdm
 import os
 import pandas as pd
 
-from data_collection import DataProcessor
+from data_collection import DataDecoder
 from utils.Settings import Setting
 from utils.Path import Path
 from api import EtherscanAPI, BSCscanAPI
@@ -46,9 +46,9 @@ class ContractEventCollector:
             wf.close()
         return logs
 
-    def download_pool_event(self, pool_address, event, dex="univ2", explorer=EtherscanAPI, apikey=setting.ETHERSCAN_API_KEY):
-        outpath = os.path.join(eval('path.{}_pool_events_path'.format(dex)), event, pool_address + ".json")
-        self.download_event_logs(pool_address, outpath, eval('self.{}_last_block'.format(dex)), event, explorer=explorer, apikey=apikey)
+    def download_event(self, address, event, event_path, dex="univ2", explorer=EtherscanAPI, apikey=setting.ETHERSCAN_API_KEY):
+        outpath = os.path.join(event_path, event, address + ".json")
+        self.download_event_logs(address, outpath, eval('self.{}_last_block'.format(dex)), event, explorer=explorer, apikey=apikey)
 
     def download_multiple_events(self, addresses, path, events, dex="univ2", explorer=EtherscanAPI, apikey=setting.ETHERSCAN_API_KEY):
         for address in tqdm(addresses):
@@ -95,7 +95,7 @@ class ContractEventCollector:
         self.download_multiple_events(chunk_addresses, path, events, dex=dex, explorer=explorer, apikey=keys[job % len(keys)])
 
     def parse_event(self, event, event_logs_path):
-        decoder = DataProcessor.EventLogDecoder(event)
+        decoder = DataDecoder.EventLogDecoder(event)
         events = []
         with open(event_logs_path, 'r') as f:
             logs = json.load(f)
@@ -105,16 +105,16 @@ class ContractEventCollector:
             events.append(decoded_event)
         return events
 
-    def get_event(self, pool_address, event, event_path, dex):
+    def get_event(self, address, event, event_path, dex):
         global key_index
-        event_logs_path = os.path.join(event_path, event, pool_address + ".json")
+        event_logs_path = os.path.join(event_path, event, address + ".json")
         if not os.path.exists(event_logs_path):  # if not exist , starts download corresponding event
             while key_index < len(explorer_api[dex]["keys"]):
                 try:
                     collector = ContractEventCollector()
                     explorer = explorer_api[dex]["explorer"]
                     api_key = explorer_api[dex]["keys"][key_index]
-                    collector.download_pool_event(pool_address, event, dex="univ2", explorer=explorer, apikey=api_key)
+                    collector.download_event(address, event, event_path, dex="univ2", explorer=explorer, apikey=api_key)
                     break
                 except Exception as e:
                     # try other key if error occurs
@@ -149,6 +149,7 @@ def clean_fail_data(event, dex="univ2"):
 
 
 if __name__ == '__main__':
-    job =16
+    job =0
     collector = ContractEventCollector()
-    collector.download_download_token_events_by_patch(job)
+    # collector.download_download_token_events_by_patch(job)
+    collector.get_event("0x590fcAdC577810658Cc225E26d78C642cf08be4e","Transfer", path.univ2_token_events_path, "univ2")

@@ -1,5 +1,9 @@
-class Event:
-    def __init__(self, address, event, blockNumber, blockHash, timeStamp, gasPrice, gasUsed, transactionHash):
+from entity.blockchain.DTO import DTO
+
+
+class Event(DTO):
+    def __init__(self, address=None, event=None, blockNumber=None, blockHash=None, timeStamp=None, gasPrice=None, gasUsed=None, transactionHash=None):
+        super().__init__()
         self.address = address
         self.event = event
         self.transactionHash = transactionHash
@@ -11,7 +15,7 @@ class Event:
 
 
 class MintEvent(Event):
-    def __init__(self, address, event, blockNumber, blockHash, timeStamp, gasPrice, gasUsed, transactionHash, sender, amount0, amount1):
+    def __init__(self, address=None, event=None, blockNumber=None, blockHash=None, timeStamp=None, gasPrice=None, gasUsed=None, transactionHash=None, sender=None, amount0=None, amount1=None):
         super().__init__(address, event, blockNumber, blockHash, timeStamp, gasPrice, gasUsed, transactionHash)
         self.sender = sender
         self.amount0 = amount0
@@ -19,7 +23,7 @@ class MintEvent(Event):
 
 
 class BurnEvent(Event):
-    def __init__(self, address, event, blockNumber, blockHash, timeStamp, gasPrice, gasUsed, transactionHash, sender, to, amount0, amount1):
+    def __init__(self, address=None, event=None, blockNumber=None, blockHash=None, timeStamp=None, gasPrice=None, gasUsed=None, transactionHash=None, sender=None, to=None, amount0=None, amount1=None):
         super().__init__(address, event, blockNumber, blockHash, timeStamp, gasPrice, gasUsed, transactionHash)
         self.sender = sender
         self.to = to
@@ -28,7 +32,8 @@ class BurnEvent(Event):
 
 
 class SwapEvent(Event):
-    def __init__(self, address, event, blockNumber, blockHash, timeStamp, gasPrice, gasUsed, transactionHash, sender, to, amount0In, amount1In, amount0Out, amount1Out):
+    def __init__(self, address=None, event=None, blockNumber=None, blockHash=None, timeStamp=None, gasPrice=None, gasUsed=None, transactionHash=None, sender=None, to=None, amount0In=None,
+                 amount1In=None, amount0Out=None, amount1Out=None):
         super().__init__(address, event, blockNumber, blockHash, timeStamp, gasPrice, gasUsed, transactionHash)
         self.sender = sender
         self.to = to
@@ -39,7 +44,7 @@ class SwapEvent(Event):
 
 
 class TransferEvent(Event):
-    def __init__(self, address, event, blockNumber, blockHash, timeStamp, gasPrice, gasUsed, transactionHash, sender, to, amount):
+    def __init__(self, address=None, event=None, blockNumber=None, blockHash=None, timeStamp=None, gasPrice=None, gasUsed=None, transactionHash=None, sender=None, to=None, amount=None):
         super().__init__(address, event, blockNumber, blockHash, timeStamp, gasPrice, gasUsed, transactionHash)
         self.sender = sender
         self.to = to

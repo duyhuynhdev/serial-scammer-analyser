@@ -7,7 +7,7 @@ from tqdm import tqdm
 import os
 import pandas as pd
 
-from data_collection import DataProcessor
+from data_collection import DataDecoder
 from entity.blockchain.Transaction import NormalTransaction, InternalTransaction
 from utils.Settings import Setting
 from utils.Path import Path
@@ -132,6 +132,8 @@ class TransactionCollector:
     panv2_last_block = 41674250
 
     def get_transactions(self, address, dex='univ2'):
+        if address == "0x98f2ee6e58778f13a975fe1d6c3a8c773779cc73":
+            print()
         api = explorer_api[dex]["explorer"]
         keys = explorer_api[dex]["keys"]
         normal_txs_path = os.path.join(eval('path.{}_normal_tx_path'.format(dex)), f"{address}.csv")
@@ -140,7 +142,6 @@ class TransactionCollector:
         if os.path.isfile(normal_txs_path):
             try:
                 normal_txs = pd.read_csv(normal_txs_path)
-                normal_txs.rename(columns={'from': 'sender'}, inplace=True)
             except Exception as e:
                 print(address, e)
                 normal_txs = None
@@ -150,18 +151,19 @@ class TransactionCollector:
         if os.path.isfile(internal_txs_path):
             try:
                 internal_txs = pd.read_csv(internal_txs_path)
-                internal_txs.rename(columns={'from': 'sender'}, inplace=True)
             except Exception as e:
                 print(address, e)
                 internal_txs = None
         else:
             internal_txs = pd.DataFrame(self.download_internal_transactions(address, api, keys[key_idx], dex))
         if normal_txs is not None:
+            normal_txs.rename(columns={'from': 'sender'}, inplace=True)
             for tx in normal_txs.to_dict('records'):
                 ptx = NormalTransaction()
                 ptx.from_dict(tx)
                 parsed_normal_txs.append(ptx)
         if internal_txs is not None:
+            internal_txs.rename(columns={'from': 'sender'}, inplace=True)
             for tx in internal_txs.to_dict('records'):
                 ptx = InternalTransaction()
                 ptx.from_dict(tx)

@@ -295,7 +295,7 @@ class PopularTokenDataCollector:
 
 if __name__ == '__main__':
     collector = PoolInfoCollector()
-    job = 16
+    job = 19
     collector.pancakeswap_token_download(job)
     # pancakeswap_pools_download(job)
     # # download_popular_tokens()
