@@ -41,11 +41,11 @@ def get_balance_of_weth_before_sell_rug(mints, burns, swaps, weth_position, max_
 
 
 def is_mint_transfer(transfer):
-    return transfer["from"] == Constant.ZERO and transfer["to"] != Constant.ZERO
+    return transfer["sender"] == Constant.ZERO and transfer["to"] != Constant.ZERO
 
 
 def is_burn_transfer(transfer):
-    return transfer["from"] != Constant.ZERO and transfer["to"] in Constant.BURN_ADDRESSES
+    return transfer["sender"] != Constant.ZERO and transfer["to"] in Constant.BURN_ADDRESSES
 
 
 def is_simple_rug_pull(transfers):
@@ -58,7 +58,7 @@ def is_simple_rug_pull(transfers):
             scammers.add(transfer["to"])
         if is_burn_transfer(transfer):
             burns.append(transfer)
-            scammers.add(transfer["from"])
+            scammers.add(transfer["sender"])
     if len(mints) != 1 or len(burns) != 1:
         return False, []
     trading_period = burns[0]["timeStamp"] - mints[0]["timeStamp"]
@@ -98,7 +98,7 @@ def is_sell_rug_pull(transfers, mints, burns, swaps, weth_position):
                 scammers.add(transfer["to"])
             # if is_burn_transfer(transfer):
             #     burns.append(transfer)
-            #     scammers.add(transfer["from"])
+            #     scammers.add(transfer["sender"])
         return True, scammers
     return False, []
 

@@ -5,4 +5,4 @@ class DTO:
     def from_dict(self, data):
         for name, value in data.items():
             setattr(self, name, value)
-
+        return self
