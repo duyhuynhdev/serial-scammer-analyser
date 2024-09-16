@@ -49,8 +49,6 @@ def explore_scammer_network(scammer_address, dex='univ2'):
     cluster_path = eval('path.{}_cluster_path'.format(dex))
     if ut.is_contract_address(scammer_address):
         return None, list()
-    # end_nodes, scam_tokens, scammers, scam_pools = get_base_datasets(dex)
-    creator_collector = CreatorCollector()
     # create node for an address with downloading all transactions and discovering/classifying neighbours
     node = Node.create_node(scammer_address, None, dataloader, NodeLabel.S, dex)
     queue = OrderedSetQueue()
@@ -120,7 +118,7 @@ def explore_scammer_network(scammer_address, dex='univ2'):
 
 
 if __name__ == '__main__':
-    explore_scammer_network("0x287e3428d2846e30a4a0bab0b3682ce8b6ce6f0d")
+    explore_scammer_network("0x19b98792e98c54f58c705cddf74316aec0999aa6")
     # explore_scammer_network("0x43e129c47dfd4abcf48a24f6b2d8ba6f49261f39")
     # explore_scammer_network_by_ignoring_creator("0x48f0fc8dfc672dd45e53b6c53cd5b09c71d9fbd6")
     # explore_scammer_network("0x81cfe8efdb6c7b7218ddd5f6bda3aa4cd1554fd2")
@@ -128,4 +126,8 @@ if __name__ == '__main__':
     # explore_scammer_network("0xb16a24e954739a2bbc68c5d7fbbe2e27f17dfff9")
     # print(is_contract_address("0x81cfe8efdb6c7b7218ddd5f6bda3aa4cd1554fd2"))
     # print(len(collect_end_nodes()))
-    # scammer_clustering()
+    # scammer_clustering()\
+    # print(ut.hex_to_dec("0x10afe6222f") * ut.hex_to_dec("0x29cbe2")/ 10**18)
+    # print((107143841398 * 2208003)/ 10**18)
+
+

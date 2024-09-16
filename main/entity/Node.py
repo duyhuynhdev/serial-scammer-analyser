@@ -8,9 +8,6 @@ from data_collection.AccountCollector import TransactionCollector
 from entity.blockchain.Transaction import NormalTransaction, InternalTransaction
 import numpy as np
 
-from utils.DataLoader import DataLoader
-
-
 class NodeLabel:
     U = "unknown"
 
@@ -48,7 +45,7 @@ class NodeLabel:
 
 class Node:
     def __init__(self, address, parent, eoa_neighbours=None, contract_neighbours=None, normal_txs=None,
-                 internal_txs=None, labels=None,
+                 internal_txs=None, swap_txs = None, contract_creation_txs = None, labels=None,
                  tag_name=""):
         self.address = address
         self.labels = labels if labels is not None else set()
@@ -58,6 +55,8 @@ class Node:
         self.contract_neighbours = OrderedSet(contract_neighbours) if contract_neighbours is not None else OrderedSet()
         self.normal_txs = normal_txs if normal_txs is not None else []
         self.internal_txs = internal_txs if internal_txs is not None else []
+        self.swap_txs = swap_txs if swap_txs is not None else []
+        self.contract_creation_txs = contract_creation_txs if contract_creation_txs is not None else []
 
     def path(self):
         path = [self.address]
@@ -75,17 +74,17 @@ def create_end_node(address, parent, label):
     return node
 
 
-def create_node(address, parent, dataloader: DataLoader, label=NodeLabel.EOA, dex='univ2'):
+def create_node(address, parent, dataloader, label=NodeLabel.EOA, dex='univ2'):
     transaction_collector = TransactionCollector()
     normal_txs, internal_txs = transaction_collector.get_transactions(address, dex)
     print("\t CREATE NODE FOR ", address, " WITH NORMAL TX:", len(normal_txs) if normal_txs is not None else 0, "AND INTERNAL TX:", len(internal_txs) if internal_txs is not None else 0)
     if normal_txs is None and internal_txs is None:
         return create_end_node(address, parent, NodeLabel.BLANK)
-    eoa_neighbours, contract_neighbours, is_grey = get_neighbours_from_transactions(address, normal_txs, internal_txs, dataloader)
+    eoa_neighbours, contract_neighbours, swap_txs, contract_creation_txs, is_grey = get_neighbours_from_transactions(address, normal_txs, internal_txs, dataloader)
     if is_grey:
         print("\t FOUND GREY NODE ", address)
         return create_end_node(address, parent, NodeLabel.GREY)
-    node = Node(address, parent, eoa_neighbours, contract_neighbours, normal_txs, internal_txs)
+    node = Node(address, parent, eoa_neighbours, contract_neighbours, normal_txs, internal_txs, swap_txs, contract_creation_txs)
     node.labels.add(label)
     # if eoa_neighbours is not None and len(eoa_neighbours) > Constant.BIG_NODE_TXS:
     #     node.labels.add(NodeLabel.BIG)
@@ -104,9 +103,9 @@ def classify_transactions(txs, scammer_address):
     return in_txs, out_txs, contract_creation_txs
 
 
-def get_neighbours_from_transactions(scammer_address, normal_txs, internal_txs, dataloader: DataLoader):
+def get_neighbours_from_transactions(scammer_address, normal_txs, internal_txs, dataloader):
     fdecoder = FunctionInputDecoder()
-    eoa_neighbours, contract_neighbours = [], []
+    eoa_neighbours, contract_neighbours, swap_txs, contract_creation_txs = [], [], [], []
     if normal_txs is not None and len(normal_txs) > 0:
         # normal_txs.fillna(None, inplace=True)
         in_txs, out_txs, contract_creation_txs = classify_transactions(normal_txs, scammer_address)
@@ -117,8 +116,8 @@ def get_neighbours_from_transactions(scammer_address, normal_txs, internal_txs, 
             # add created contract into contract list
             contract_neighbours.extend([tx.contractAddress for tx in contract_creation_txs])
         if len(out_txs) > 0:
-            out_txs_to_contract = [tx for tx in out_txs if tx.functionName is not np.nan]
-            out_txs_to_eoa = [tx for tx in out_txs if (tx.functionName is np.nan) and (int(tx.value) > 0)]
+            out_txs_to_contract = [tx for tx in out_txs if (tx.functionName is not np.nan) or (tx.functionName != "")]
+            out_txs_to_eoa = [tx for tx in out_txs if ((tx.functionName is np.nan) or (tx.functionName == "")) and (int(tx.value) > 0)]
             if len(out_txs_to_eoa) > 0:
                 eoa_neighbours.extend([tx.to for tx in out_txs_to_eoa])
             if len(out_txs_to_contract) > 0:
@@ -126,28 +125,30 @@ def get_neighbours_from_transactions(scammer_address, normal_txs, internal_txs, 
                 for contract_call_tx in out_txs_to_contract:
                     paths = list()
                     parsed_inputs = fdecoder.decode_function_input(contract_call_tx.input)
-                    for input in parsed_inputs:
-                        paths.append(input["path"])
-                    for path in paths:
-                        scam_count = 0
-                        for token in path:
-                            if token.lower() in dataloader.scam_token_pool.keys():
-                                scam_count += 1
-                                scam_pool = dataloader.scam_token_pool[token.lower()]
-                                if scam_pool is not None:
-                                    contract_neighbours.append(scam_pool)
-                                    scammers = dataloader.pool_scammers[scam_pool]
-                                    # scam_pool_creator = dataloader.creators[scam_pool]
-                                    if scammers is not None:
-                                        eoa_neighbours.extend(scammers)
-                        if scam_count == 0 and scammer_address.lower() not in dataloader.scammers:
-                            print(f"\t\t FOUND BENIGN SWAP TX {contract_call_tx.hash} TOKEN 0 {path[0]} TOKEN 1 {path[1]}")
-                            return OrderedSet(), OrderedSet(), True
+                    if len(parsed_inputs) > 0:
+                        swap_txs.append(contract_call_tx)
+                        for input in parsed_inputs:
+                            paths.append(input["path"])
+                        for path in paths:
+                            scam_count = 0
+                            for token in path:
+                                if token.lower() in dataloader.scam_token_pool.keys():
+                                    scam_count += 1
+                                    scam_pool = dataloader.scam_token_pool[token.lower()]
+                                    if scam_pool is not None:
+                                        contract_neighbours.append(scam_pool)
+                                        scammers = dataloader.pool_scammers[scam_pool]
+                                        # scam_pool_creator = dataloader.creators[scam_pool]
+                                        if scammers is not None:
+                                            eoa_neighbours.extend(scammers)
+                            if scam_count == 0 and (scammer_address.lower() not in dataloader.scammers):
+                                print(f"\t\t FOUND BENIGN SWAP TX {contract_call_tx.hash} TOKEN 0 {path[0]} TOKEN 1 {path[1]}")
+                                return OrderedSet(), OrderedSet(), swap_txs, contract_creation_txs, True
     if internal_txs is not None and len(internal_txs) > 0:
         # receiver in internal txs of an eoa is always itself
         contract_neighbours.extend([tx.sender for tx in internal_txs])
-    return OrderedSet(eoa_neighbours), OrderedSet(contract_neighbours), False
+    return OrderedSet(eoa_neighbours), OrderedSet(contract_neighbours), swap_txs, contract_creation_txs, False
 
 
 if __name__ == '__main__':
-    create_node("0x48f0fc8dfc672dd45e53b6c53cd5b09c71d9fbd6", None, DataLoader(), dex='univ2')
+    create_node("0x48f0fc8dfc672dd45e53b6c53cd5b09c71d9fbd6", None, None, dex='univ2')

@@ -3,6 +3,7 @@ import os
 
 from marshmallow.orderedset import OrderedSet
 
+from entity.Cluster import ClusterNode
 from utils.Settings import Setting
 from utils.Path import Path
 from utils import Utils as ut
@@ -50,34 +51,57 @@ def load_end_nodes(dex='univ2'):
 def load_creation_info(dex='univ2'):
     print("LOAD CREATION INFO")
     creation_info = dict()
-    pool_creation_path = os.path.join(eval('path.{}_pool_path'.format(dex)), "pool_creation_info.csv")
-    token_creation_path = os.path.join(eval('path.{}_token_path'.format(dex)), "token_creation_info.csv")
+    pool_creation_path = os.path.join(eval('path.{}_processed_path'.format(dex)), "pool_creation_info.csv")
+    token_creation_path = os.path.join(eval('path.{}_processed_path'.format(dex)), "token_creation_info.csv")
     pool_creations = pd.read_csv(pool_creation_path)
     creation_info.update(dict(zip(pool_creations["contractAddress"].str.lower(), pool_creations["contractCreator"].str.lower())))
     token_creations = pd.read_csv(token_creation_path)
     creation_info.update(dict(zip(token_creations["contractAddress"].str.lower(), token_creations["contractCreator"].str.lower())))
     return creation_info
 
+def load_pool_info(dex = 'univ2'):
+    pool_infos = pd.read_csv(os.path.join(eval('path.{}_processed_path'.format(dex)), "pool_info.csv"), low_memory=False)
+    pool_infos.drop_duplicates(inplace=True)
+    tokens = pool_infos[["token0","token1"]]
+    tokens["token0"] = tokens["token0"].str.lower()
+    tokens["token1"] = tokens["token1"].str.lower()
+    return dict(zip(pool_infos["pool"].str.lower(), tokens.to_dict('records')))
+
+def load_token_info(dex = 'univ2'):
+    token_infos = pd.read_csv(os.path.join(eval('path.{}_processed_path'.format(dex)), "token_info.csv"), low_memory=False)
+    token_infos.drop_duplicates(inplace=True)
+    infos = token_infos[["name","symbol","decimals","totalSupply"]]
+    return dict(zip(token_infos["token"].str.lower(), infos.to_dict('records')))
 
 def load_rug_pull_dataset(dex='univ2'):
     print("LOAD RUG PULL INFO")
     scam_pools = list()
     # scammers = list()
-    scammers = pd.read_csv(os.path.join(eval('path.{}_processed_path'.format(dex)), "1d_rp_scammers.csv"))
+    scammers = pd.read_csv(os.path.join(eval('path.{}_processed_path'.format(dex)), "1_pair_scammers.csv"))
     index_issue = scammers[(scammers["pool"] == scammers["scammer"])].index
     scammers.drop(index_issue)
     scammers["pool"] = scammers["pool"].str.lower()
     scammers["scammer"] = scammers["scammer"].str.lower()
     scam_pools.extend(scammers["pool"].unique())
     pool_scammers = scammers.groupby('pool')['scammer'].apply(list).to_dict()
-    rp_pools = pd.read_csv(os.path.join(eval('path.{}_processed_path'.format(dex)), "1d_rp.csv"))
+    rp_pools = pd.read_csv(os.path.join(eval('path.{}_processed_path'.format(dex)), "1_pair_pool_labels.csv"))
     rp_pools.fillna("", inplace=True)
+    rp_pools = rp_pools[rp_pools["is_rp"] != 0]
     rp_pools["pool"] = rp_pools["pool"].str.lower()
     rp_pools["scam_token"] = rp_pools["scam_token"].str.lower()
     scam_pools.extend(rp_pools["pool"].unique())
-    scam_token_pool = dict(zip( rp_pools["scam_token"], rp_pools["pool"]))
+    scam_token_pool = dict(zip(rp_pools["scam_token"], rp_pools["pool"]))
     return pool_scammers, scam_token_pool, OrderedSet(scam_pools), scammers["scammer"].str.lower().to_list()
 
+
+def load_cluster(name, dex='univ2'):
+    c_path = os.path.join(eval(f'path.{dex}_cluster_path'), f"{name}.csv")
+    cluster_df = pd.read_csv(c_path)
+    clusters = []
+    for idx, row in cluster_df.iterrows():
+        cluster_node = ClusterNode.from_dict(row.to_dict())
+        clusters.append(cluster_node)
+    return clusters
 
 class DataLoader(object):
     def __init__(self, dex='univ2'):
@@ -91,9 +115,14 @@ class DataLoader(object):
          self.other_addresses) = load_end_nodes(dex=dex)
         # key is token/pool address - value is creator address
         self.creators = load_creation_info(dex=dex)
+        # contract infos
+        self.pool_infos = load_pool_info(dex=dex)
+        self.token_infos = load_token_info(dex=dex)
+        # rug pull related infos
         self.pool_scammers, self.scam_token_pool, self.scam_pools, self.scammers = load_rug_pull_dataset(dex=dex)
 
 
 if __name__ == '__main__':
-    dataloader = DataLoader(dex='univ2')
-    print(dataloader.pool_scammers)
+    # dataloader = DataLoader(dex='univ2')
+    # print(load_cluster("cluster_0x7f0a9d794bba0a588f4c8351d8549bb5f76a34c4", dex='univ2'))
+    print(load_token_info(dex='univ2'))
