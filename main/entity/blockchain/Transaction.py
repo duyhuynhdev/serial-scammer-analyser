@@ -24,7 +24,7 @@ class Transaction(DTO):
             setattr(self, name, value)
 
     def get_transaction_amount(self):
-        if self.isError:
+        if self.isError == 1 or self.isError == '1':
             return 0
         return int(self.value) / 10 ** 18
 
@@ -53,7 +53,7 @@ class NormalTransaction(Transaction):
         return int(self.gasPrice * self.gasUsed) / 10 ** 18
 
     def is_to_eoa(self, owner):
-        return self.is_in_tx(owner) or (self.is_out_tx(owner) and ((self.functionName is not np.nan) or (self.functionName != "")))
+        return (self.is_out_tx(owner) and ((self.functionName is np.nan) or (self.functionName == "")))
 
     def is_to_contract(self, owner):
         return not self.is_to_eoa(owner)

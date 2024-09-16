@@ -30,21 +30,29 @@ def chain_pattern_detection(scammer_address):
     """Function that returns a single chain list scam from a scammer address. Includes the entire chain """
     chain = [scammer_address]
     current_node = Node.create_node(scammer_address, None, dataloader)
-    # loop for the entire chain, once terminated
+    # TODO remove
     number_of_iterations = 0
-    while current_node.address in dataloader.scammers and number_of_iterations < MAX_ITERATIONS:
-        # TODO maybe don't assume last element because this may not work for the termination condition
-        largest_out_transaction = current_node.normal_txs[-1]
+    should_continue = current_node.address in dataloader.scammers
+    while should_continue and number_of_iterations < MAX_ITERATIONS:
+        should_continue = False
+        largest_out_transaction = None
         # starting from the latest transaction, pick the largest until we reach the last remove liquidity pool call
-        for index in range(len(current_node.normal_txs) - 2, -1, -1):
-            if current_node.normal_txs[index].get_transaction_amount() > largest_out_transaction.get_transaction_amount():
-                largest_out_transfer = current_node.normal_txs[index]
-            if REMOVE_LIQUIDITY_SUBSTRING in current_node.normal_txs[index].functionName:
+        for index in range(len(current_node.normal_txs) - 1, -1, -1):
+            if REMOVE_LIQUIDITY_SUBSTRING in str(current_node.normal_txs[index].functionName):
+                # TODO condition needs to be added. If the scammer removed from liquidity pool.
                 break
+            # TODO verify this condition
+            if current_node.normal_txs[index].is_to_eoa(current_node.normal_txs[index].sender):
+                if largest_out_transaction is None or current_node.normal_txs[index].get_transaction_amount() > largest_out_transaction.get_transaction_amount():
+                    largest_out_transaction = current_node.normal_txs[index]
 
-        chain.append(largest_out_transfer.address)
-        current_node = Node.create_node(largest_out_transfer.address, None, dataloader)
-        number_of_iterations += 1
+
+        if largest_out_transaction is not None and largest_out_transaction.to in dataloader.scammers:
+            # TODO you also need to verify that it's the largest IN transaction for this scammer BEFORE first add
+            should_continue = True
+            current_node = Node.create_node(largest_out_transaction.to, None, dataloader)
+            chain.append(current_node.address)
+            number_of_iterations += 1
 
     return chain
 
