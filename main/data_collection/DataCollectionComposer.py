@@ -40,11 +40,11 @@ def extract_1d_events(events, start_ts):
 
 
 def is_mint_transfer(transfer):
-    return transfer["from"] == zero_address and transfer["to"] != zero_address
+    return transfer["sender"] == zero_address and transfer["to"] != zero_address
 
 
 def is_burn_transfer(transfer):
-    return transfer["from"] != zero_address and transfer["to"] in burn_addresses
+    return transfer["sender"] != zero_address and transfer["to"] in burn_addresses
 
 
 def is_simple_rug_pull(transfers):

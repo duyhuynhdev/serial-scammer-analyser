@@ -88,7 +88,7 @@ class EventLogDecoder:
         "Swap": {"types": ["address", "address", "uint256", "uint256", "uint256", "uint256"], "names": ['sender', 'to', 'amount0In', 'amount1In', 'amount0Out', 'amount1Out']},
         "Burn": {"types": ["address", "address", "uint256", "uint256"], "names": ['sender', 'to', 'amount0', 'amount1']},
         "Mint": {"types": ["address", "uint256", "uint256"], "names": ['sender', 'amount0', 'amount1']},
-        "Transfer": {"types": ["address", "address", "uint256"], "names": ['from', 'to', 'value']},
+        "Transfer": {"types": ["address", "address", "uint256"], "names": ['sender', 'to', 'amount']},
     }
 
     def __init__(self, event):

@@ -3,7 +3,10 @@ import os
 
 from marshmallow.orderedset import OrderedSet
 
+from data_collection.EventCollector import ContractEventCollector
 from entity.Cluster import ClusterNode
+from entity.blockchain.Address import Pool, Token
+from entity.blockchain.Event import TransferEvent, SwapEvent, BurnEvent, MintEvent
 from utils.Settings import Setting
 from utils.Path import Path
 from utils import Utils as ut
@@ -59,19 +62,22 @@ def load_creation_info(dex='univ2'):
     creation_info.update(dict(zip(token_creations["contractAddress"].str.lower(), token_creations["contractCreator"].str.lower())))
     return creation_info
 
-def load_pool_info(dex = 'univ2'):
+
+def load_pool_info(dex='univ2'):
     pool_infos = pd.read_csv(os.path.join(eval('path.{}_processed_path'.format(dex)), "pool_info.csv"), low_memory=False)
     pool_infos.drop_duplicates(inplace=True)
-    tokens = pool_infos[["token0","token1"]]
+    tokens = pool_infos[["token0", "token1"]]
     tokens["token0"] = tokens["token0"].str.lower()
     tokens["token1"] = tokens["token1"].str.lower()
     return dict(zip(pool_infos["pool"].str.lower(), tokens.to_dict('records')))
 
-def load_token_info(dex = 'univ2'):
+
+def load_token_info(dex='univ2'):
     token_infos = pd.read_csv(os.path.join(eval('path.{}_processed_path'.format(dex)), "token_info.csv"), low_memory=False)
     token_infos.drop_duplicates(inplace=True)
-    infos = token_infos[["name","symbol","decimals","totalSupply"]]
+    infos = token_infos[["name", "symbol", "decimals", "totalSupply"]]
     return dict(zip(token_infos["token"].str.lower(), infos.to_dict('records')))
+
 
 def load_rug_pull_dataset(dex='univ2'):
     print("LOAD RUG PULL INFO")
@@ -84,6 +90,7 @@ def load_rug_pull_dataset(dex='univ2'):
     scammers["scammer"] = scammers["scammer"].str.lower()
     scam_pools.extend(scammers["pool"].unique())
     pool_scammers = scammers.groupby('pool')['scammer'].apply(list).to_dict()
+    scammer_pool = dict(zip(scammers["scammer"], scammers["pool"]))
     rp_pools = pd.read_csv(os.path.join(eval('path.{}_processed_path'.format(dex)), "1_pair_pool_labels.csv"))
     rp_pools.fillna("", inplace=True)
     rp_pools = rp_pools[rp_pools["is_rp"] != 0]
@@ -91,7 +98,7 @@ def load_rug_pull_dataset(dex='univ2'):
     rp_pools["scam_token"] = rp_pools["scam_token"].str.lower()
     scam_pools.extend(rp_pools["pool"].unique())
     scam_token_pool = dict(zip(rp_pools["scam_token"], rp_pools["pool"]))
-    return pool_scammers, scam_token_pool, OrderedSet(scam_pools), scammers["scammer"].str.lower().to_list()
+    return pool_scammers, scam_token_pool, OrderedSet(scam_pools), scammers["scammer"].str.lower().to_list(), scammer_pool
 
 
 def load_cluster(name, dex='univ2'):
@@ -102,6 +109,29 @@ def load_cluster(name, dex='univ2'):
         cluster_node = ClusterNode.from_dict(row.to_dict())
         clusters.append(cluster_node)
     return clusters
+
+
+def load_pool(scammer_address, dataloader, dex='univ2'):
+    pool_address = dataloader.scammer_pool[scammer_address.lower()]
+    pool_event_path = eval('path.{}_pool_events_path'.format(dex))
+    contract_event_collector = ContractEventCollector()
+    transfer_list = contract_event_collector.get_event(pool_address, "Transfer", pool_event_path, dex)
+    transfers = [TransferEvent().from_dict(e) for e in transfer_list]
+    swaps_list = contract_event_collector.get_event(pool_address, "Swap", pool_event_path, dex)
+    swaps = [SwapEvent().from_dict(e) for e in swaps_list]
+    burns_list = contract_event_collector.get_event(pool_address, "Burn", pool_event_path, dex)
+    burns = [BurnEvent().from_dict(e) for e in burns_list]
+    mint_list = contract_event_collector.get_event(pool_address, "Mint", pool_event_path, dex)
+    mints = [MintEvent().from_dict(e) for e in mint_list]
+    pool_info = dataloader.pool_infos[pool_address.lower()]
+    scammers = dataloader.pool_scammers[pool_address.lower()]
+    token0 = Token(pool_info["token0"])
+    token0.from_dict(dataloader.token_infos[pool_info["token0"]])
+    token1 = Token(pool_info["token1"])
+    token1.from_dict(dataloader.token_infos[pool_info["token1"]])
+    pool = Pool(pool_address, token0, token1, scammers, mints, burns, swaps, transfers)
+    return pool
+
 
 class DataLoader(object):
     def __init__(self, dex='univ2'):
@@ -119,10 +149,12 @@ class DataLoader(object):
         self.pool_infos = load_pool_info(dex=dex)
         self.token_infos = load_token_info(dex=dex)
         # rug pull related infos
-        self.pool_scammers, self.scam_token_pool, self.scam_pools, self.scammers = load_rug_pull_dataset(dex=dex)
+        self.pool_scammers, self.scam_token_pool, self.scam_pools, self.scammers, self.scammer_pool = load_rug_pull_dataset(dex=dex)
 
 
 if __name__ == '__main__':
     # dataloader = DataLoader(dex='univ2')
     # print(load_cluster("cluster_0x7f0a9d794bba0a588f4c8351d8549bb5f76a34c4", dex='univ2'))
-    print(load_token_info(dex='univ2'))
+    # print(load_token_info(dex='univ2'))
+    pool = load_pool("0x7f0a9d794bba0a588f4c8351d8549bb5f76a34c4", DataLoader(dex='univ2'))
+    print(pool)
