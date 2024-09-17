@@ -68,13 +68,13 @@ def explore_scammer_network(scammer_address, dex='univ2'):
         print("EOA NODES", len(root.eoa_neighbours))
         print("CONTRACT NODES", len(root.contract_neighbours))
 
-        # if NodeLabel.BIG in root.labels:
-        #     print("TEMPORARY SKIP BIG NODE")
-        #     print("QUEUE LEN", queue.qsize())
-        #     print("SCANNED NODES", len(traversed_nodes))
-        #     print("DEAD NODES", len(dead_nodes))
-        #     print("=" * 50)
-        #     continue
+        if NodeLabel.BIG in root.labels:
+            print("TEMPORARY SKIP BIG NODE")
+            print("QUEUE LEN", queue.qsize())
+            print("SCANNED NODES", len(traversed_nodes))
+            print("DEAD NODES", len(dead_nodes))
+            print("=" * 50)
+            continue
         # EOA neighbours
         for eoa_neighbour_address in root.eoa_neighbours:
             eoa_neighbour_address = eoa_neighbour_address.lower()

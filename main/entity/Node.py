@@ -86,8 +86,8 @@ def create_node(address, parent, dataloader, label=NodeLabel.EOA, dex='univ2'):
         return create_end_node(address, parent, NodeLabel.GREY)
     node = Node(address, parent, eoa_neighbours, contract_neighbours, normal_txs, internal_txs, swap_txs, contract_creation_txs)
     node.labels.add(label)
-    # if eoa_neighbours is not None and len(eoa_neighbours) > Constant.BIG_NODE_TXS:
-    #     node.labels.add(NodeLabel.BIG)
+    if (len(normal_txs) + len(internal_txs)) >= Constant.BIG_NODE_TXS:
+        node.labels.add(NodeLabel.BIG)
     return node
 
 
