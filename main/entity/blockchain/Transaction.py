@@ -1,3 +1,5 @@
+import math
+
 from web3 import Web3
 
 from entity.blockchain.DTO import DTO
@@ -32,6 +34,8 @@ class Transaction(DTO):
         return Web3.to_checksum_address(self.sender) == Web3.to_checksum_address(owner) and (self.to is np.nan or self.to == "")
 
     def is_in_tx(self, owner):
+        if isinstance(self.to, float) and math.isnan(self.to):
+            return False
         return Web3.to_checksum_address(self.to) == Web3.to_checksum_address(owner)
 
     def is_out_tx(self, owner):
