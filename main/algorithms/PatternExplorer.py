@@ -31,5 +31,5 @@ def chain_pattern_detection(cluster: Cluster):
 
 
 if __name__ == '__main__':
-    # execute("0x48f0fc8dfc672dd45e53b6c53cd5b09c71d9fbd6")
+    execute("0x94e247c276cc6046c15d7e44d951b97080d69e13")
     print(dataloader.scammers)

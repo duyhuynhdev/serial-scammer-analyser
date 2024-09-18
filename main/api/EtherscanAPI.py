@@ -24,20 +24,20 @@ def build_url(module, action, params, apikey=setting.ETHERSCAN_API_KEY):
 
 def call_api(module, action, params, apikey=setting.ETHERSCAN_API_KEY):
     api_url = build_url(module, action, params, apikey)
-    retry = 3
+    retry = 10
     response_data = None
     while retry > 0:
         try:
             response = requests.get(api_url, headers={"Content-Type": "application/json"})
             response_data = response.json()
-            # print(response_data)
-            break
+            if response_data["message"] != 'Unexpected error, timeout or server too busy. Please try again later' and response_data["message"] != "NOTOK":
+                break
         except Exception as e:
-            print(e)
             print(api_url)
-            print("SLEEP 10 SECONDS AND RETRY")
-            sleep(10)
+            print("SLEEP 3 SECONDS AND RETRY")
+            sleep(3)
             retry -= 1
+    print(response_data)
     assert (response_data is not None) and (response_data["status"] == "1" or isinstance(response_data["result"], list) or response_data["message"] == 'No data found')
     return response_data["result"] if response_data["result"] is not None else []
 
