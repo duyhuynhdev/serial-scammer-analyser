@@ -148,6 +148,8 @@ def save_overwrite_if_exist(data, output_path):
     # print("SAVE", len(data), "RECORDS")
     save_df.to_csv(output_path, index=False)
 
+def save_file_to_S3():
+    pass
 
 def get_abi_function_signatures(abi, type):
     functions = []
