@@ -1,3 +1,4 @@
+import concurrent.futures
 import math
 from Crypto.Hash import keccak
 import os
@@ -9,6 +10,10 @@ from web3 import Web3
 
 from utils.Path import Path
 from utils.Settings import Setting
+
+from pathlib import Path
+import boto3
+from boto3.s3.transfer import TransferConfig
 
 setting = Setting()
 path = Path()
@@ -148,8 +153,49 @@ def save_overwrite_if_exist(data, output_path):
     # print("SAVE", len(data), "RECORDS")
     save_df.to_csv(output_path, index=False)
 
-def save_file_to_S3():
-    pass
+
+def upload_local_file_to_s3(s3_client, file_path, bucket_name, s3_key, config=TransferConfig()):
+    s3_client.upload_file(file_path, bucket_name, s3_key, Config=config)
+    return s3_key
+
+
+def upload_local_files_to_s3():
+    """
+    This function uploads the contents of ../../resources/data to the s3 bucket.
+    """
+
+    # Get the current file path
+    current_file_path = Path(__file__)
+    # Get the project root by navigating two levels up
+    project_root = current_file_path.parents[2]
+    # Define the data directory
+    data_directory = project_root / 'resources' / 'data'
+
+    bucket_name = "serial-scammer-analyser-bucket"
+
+    s3_client = boto3.client('s3')
+
+    # Collect all the files from a specified directory and its subdirectories,
+    # prepare the corresponding S3 paths for each file, and then upload them concurrently
+    # to an S3 bucket.
+    files_to_upload = []
+    for root, dirs, files in os.walk(data_directory):
+        for file_name in files:
+            local_path = os.path.join(root, file_name)
+            s3_path = os.path.relpath(local_path, data_directory).replace('\\', '/')
+
+            files_to_upload.append({'local_path': local_path, 's3_path': s3_path})
+
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        futures = [
+            executor.submit(upload_local_file_to_s3, s3_client, file['local_path'], bucket_name, file['s3_path']) for file in files_to_upload
+        ]
+
+        for future in concurrent.futures.as_completed(futures):
+            print(f"File uploaded: {future.result()}")
+
+
+
 
 def get_abi_function_signatures(abi, type):
     functions = []
@@ -171,3 +217,7 @@ def get_abi_function_inputs(abi, type):
 
 def hex_to_dec(hex_val):
     return int(hex_val, 16)
+
+
+if __name__ == '__main__':
+    upload_local_files_to_s3()

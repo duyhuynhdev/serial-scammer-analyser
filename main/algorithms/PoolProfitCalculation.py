@@ -12,6 +12,7 @@ dataloader = DataLoader.DataLoader()
 def execute(cluster_id):
     cluster = DataLoader.load_cluster(cluster_id)
     pool = DataLoader.load_pool(cluster[0].address,dataloader)
+
     print(cluster)
 
 if __name__ == '__main__':
