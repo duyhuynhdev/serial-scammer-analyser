@@ -1,4 +1,3 @@
-
 from algorithms.ScammerNetworkBuilder import dataloader
 from entity import Node
 from utils.DataLoader import DataLoader
@@ -15,42 +14,54 @@ def chain_pattern_detection(scammer_address):
     is involved in"""
     chain = [scammer_address]
     current_node = Node.create_node(scammer_address, None, dataloader)
-    valid_address_fwd = current_node.address in dataloader.scammers
-    valid_address_bwd = valid_address_fwd
-    while valid_address_fwd:
-        # TODO need more checks if these transactions are None
-        largest_out_transaction = get_largest_out_transaction_after_remove_liquidity(current_node.address)[0]
-        largest_in_transaction, next_node = get_largest_in_transaction_before_add_liquidity(largest_out_transaction.to)
+    valid_address_fwd = valid_address_bwd = current_node.address in dataloader.scammers
 
-        valid_address_fwd = largest_out_transaction.hash == largest_in_transaction.hash and largest_out_transaction.to in dataloader.scammers
+    # chain forward
+    while valid_address_fwd:
+        valid_address_fwd = False
+        largest_out_transaction = get_largest_out_after_remove_liquidity(current_node.address)[0]
+        if largest_out_transaction and largest_out_transaction.to in dataloader.scammers:
+            largest_in_transaction, next_node = get_largest_in_before_add_liquidity(largest_out_transaction.to)
+            valid_address_fwd = largest_out_transaction.hash == largest_in_transaction.hash
+
         if valid_address_fwd:
             current_node = next_node
             # TODO remove this
-            print("address to:" + current_node.address + "trans hash:" + largest_out_transaction.hash)
+            print("address to: " + current_node.address + " trans hash: " + largest_out_transaction.hash)
             # TODO just append the address not the whole debugging string
-            chain.append({"address to:" + current_node.address, "trans hash:" + largest_out_transaction.hash})
+            chain.append({"address to: " + current_node.address, " trans hash: " + largest_out_transaction.hash})
+
+    # TODO possibly don't recreate this
+    current_node = Node.create_node(scammer_address, None, dataloader)
 
     while valid_address_bwd:
-        print('no logic!')
         valid_address_bwd = False
+        largest_in_transaction = get_largest_in_before_add_liquidity(current_node.address)[0]
+        if largest_in_transaction and largest_in_transaction.sender in dataloader.scammers:
+            largest_out_transaction, prev_node = get_largest_out_after_remove_liquidity(largest_in_transaction.sender)
+            valid_address_bwd = largest_out_transaction.hash == largest_in_transaction.hash
+
+        if valid_address_bwd:
+            current_node = prev_node
+            print("prev address from: " + current_node.address + " trans hash: " + largest_in_transaction.hash)
+            chain.insert(0, {"address from: " + current_node.address, " trans hash: " + largest_in_transaction.hash})
 
     return chain if len(chain) >= MIN_CHAIN_SIZE else None
 
 
-def get_largest_out_transaction_after_remove_liquidity(scammer_address: str):
+def get_largest_out_after_remove_liquidity(scammer_address: str):
     node = Node.create_node(scammer_address, None, dataloader)
     return get_largest_transaction(node, REMOVE_LIQUIDITY_SUBSTRING, True, len(node.normal_txs) - 1, -1, -1)
 
 
-def get_largest_in_transaction_before_add_liquidity(scammer_address: str):
+def get_largest_in_before_add_liquidity(scammer_address: str):
     node = Node.create_node(scammer_address, None, dataloader)
     return get_largest_transaction(node, ADD_LIQUIDITY_SUBSTRING, False, 0, len(node.normal_txs), 1)
 
 
-# TODO what to do if largest_transaction is None
-def get_largest_transaction(node: Node, termination_function_name: str, is_out, *steps):
+def get_largest_transaction(node: Node, termination_function_name: str, is_out, *range_loop_args):
     largest_transaction = None
-    for index in range(steps[0], steps[1], steps[2]):
+    for index in range(range_loop_args[0], range_loop_args[1], range_loop_args[2]):
         if termination_function_name in str(node.normal_txs[index].functionName):
             break
         elif (is_out and node.normal_txs[index].is_to_eoa(node.address)) or (
