@@ -61,15 +61,15 @@ class ContractEventCollector:
     def download_pool_events_by_patch(self, job, dex="univ2"):
         explorer = explorer_api[dex]["explorer"]
         keys = explorer_api[dex]["keys"]
-        pool_path = os.path.join(eval('path.{}_pool_path'.format(dex)), "pool_addresses.csv")
+        pool_path = os.path.join(eval('path.{}_processed_path'.format(dex)), "pool_addresses.csv")
         pools = pd.read_csv(pool_path)["pool"].values
         chunks = ut.partitioning(0, len(pools), int(len(pools) / len(keys)))
         chunk = chunks[job]
         chunk_addresses = pools[chunk["from"]:(chunk["to"] + 1)]
-        print(f"DOWNLOAD ALL POOL EVENTS FROM {chunk['from']} TO {chunk['to']} WITH KEY {keys[job]}")
-        events = ["Burn", "Mint", "Swap", "Transfer", "Sync"]
+        print(f"DOWNLOAD ALL POOL EVENTS FROM {chunk['from']} TO {chunk['to']} WITH KEY {keys[job % len(keys)]} (JOB {job})")
+        events = ["Burn", "Mint", "Swap", "Transfer"]
         path = eval('path.{}_pool_events_path'.format(dex))
-        self.download_multiple_events(chunk_addresses, path, events, dex=dex, explorer=explorer, apikey=keys[job])
+        self.download_multiple_events(chunk_addresses, path, events, dex=dex, explorer=explorer, apikey=keys[job % len(keys)])
 
     def download_pool_events(self, event, dex="univ2", explorer=EtherscanAPI, apikey=setting.ETHERSCAN_API_KEY):
         print("DOWNLOAD EVENT {} WITH KEY {}".format(event, apikey))
@@ -149,7 +149,7 @@ def clean_fail_data(event, dex="univ2"):
 
 
 if __name__ == '__main__':
-    job =0
+    job =14
     collector = ContractEventCollector()
-    # collector.download_download_token_events_by_patch(job)
-    collector.get_event("0x590fcAdC577810658Cc225E26d78C642cf08be4e","Transfer", path.univ2_token_events_path, "univ2")
+    collector.download_pool_events_by_patch(job)
+    # collector.get_event("0x590fcAdC577810658Cc225E26d78C642cf08be4e","Transfer", path.univ2_token_events_path, "univ2")

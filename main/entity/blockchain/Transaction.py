@@ -26,7 +26,7 @@ class Transaction(DTO):
             setattr(self, name, value)
 
     def get_transaction_amount(self):
-        if self.isError == 1 or self.isError == '1':
+        if (self.isError == 1) or (self.isError == '1'):
             return 0
         return int(self.value) / 10 ** 18
 
@@ -52,7 +52,7 @@ class NormalTransaction(Transaction):
         self.cumulativeGasUsed = cumulativeGasUsed
 
     def get_transaction_fee(self):
-        if self.isError:
+        if (self.isError == 1) or (self.isError == '1'):
             return 0
         return int(self.gasPrice * self.gasUsed) / 10 ** 18
 
