@@ -4,7 +4,6 @@ from tqdm import tqdm
 import os
 import pandas as pd
 
-from data_collection import DataDecoder
 from entity.blockchain.Transaction import NormalTransaction, InternalTransaction
 from utils.Settings import Setting
 from utils.Path import Path
@@ -12,7 +11,6 @@ from api import EtherscanAPI, BSCscanAPI
 
 path = Path()
 setting = Setting()
-
 explorer_api = {
     "univ2": {"explorer": EtherscanAPI, "keys": setting.ETHERSCAN_API_KEYS},
     "panv2": {"explorer": BSCscanAPI, "keys": setting.BSCSCAN_API_KEYS},
@@ -99,7 +97,7 @@ class CreatorCollector:
 
     def get_pool_creator(self, address, dex='univ2'):
         address = address.lower()
-        pool_creation_path = os.path.join(eval('path.{}_pool_path'.format(dex)), "pool_creation_info.csv")
+        pool_creation_path = os.path.join(eval('path.{}_processed_path'.format(dex)), "pool_creation_info.csv")
         # if not os.path.isfile(pool_creation_path):
         #     return self.download_creator(address, pool_creation_path, dex)
         existed_data = pd.read_csv(pool_creation_path)
@@ -112,7 +110,7 @@ class CreatorCollector:
 
     def get_token_creator(self, address, dex='univ2'):
         address = address.lower()
-        token_creation_path = os.path.join(eval('path.{}_token_path'.format(dex)), "token_creation_info.csv")
+        token_creation_path = os.path.join(eval('path.{}_processed_path'.format(dex)), "token_creation_info.csv")
         # if not os.path.isfile(token_creation_path):
         #     return self.download_creator(address, token_creation_path, dex)
         existed_data = pd.read_csv(token_creation_path)
@@ -173,7 +171,7 @@ class TransactionCollector:
         chunks = ut.partitioning(0, len(addresses), int(len(addresses) / len(keys)))
         chunk = chunks[job]
         chunk_addresses = addresses[chunk["from"]:(chunk["to"] + 1)]
-        print(f"DOWNLOAD ACCOUNT TXS FROM {chunk['from']} TO {chunk['to']} WITH KEY {keys[job % len(keys)]} (JOB {job})")
+        print(f"DOWNLOAD ACCOUNT TXS FROM {chunk['from']} TO {chunk['to']} WITH KEY {keys[job % len(keys)]} (JOB {job}/{len(chunks)})")
         for address in tqdm(chunk_addresses):
             self.download_normal_transactions(address, api, keys[job % len(keys)], dex)
             self.download_internal_transactions(address, api, keys[job % len(keys)], dex)
@@ -211,11 +209,15 @@ if __name__ == '__main__':
     # collectors = CreatorCollector()
     # collectors.get_creators(addresses=token_addresses, job=job, contract_type='pool', dex=dex)
     # print(collectors.get_pool_creator("0x2102A87B61Ca83a947473808677f1cF33A260c69", dex=dex))
+    scammers = pd.read_csv(os.path.join(eval('path.{}_processed_path'.format(dex)), "1_pair_scammers.csv"))
+    index_issue = scammers[(scammers["pool"] == scammers["scammer"])].index
+    scammers.drop(index_issue, inplace=True)
+    scammers["pool"] = scammers["pool"].str.lower()
+    scammers["scammer"] = scammers["scammer"].str.lower()
     tx_collector = TransactionCollector()
     # normal, internal = tx_collector.get_transactions("0x48f0fc8dfc672dd45e53b6c53cd5b09c71d9fbd6", dex=dex)
     # print(normal)
     # print(internal)
-    # scammers = pd.read_csv(os.path.join(path.univ2_processed_path, "scammers.csv"))["scammer"].values.tolist()
-    # tx_collector.download_transactions(job, scammers, dex)
-    transaction = tx_collector.get_transactions("0x19b98792e98c54f58c705cddf74316aec0999aa6", dex)
-    print(transaction)
+    tx_collector.download_transactions(job, scammers["scammer"].str.lower().to_list(), dex)
+    # transaction = tx_collector.get_transactions("0x19b98792e98c54f58c705cddf74316aec0999aa6", dex)
+    # print(transaction)

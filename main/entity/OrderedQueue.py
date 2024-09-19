@@ -1,24 +1,22 @@
-from queue import Queue
+class OrderedQueue():
+    def __init__(self):
+        self.queue = list()
+        self.addresses = set()
 
-from marshmallow.orderedset import OrderedSet
-
-
-class OrderedSetQueue(Queue):
-    addresses = set()
-
-    def _init(self, maxsize: int = 0):
-        self.queue = OrderedSet()
-
-    def _put(self, item):
+    def put(self, item):
         if item.address not in self.addresses:
-            self.queue.add(item)
+            self.queue.append(item)
             self.addresses.add(item.address)
 
-    def _get(self):
-        item = self.queue.pop()
+    def get(self):
+        if len(self.queue) == 0:
+            return None
+        item = self.queue.pop(0)
         self.addresses.remove(item.address)
         return item
 
-    def __contains__(self, item):
-        with self.mutex:
-            return item in self.queue
+    def empty(self):
+        return len(self.addresses) == 0
+
+    def qsize(self):
+        return len(self.addresses)

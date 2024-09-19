@@ -3,19 +3,20 @@ import os
 
 from marshmallow.orderedset import OrderedSet
 
+from data_collection.AccountCollector import CreatorCollector, TransactionCollector
 from data_collection.EventCollector import ContractEventCollector
 from entity.Cluster import ClusterNode
 from entity.blockchain.Address import Pool, Token
 from entity.blockchain.Event import TransferEvent, SwapEvent, BurnEvent, MintEvent
 from utils.Settings import Setting
 from utils.Path import Path
-from utils import Utils as ut
 
 path = Path()
 setting = Setting()
 
 bridge_files = ["bridge.csv", "bridge_addresses.csv"]
 defi_files = ["dex.csv", "cex_address.csv", "exchange_addresses.csv", "factory_addresses.csv", "deployer_addresses.csv", "proxy_addresses.csv", "router_addresses.csv"]
+cex_files = ["cex_address.csv"]
 mev_bot_files = ["mev_bot_addresses.csv", "MEV_bots.csv"]
 mixer_files = ["tonador_cash.csv"]
 wallet_files = ["wallet_addresses.csv"]
@@ -26,6 +27,7 @@ def load_end_nodes(dex='univ2'):
     print("LOAD END NODES")
     bridge_addresses = set()
     defi_addresses = set()
+    cex_addresses = set()
     MEV_addresses = set()
     mixer_addresses = set()
     wallet_addresses = set()
@@ -36,6 +38,9 @@ def load_end_nodes(dex='univ2'):
     for defi in defi_files:
         df = pd.read_csv(os.path.join(eval('path.{}_public_addresses_path'.format(dex)), defi))
         defi_addresses.update(df["address"].str.lower().values)
+    for cex in cex_files:
+        df = pd.read_csv(os.path.join(eval('path.{}_public_addresses_path'.format(dex)), cex))
+        cex_addresses.update(df["address"].str.lower().values)
     for mev in mev_bot_files:
         df = pd.read_csv(os.path.join(eval('path.{}_public_addresses_path'.format(dex)), mev))
         MEV_addresses.update(df["address"].str.lower().values)
@@ -48,7 +53,7 @@ def load_end_nodes(dex='univ2'):
     for other in other_files:
         df = pd.read_csv(os.path.join(eval('path.{}_public_addresses_path'.format(dex)), other))
         other_addresses.update(df["address"].str.lower().values)
-    return bridge_addresses, defi_addresses, MEV_addresses, mixer_addresses, wallet_addresses, other_addresses
+    return bridge_addresses, defi_addresses, cex_addresses, MEV_addresses, mixer_addresses, wallet_addresses, other_addresses
 
 
 def load_creation_info(dex='univ2'):
@@ -85,12 +90,12 @@ def load_rug_pull_dataset(dex='univ2'):
     # scammers = list()
     scammers = pd.read_csv(os.path.join(eval('path.{}_processed_path'.format(dex)), "1_pair_scammers.csv"))
     index_issue = scammers[(scammers["pool"] == scammers["scammer"])].index
-    scammers.drop(index_issue)
+    scammers.drop(index_issue, inplace=True)
     scammers["pool"] = scammers["pool"].str.lower()
     scammers["scammer"] = scammers["scammer"].str.lower()
     scam_pools.extend(scammers["pool"].unique())
     pool_scammers = scammers.groupby('pool')['scammer'].apply(list).to_dict()
-    scammer_pool = dict(zip(scammers["scammer"], scammers["pool"]))
+    scammer_pools = scammers.groupby('scammer')['pool'].apply(list).to_dict()
     rp_pools = pd.read_csv(os.path.join(eval('path.{}_processed_path'.format(dex)), "1_pair_pool_labels.csv"))
     rp_pools.fillna("", inplace=True)
     rp_pools = rp_pools[rp_pools["is_rp"] != 0]
@@ -98,7 +103,7 @@ def load_rug_pull_dataset(dex='univ2'):
     rp_pools["scam_token"] = rp_pools["scam_token"].str.lower()
     scam_pools.extend(rp_pools["pool"].unique())
     scam_token_pool = dict(zip(rp_pools["scam_token"], rp_pools["pool"]))
-    return pool_scammers, scam_token_pool, OrderedSet(scam_pools), scammers["scammer"].str.lower().to_list(), scammer_pool
+    return pool_scammers, scam_token_pool, OrderedSet(scam_pools), scammers["scammer"].str.lower().to_list(), scammer_pools
 
 
 def load_cluster(name, dex='univ2'):
@@ -111,26 +116,43 @@ def load_cluster(name, dex='univ2'):
     return clusters
 
 
+def load_transaction_by_address(self, address, dex='univ2'):
+    transaction_collector = TransactionCollector()
+    normal_txs, internal_txs = transaction_collector.get_transactions(address, dex)
+    return normal_txs, internal_txs
+
+
 def load_pool(scammer_address, dataloader, dex='univ2'):
-    pool_address = dataloader.scammer_pool[scammer_address.lower()]
+    pool_addresses = dataloader.scammer_pool[scammer_address.lower()]
     pool_event_path = eval('path.{}_pool_events_path'.format(dex))
     contract_event_collector = ContractEventCollector()
-    transfer_list = contract_event_collector.get_event(pool_address, "Transfer", pool_event_path, dex)
-    transfers = [TransferEvent().from_dict(e) for e in transfer_list]
-    swaps_list = contract_event_collector.get_event(pool_address, "Swap", pool_event_path, dex)
-    swaps = [SwapEvent().from_dict(e) for e in swaps_list]
-    burns_list = contract_event_collector.get_event(pool_address, "Burn", pool_event_path, dex)
-    burns = [BurnEvent().from_dict(e) for e in burns_list]
-    mint_list = contract_event_collector.get_event(pool_address, "Mint", pool_event_path, dex)
-    mints = [MintEvent().from_dict(e) for e in mint_list]
-    pool_info = dataloader.pool_infos[pool_address.lower()]
-    scammers = dataloader.pool_scammers[pool_address.lower()]
-    token0 = Token(pool_info["token0"])
-    token0.from_dict(dataloader.token_infos[pool_info["token0"]])
-    token1 = Token(pool_info["token1"])
-    token1.from_dict(dataloader.token_infos[pool_info["token1"]])
-    pool = Pool(pool_address, token0, token1, scammers, mints, burns, swaps, transfers)
-    return pool
+    creator_collector = CreatorCollector()
+    pools = []
+    for pool_address in pool_addresses:
+        transfer_list = contract_event_collector.get_event(pool_address, "Transfer", pool_event_path, dex)
+        transfers = [TransferEvent().from_dict(e) for e in transfer_list]
+        swaps_list = contract_event_collector.get_event(pool_address, "Swap", pool_event_path, dex)
+        swaps = [SwapEvent().from_dict(e) for e in swaps_list]
+        burns_list = contract_event_collector.get_event(pool_address, "Burn", pool_event_path, dex)
+        burns = [BurnEvent().from_dict(e) for e in burns_list]
+        mint_list = contract_event_collector.get_event(pool_address, "Mint", pool_event_path, dex)
+        mints = [MintEvent().from_dict(e) for e in mint_list]
+        pool_info = dataloader.pool_infos[pool_address.lower()]
+        scammers = dataloader.pool_scammers[pool_address.lower()]
+        pool_creation = creator_collector.get_pool_creator(pool_address, dex)
+        token0 = Token(pool_info["token0"])
+        token0.from_dict(dataloader.token_infos[pool_info["token0"]])
+        token0_creation = creator_collector.get_token_creator(token0.address, dex)
+        token0.creator = token0_creation["contractCreator"]
+        token0.creation_tx = token0_creation["txHash"]
+        token1 = Token(pool_info["token1"])
+        token1.from_dict(dataloader.token_infos[pool_info["token1"]])
+        token1_creation = creator_collector.get_token_creator(token1.address, dex)
+        token1.creator = token1_creation["contractCreator"]
+        token1.creation_tx = token1_creation["txHash"]
+        pool = Pool(pool_address, token0, token1, scammers, mints, burns, swaps, transfers, pool_creation["contractCreator"], pool_creation["txHash"])
+        pools.append(pool)
+    return pools
 
 
 class DataLoader(object):
@@ -139,6 +161,7 @@ class DataLoader(object):
         # sets of address
         (self.bridge_addresses,
          self.defi_addresses,
+         self.cex_addresses,
          self.MEV_addresses,
          self.mixer_addresses,
          self.wallet_addresses,

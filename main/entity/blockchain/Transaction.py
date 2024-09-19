@@ -34,7 +34,7 @@ class Transaction(DTO):
         return Web3.to_checksum_address(self.sender) == Web3.to_checksum_address(owner) and (self.to is np.nan or self.to == "")
 
     def is_in_tx(self, owner):
-        if isinstance(self.to, float) and math.isnan(self.to):
+        if (isinstance(self.to, float) and math.isnan(self.to)) or self.to == "":
             return False
         return Web3.to_checksum_address(self.to) == Web3.to_checksum_address(owner)
 
@@ -61,6 +61,7 @@ class NormalTransaction(Transaction):
 
     def is_to_contract(self, owner):
         return not self.is_to_eoa(owner)
+
 
 class InternalTransaction(Transaction):
     def __init__(self, blockNumber=None, timeStamp=None, hash=None, sender=None, to=None, value=None, gas=None, gasUsed=None, contractAddress=None, input=None, isError=None, type=None, errCode=None):
