@@ -6,15 +6,16 @@ dataloader = DataLoader()
 
 REMOVE_LIQUIDITY_SUBSTRING = "removeLiquidity"
 ADD_LIQUIDITY_SUBSTRING = "addLiquidity"
-MIN_CHAIN_SIZE = 2
 
 
 def chain_pattern_detection(scammer_address):
     """Function that returns a single chain list scam from a scammer address. Includes the entire chain the address
     is involved in"""
-    chain = [scammer_address]
+    chain = []
     current_node = Node.create_node(scammer_address, None, dataloader)
     valid_address_fwd = valid_address_bwd = current_node.address in dataloader.scammers
+    if valid_address_fwd:
+        chain.append(scammer_address)
 
     # chain forward
     while valid_address_fwd:
@@ -44,9 +45,10 @@ def chain_pattern_detection(scammer_address):
         if valid_address_bwd:
             current_node = prev_node
             print("prev address from: " + current_node.address + " trans hash: " + largest_in_transaction.hash)
+            # TODO insert at start of list is slow, this needs to be optimized
             chain.insert(0, {"address from: " + current_node.address, " trans hash: " + largest_in_transaction.hash})
 
-    return chain if len(chain) >= MIN_CHAIN_SIZE else None
+    return chain
 
 
 def get_largest_out_after_remove_liquidity(scammer_address: str):
@@ -59,18 +61,28 @@ def get_largest_in_before_add_liquidity(scammer_address: str):
     return get_largest_transaction(node, ADD_LIQUIDITY_SUBSTRING, False, 0, len(node.normal_txs), 1)
 
 
-def get_largest_transaction(node: Node, termination_function_name: str, is_out, *range_loop_args):
+def get_largest_transaction(node: Node, liquidity_function_name: str, is_out, *range_loop_args):
+    passed_liquidity_function = False
+    exists_duplicate_amount = False
     largest_transaction = None
     for index in range(range_loop_args[0], range_loop_args[1], range_loop_args[2]):
-        if termination_function_name in str(node.normal_txs[index].functionName):
-            break
+        if not passed_liquidity_function and liquidity_function_name in str(node.normal_txs[index].functionName):
+            passed_liquidity_function = True
         elif (is_out and node.normal_txs[index].is_to_eoa(node.address)) or (
                 not is_out and node.normal_txs[index].is_in_tx(node.address)):
-            if largest_transaction is None or node.normal_txs[
-                index].get_transaction_amount() > largest_transaction.get_transaction_amount():
-                largest_transaction = node.normal_txs[index]
+            if largest_transaction is None or node.normal_txs[index].get_transaction_amount() >= largest_transaction.get_transaction_amount():
+                # >= amount found then current largest, therefore is not the sole funder
+                if passed_liquidity_function:
+                    return None, node
 
-    return largest_transaction, node
+                # if this new transaction is the same amount already, indicate that there is a duplicate
+                if node.normal_txs[index].get_transaction_amount() == largest_transaction.get_transaction_amount():
+                    exists_duplicate_amount = True
+                else:
+                    exists_duplicate_amount = False
+                    largest_transaction = node.normal_txs[index]
+
+    return largest_transaction if not exists_duplicate_amount else None, node
 
 
 if __name__ == '__main__':
