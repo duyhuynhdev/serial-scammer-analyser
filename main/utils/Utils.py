@@ -155,6 +155,7 @@ def save_overwrite_if_exist(data, output_path):
 
 
 def upload_local_file_to_s3(s3_client, file_path, bucket_name, s3_key, config=TransferConfig()):
+    # Providing the default config allows for multipart uploading.
     s3_client.upload_file(file_path, bucket_name, s3_key, Config=config)
     return s3_key
 
