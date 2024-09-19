@@ -1,6 +1,5 @@
 import json
 
-
 import utils.Utils as ut
 from tqdm import tqdm
 import os
