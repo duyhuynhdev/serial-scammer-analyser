@@ -23,7 +23,8 @@ def chain_pattern_detection(scammer_address):
         largest_out_transaction = get_largest_out_after_remove_liquidity(current_node.address)[0]
         if largest_out_transaction and largest_out_transaction.to in dataloader.scammers:
             largest_in_transaction, next_node = get_largest_in_before_add_liquidity(largest_out_transaction.to)
-            valid_address_fwd = largest_out_transaction.hash == largest_in_transaction.hash
+            if largest_in_transaction:
+                valid_address_fwd = largest_out_transaction.hash == largest_in_transaction.hash
 
         if valid_address_fwd:
             current_node = next_node
@@ -40,7 +41,8 @@ def chain_pattern_detection(scammer_address):
         largest_in_transaction = get_largest_in_before_add_liquidity(current_node.address)[0]
         if largest_in_transaction and largest_in_transaction.sender in dataloader.scammers:
             largest_out_transaction, prev_node = get_largest_out_after_remove_liquidity(largest_in_transaction.sender)
-            valid_address_bwd = largest_out_transaction.hash == largest_in_transaction.hash
+            if largest_out_transaction:
+                valid_address_bwd = largest_out_transaction.hash == largest_in_transaction.hash
 
         if valid_address_bwd:
             current_node = prev_node
@@ -68,9 +70,15 @@ def get_largest_transaction(node: Node, liquidity_function_name: str, is_out, *r
     for index in range(range_loop_args[0], range_loop_args[1], range_loop_args[2]):
         if not passed_liquidity_function and liquidity_function_name in str(node.normal_txs[index].functionName):
             passed_liquidity_function = True
-        elif (is_out and node.normal_txs[index].is_to_eoa(node.address)) or (
-                not is_out and node.normal_txs[index].is_in_tx(node.address)):
-            if largest_transaction is None or node.normal_txs[index].get_transaction_amount() >= largest_transaction.get_transaction_amount():
+        elif (is_out and node.normal_txs[index].is_to_eoa(node.address)) or (not is_out and node.normal_txs[index].is_in_tx(node.address)):
+
+            # just set the largest_transaction for the first find
+            if largest_transaction is None:
+                largest_transaction = node.normal_txs[index]
+                if passed_liquidity_function:
+                    return None, node
+
+            elif node.normal_txs[index].get_transaction_amount() >= largest_transaction.get_transaction_amount():
                 # >= amount found then current largest, therefore is not the sole funder
                 if passed_liquidity_function:
                     return None, node
