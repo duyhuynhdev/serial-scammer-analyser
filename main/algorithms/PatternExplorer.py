@@ -15,12 +15,12 @@ ADD_LIQUIDITY_SUBSTRING = "addLiquidity"
 def chain_pattern_detection(scammer_address):
     """Function that returns a single chain list scam from a scammer address. Includes the entire chain the address
     is involved in"""
-    chain = []
+    fwd_chain = []
     current_node = Node.create_node(scammer_address, None, dataloader)
     valid_address_fwd = valid_address_bwd = current_node.address in dataloader.scammers
     # TODO verify, because can be in list of scammers but have no liquidity calls.
     if valid_address_fwd:
-        chain.append(scammer_address)
+        fwd_chain.append(scammer_address)
 
     # chain forward
     while valid_address_fwd:
@@ -33,7 +33,7 @@ def chain_pattern_detection(scammer_address):
 
         if valid_address_fwd:
             current_node = next_node
-            chain.append(current_node.address)
+            fwd_chain.append(current_node.address)
 
     # TODO possibly don't recreate this
     current_node = Node.create_node(scammer_address, None, dataloader)
@@ -51,7 +51,7 @@ def chain_pattern_detection(scammer_address):
             bwd_chain.append(current_node.address)
 
     bwd_chain = bwd_chain[::-1]
-    return bwd_chain + chain
+    return bwd_chain + fwd_chain
 
 
 def get_largest_out_after_remove_liquidity(scammer_address: str):
@@ -108,24 +108,32 @@ def read_from_csv_as_set(input_path):
 
 
 def run_chain_on_scammers():
-    max_scammers_to_run = 100
+
     scammer_chain_path = os.path.join(path.univ2_scammer_chain_path, "scammer_chain.txt")
 
     existing_addresses = read_from_csv_as_set(scammer_chain_path)
     scammers_remaining = set(dataloader.scammers)
     for processed_scammer in existing_addresses:
-        if processed_scammer in scammers_remaining:
-            scammers_remaining.remove(processed_scammer)
+            scammers_remaining.discard(processed_scammer)
 
-    count = 0
-    with open(scammer_chain_path, "a") as f:
-        for current_address in iter(scammers_remaining):
-            if count == max_scammers_to_run:
-                break
-            chain = chain_pattern_detection(current_address)
-            string_to_write = '{}, {}\n'.format(len(chain), ', '.join(chain))
-            f.write(string_to_write)
-            count = count + 1
+    # lower means will write to file more frequently, but lower performance
+    # higher means less file writes, but better performance
+    save_file_freq = 10
+    num_scammers_to_run = 200
+    overall_scammers_written = 0
+
+    # save to file
+    while overall_scammers_written <= num_scammers_to_run:
+        with open(scammer_chain_path, "a") as f:
+            for _ in range(save_file_freq):
+                current_address = scammers_remaining.pop()
+                chain = chain_pattern_detection(current_address)
+                string_to_write = '{}, {}\n'.format(len(chain), ', '.join(chain))
+                f.write(string_to_write)
+                overall_scammers_written = overall_scammers_written + 1
+                for scammer in chain:
+                    scammers_remaining.discard(scammer)
+
 
 
 if __name__ == '__main__':
