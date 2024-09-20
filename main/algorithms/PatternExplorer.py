@@ -1,12 +1,15 @@
+import os
+
 from algorithms.ScammerNetworkBuilder import dataloader
 from entity import Node
 from utils.DataLoader import DataLoader
+from utils.Path import Path
 
 dataloader = DataLoader()
+path = Path()
 
 REMOVE_LIQUIDITY_SUBSTRING = "removeLiquidity"
 ADD_LIQUIDITY_SUBSTRING = "addLiquidity"
-NUM_OF_SCAMMERS_TO_RUN_ON = 10
 
 
 def chain_pattern_detection(scammer_address):
@@ -15,6 +18,7 @@ def chain_pattern_detection(scammer_address):
     chain = []
     current_node = Node.create_node(scammer_address, None, dataloader)
     valid_address_fwd = valid_address_bwd = current_node.address in dataloader.scammers
+    # TODO verify, because can be in list of scammers but have no liquidity calls.
     if valid_address_fwd:
         chain.append(scammer_address)
 
@@ -33,7 +37,7 @@ def chain_pattern_detection(scammer_address):
 
     # TODO possibly don't recreate this
     current_node = Node.create_node(scammer_address, None, dataloader)
-
+    bwd_chain = []
     while valid_address_bwd:
         valid_address_bwd = False
         largest_in_transaction = get_largest_in_before_add_liquidity(current_node.address)[0]
@@ -44,9 +48,10 @@ def chain_pattern_detection(scammer_address):
 
         if valid_address_bwd:
             current_node = prev_node
-            chain.insert(0, current_node.address)
+            bwd_chain.append(current_node.address)
 
-    return chain
+    bwd_chain = bwd_chain[::-1]
+    return bwd_chain + chain
 
 
 def get_largest_out_after_remove_liquidity(scammer_address: str):
@@ -89,14 +94,38 @@ def get_largest_transaction(node: Node, liquidity_function_name: str, is_out, *r
     return largest_transaction if not exists_duplicate_amount and passed_liquidity_function else None, node
 
 
-def run_chain_on_scammers():
-    result = []
-    for index in range(0, NUM_OF_SCAMMERS_TO_RUN_ON, 1):
-        current_scammer = dataloader.scammers[index]
-        chain = chain_pattern_detection(current_scammer)
-        result.append('Chain of length {}: {}'.format(len(chain), chain))
+def read_from_csv_as_set(input_path):
+    set_csv = set()
+    file = open(input_path)
+    for line in file:
+        row = line.rstrip('\n').split(', ')
+        # don't add length in set
+        for index in range(1, len(row)):
+            set_csv.add(row[index])
 
-    print(*result, sep='\n')
+    file.close()
+    return set_csv
+
+
+def run_chain_on_scammers():
+    max_scammers_to_run = 100
+    scammer_chain_path = os.path.join(path.univ2_scammer_chain_path, "scammer_chain.txt")
+
+    existing_addresses = read_from_csv_as_set(scammer_chain_path)
+    scammers_remaining = set(dataloader.scammers)
+    for processed_scammer in existing_addresses:
+        if processed_scammer in scammers_remaining:
+            scammers_remaining.remove(processed_scammer)
+
+    count = 0
+    with open(scammer_chain_path, "a") as f:
+        for current_address in iter(scammers_remaining):
+            if count == max_scammers_to_run:
+                break
+            chain = chain_pattern_detection(current_address)
+            string_to_write = '{}, {}\n'.format(len(chain), ', '.join(chain))
+            f.write(string_to_write)
+            count = count + 1
 
 
 if __name__ == '__main__':

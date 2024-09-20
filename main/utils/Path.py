@@ -31,6 +31,7 @@ class Path(object):
         self.univ2_processed_path = os.path.join(self.univ2_base_path, "processed")
         self.univ2_public_addresses_path = os.path.join(self.univ2_processed_path, "public_addresses")
         self.univ2_cluster_path = os.path.join(self.univ2_processed_path, "cluster")
+        self.univ2_scammer_chain_path = os.path.join(self.univ2_base_path, "scammer_chain")
 
         self.panv2_base_path = os.path.join(self.data_root_path, "pancakeswap")
         self.panv2_account_path = os.path.join(self.panv2_base_path, "account")
