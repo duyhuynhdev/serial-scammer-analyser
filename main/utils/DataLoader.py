@@ -1,7 +1,8 @@
 import pandas as pd
 import os
-
-from marshmallow.orderedset import OrderedSet
+import networkx as nx
+from itertools import chain, pairwise
+from tqdm import tqdm
 
 from data_collection.AccountCollector import CreatorCollector, TransactionCollector
 from data_collection.EventCollector import ContractEventCollector
@@ -93,7 +94,7 @@ def load_rug_pull_dataset(dex='univ2'):
     scammers.drop(index_issue, inplace=True)
     scammers["pool"] = scammers["pool"].str.lower()
     scammers["scammer"] = scammers["scammer"].str.lower()
-    scam_pools.extend(scammers["pool"].unique())
+    # scam_pools.extend(scammers["pool"].unique())
     pool_scammers = scammers.groupby('pool')['scammer'].apply(list).to_dict()
     scammer_pools = scammers.groupby('scammer')['pool'].apply(list).to_dict()
     rp_pools = pd.read_csv(os.path.join(eval('path.{}_processed_path'.format(dex)), "1_pair_pool_labels.csv"))
@@ -103,7 +104,7 @@ def load_rug_pull_dataset(dex='univ2'):
     rp_pools["scam_token"] = rp_pools["scam_token"].str.lower()
     scam_pools.extend(rp_pools["pool"].unique())
     scam_token_pool = dict(zip(rp_pools["scam_token"], rp_pools["pool"]))
-    return pool_scammers, scam_token_pool, OrderedSet(scam_pools), scammers["scammer"].str.lower().to_list(), scammer_pools
+    return pool_scammers, scam_token_pool, scam_pools, scammers["scammer"].str.lower().to_list(), scammer_pools
 
 
 def load_cluster(name, dex='univ2'):
@@ -155,6 +156,21 @@ def load_pool(scammer_address, dataloader, dex='univ2'):
     return pools
 
 
+def merge_scammer_groups(dex='univ2'):
+    scammers = pd.read_csv(os.path.join(eval('path.{}_processed_path'.format(dex)), "1_pair_scammers.csv"))
+    index_issue = scammers[(scammers["pool"] == scammers["scammer"])].index
+    scammers.drop(index_issue, inplace=True)
+    scammers["pool"] = scammers["pool"].str.lower()
+    scammers["scammer"] = scammers["scammer"].str.lower()
+    pool_scammers = scammers.groupby('pool')['scammer'].apply(list).to_dict()
+    scammers_set = pool_scammers.values()
+    G = nx.from_edgelist(chain.from_iterable(pairwise(e) for e in scammers_set))
+    G.add_nodes_from(set.union(*map(set, scammers_set)))  # adding single items
+
+    groups = list(nx.connected_components(G))
+    return groups
+
+
 class DataLoader(object):
     def __init__(self, dex='univ2'):
         ### ALL ADDRESSES MUST BE IN LOWER CASES ###
@@ -179,10 +195,12 @@ if __name__ == '__main__':
     # dataloader = DataLoader(dex='univ2')
     # print(load_cluster("cluster_0x7f0a9d794bba0a588f4c8351d8549bb5f76a34c4", dex='univ2'))
     # print(load_token_info(dex='univ2'))
-    pool = load_pool("0x19b98792e98c54f58c705cddf74316aec0999aa6", DataLoader(dex='univ2'))
-    pos = pool.get_high_value_position()
-    print(pool.address)
-    print(pos)
-    print(pool.get_max_swap_value(pos))
-    print(pool.get_total_mint_value(pos))
-    print(pool.get_total_burn_value(pos))
+    # pool = load_pool("0x19b98792e98c54f58c705cddf74316aec0999aa6", DataLoader(dex='univ2'))
+    # pos = pool.get_high_value_position()
+    # print(pool.address)
+    # print(pos)
+    # print(pool.get_max_swap_value(pos))
+    # print(pool.get_total_mint_value(pos))
+    # print(pool.get_total_burn_value(pos))
+    groups = merge_scammer_groups(dex='univ2')
+    print(len(groups))

@@ -103,29 +103,28 @@ class PoolDataCollector:
 
 
 class PoolInfoCollector:
-    def download_tokens_from_pool(self, job, chunks, dex="univ2"):
-        chunk = chunks[job]
+    def download_tokens_from_pool(self, job, dex="univ2"):
         key = setting.INFURA_API_KEYS[(job % len(setting.INFURA_API_KEYS))]
         node_url = infura_api[dex]["node_url"]
         pool_abi = infura_api[dex]["pool_abi"]
         node_web3 = Web3(Web3.HTTPProvider(node_url + key))
-        pool_file_name = f'{chunk["from"]}_{chunk["to"]}.csv'
-        pool_path = os.path.join(eval('path.{}_address_path'.format(dex)), pool_file_name)
-        pool_addresses = []
-        if os.path.isfile(pool_path):
-            df = pd.read_csv(pool_path)
-            pool_addresses = df["pool"].values
-        pool_info_file_name = f'{chunk["from"]}_{chunk["to"]}.csv'
-        output_path = os.path.join(eval('path.{}_info_path'.format(dex)), pool_info_file_name)
+        pool_path = os.path.join(eval('path.{}_processed_path'.format(dex)), "pool_addresses.csv")
+        df = pd.read_csv(pool_path)
+        pool_addresses = df["pool"].values
+        output_path = os.path.join(eval('path.{}_processed_path'.format(dex)), "pool_info.csv")
+        chunks = ut.partitioning(0, len(pool_addresses), int(len(pool_addresses) / len(setting.INFURA_API_KEYS)))
+        chunk = chunks[job]
+        chunk_addresses = pool_addresses[chunk["from"]:(chunk["to"] + 1)]
+        print(f"DOWNLOAD ALL POOL EVENTS FROM {chunk['from']} TO {chunk['to']} WITH KEY {setting.INFURA_API_KEYS[job % len(setting.INFURA_API_KEYS)]} (JOB {job} / {len(chunks)})")
         print(f'START DOWNLOADING DATA (JOB {job})')
         print(f'WITH KEY {key}')
-        print(f'DATA IS WRITTEN INTO FILE {pool_info_file_name}')
+        print(f'DATA IS WRITTEN INTO FILE {output_path}')
         downloaded_addresses = []
         if os.path.isfile(output_path):
             df = pd.read_csv(output_path)
             downloaded_addresses = df["pool"].values
         data = []
-        for address in tqdm(pool_addresses):
+        for address in tqdm(chunk_addresses):
             if address in downloaded_addresses:
                 # print("DOWNLOADED ALREADY: ", address)
                 continue
@@ -179,14 +178,10 @@ class PoolInfoCollector:
         pd.DataFrame.from_records(all_pools).to_csv(output_path, index=False)
 
     def uniswap_token_download(self, job):
-        if job >= len(uni_chunks):
-            return
-        self.download_tokens_from_pool(job, uni_chunks, dex="univ2")
+        self.download_tokens_from_pool(job, dex="univ2")
 
     def pancakeswap_token_download(self, job):
-        if job >= len(pancake_chunks):
-            return
-        self.download_tokens_from_pool(job, pancake_chunks, dex="panv2")
+        self.download_tokens_from_pool(job, dex="panv2")
 
 
 class TokenInfoCollector:
@@ -295,7 +290,7 @@ class PopularTokenDataCollector:
 
 if __name__ == '__main__':
     collector = PoolInfoCollector()
-    job = 19
+    job = 9
     collector.pancakeswap_token_download(job)
     # pancakeswap_pools_download(job)
     # # download_popular_tokens()
@@ -304,4 +299,3 @@ if __name__ == '__main__':
     # collector.merge_all_pool_infos(uni_chunks, dex="univ2")
     # collector = TokenInfoCollector()
     # collector.download_tokens_info(6)
-

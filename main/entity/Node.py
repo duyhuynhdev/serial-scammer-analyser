@@ -123,7 +123,7 @@ def get_neighbours_from_transactions(scammer_address, normal_txs, internal_txs, 
                     # Get all tokens from paths (each path contains 2 tokens)
                     # The first element of path is the input token, the last is the output token
                     # Hence if path [0] is HV token -> the swap is swap in
-                    scam_tokens = [path[1] for path in paths if path[0].lower() in Constant.HIGH_VALUE_TOKENS and path[1].lower() in dataloader.scam_token_pool.keys()]
+                    scam_tokens = [path[1] for path in paths if (len(path) ==  2) and (path[0].lower() in Constant.HIGH_VALUE_TOKENS) and (path[1].lower() in dataloader.scam_token_pool.keys())]
                     # scam_tokens = [token for path in paths for token in path if token.lower() in dataloader.scam_token_pool.keys()]
                     if len(scam_tokens) > 0:
                         labels.add(NodeLabel.WASHTRADER)

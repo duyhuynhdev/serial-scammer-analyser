@@ -16,9 +16,6 @@ explorer_api = {
     "panv2": {"explorer": BSCscanAPI, "keys": setting.BSCSCAN_API_KEYS},
 }
 
-key_idx = 0
-
-
 class CreatorCollector:
     def get_creators(self, addresses, job, contract_type='pool', dex='univ2'):
         data = []
@@ -53,7 +50,7 @@ class CreatorCollector:
             ut.save_or_append_if_exist(data, output_path)
         print(f'FINISHED DOWNLOADING DATA (JOB {job})')
 
-    def download_creator(self, address, output_path, dex='univ2'):
+    def download_creator(self, address, output_path, dex='univ2', key_idx = 0):
         # global key_idx
         api = explorer_api[dex]["explorer"]
         keys = explorer_api[dex]["keys"]
@@ -126,7 +123,7 @@ class TransactionCollector:
     univ2_last_block = 20606150  # Aug-25-2024 02:17:59 PM +UTC
     panv2_last_block = 41674250
 
-    def get_transactions(self, address, dex='univ2'):
+    def get_transactions(self, address, dex='univ2',key_idx = 0):
         if address == "0x98f2ee6e58778f13a975fe1d6c3a8c773779cc73":
             print()
         api = explorer_api[dex]["explorer"]
