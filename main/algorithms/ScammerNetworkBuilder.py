@@ -1,3 +1,4 @@
+import glob
 import os
 
 from tqdm import tqdm
@@ -19,19 +20,13 @@ dataloader = DataLoader()
 
 
 def run_clustering(index, dex='univ2'):
-    finish_set = {}
-    process_path = eval('path.{}_processed_path'.format(dex))
-    visited_scammer_path = os.path.join(process_path, "visited_scammers.txt")
-    if os.path.exists(visited_scammer_path):
-        finish_set= set(ut.read_list_from_file(visited_scammer_path))
     rp = dataloader.scam_pools[index]
     scammers = dataloader.pool_scammers[rp]
-    scammers = [s for s in scammers if s.lower() not in finish_set and s not in finish_set]
+    scammers.sort()
     if len(scammers) > 0:
         print("*" * 200)
         print(f"START CLUSTERING (ADDRESS {scammers[0]}) IDX {index}")
-        cluster, scanned_nodes = explore_scammer_network(scammers, dex)
-        finish_set.update(set(scanned_nodes))
+        explore_scammer_network(scammers, dex)
         print(f"END CLUSTERING (ADDRESS {scammers[0]}) IDX {index}")
         print("*" * 200)
 
@@ -67,22 +62,36 @@ def init(scammer_address, scammers, cluster_path, dex):
     return cluster, queue, traversed_nodes
 
 
+def load_visited_scammers(vs_path, cluster_vs_path):
+    visited_scammers = []
+    vs_files = glob.glob(os.path.join(vs_path, "*.txt"))
+    for file in vs_files:
+        #load all vs from other cluster except the running one
+        if file == cluster_vs_path:
+            continue
+        visited_scammers.extend(ut.read_list_from_file(file))
+    return set(visited_scammers)
+
+
 def explore_scammer_network(scammers, dex='univ2'):
     cluster_path = eval('path.{}_cluster_path'.format(dex))
-    process_path = eval('path.{}_processed_path'.format(dex))
-    visited_scammer_path = os.path.join(process_path,"visited_scammers.txt")
+    vs_path = eval('path.{}_visited_scammer_path'.format(dex))
     scammer_address = scammers[0]
+    cluster_vs_path = os.path.join(vs_path, scammer_address + "visited_scammers.txt")
+    # load vs from other cluster
+    visited_scammers = load_visited_scammers(vs_path, cluster_vs_path)
+    # vs list for this cluster
+    cluster_visited_scammers = set()
     if ut.is_contract_address(scammer_address):
         return None, list()
     # create node for an address with downloading all transactions and discovering/classifying neighbours
     cluster, queue, traversed_nodes = init(scammer_address, scammers, cluster_path, dex)
-    visited_scammers = list(scammers)
+    traversed_nodes.update(visited_scammers)
     count = 0
     # start exploring
     while not queue.empty():
         print("QUEUE LEN", queue.qsize())
         print("SCANNED NODES", len(traversed_nodes))
-
         root: Node.Node = queue.get()
         print("\t ROOT ADDRESS", root.address)
         print("\t PATH", " -> ".join(root.path))
@@ -118,7 +127,7 @@ def explore_scammer_network(scammers, dex='univ2'):
                         label = NodeLabel.EOA
                         if eoa_neighbour_address.lower() in dataloader.scammers:
                             label = NodeLabel.SCAMMER
-                            visited_scammers.append(eoa_neighbour_address)
+                            cluster_visited_scammers.add(eoa_neighbour_address)
                         eoa_node = Node.create_node(eoa_neighbour_address, root.path, dataloader, label, dex)
                         cluster.add_node(eoa_node)
                         # put unvisited neighbours into queue
@@ -141,7 +150,7 @@ def explore_scammer_network(scammers, dex='univ2'):
             print(">>> SAVE QUEUE & CLUSTER STATE")
             cluster.export(cluster_path)
             cluster.write_queue(cluster_path, queue, traversed_nodes)
-            ut.write_list_to_file(visited_scammer_path, visited_scammers)
+            ut.write_list_to_file(cluster_vs_path, cluster_visited_scammers)
             count = 0
         print("=" * 100)
     cluster.export(cluster_path)
@@ -158,6 +167,6 @@ if __name__ == '__main__':
     # explore_scammer_network("0xb16a24e954739a2bbc68c5d7fbbe2e27f17dfff9")
     # print(is_contract_address("0x81cfe8efdb6c7b7218ddd5f6bda3aa4cd1554fd2"))
     # print(len(collect_end_nodes()))
-    run_clustering(1)
+    run_clustering(4)
     # print(ut.hex_to_dec("0x10afe6222f") * ut.hex_to_dec("0x29cbe2")/ 10**18)
     # print((107143841398 * 2208003)/ 10**18)
