@@ -6,6 +6,7 @@ dataloader = DataLoader()
 
 REMOVE_LIQUIDITY_SUBSTRING = "removeLiquidity"
 ADD_LIQUIDITY_SUBSTRING = "addLiquidity"
+NUM_OF_SCAMMERS_TO_RUN_ON = 10
 
 
 def chain_pattern_detection(scammer_address):
@@ -28,10 +29,7 @@ def chain_pattern_detection(scammer_address):
 
         if valid_address_fwd:
             current_node = next_node
-            # TODO remove this
-            print("address to: " + current_node.address + " trans hash: " + largest_out_transaction.hash)
-            # TODO just append the address not the whole debugging string
-            chain.append({"address to: " + current_node.address, " trans hash: " + largest_out_transaction.hash})
+            chain.append(current_node.address)
 
     # TODO possibly don't recreate this
     current_node = Node.create_node(scammer_address, None, dataloader)
@@ -46,9 +44,7 @@ def chain_pattern_detection(scammer_address):
 
         if valid_address_bwd:
             current_node = prev_node
-            print("prev address from: " + current_node.address + " trans hash: " + largest_in_transaction.hash)
-            # TODO insert at start of list is slow, this needs to be optimized
-            chain.insert(0, {"address from: " + current_node.address, " trans hash: " + largest_in_transaction.hash})
+            chain.insert(0, current_node.address)
 
     return chain
 
@@ -70,14 +66,14 @@ def get_largest_transaction(node: Node, liquidity_function_name: str, is_out, *r
     for index in range(range_loop_args[0], range_loop_args[1], range_loop_args[2]):
         if not passed_liquidity_function and liquidity_function_name in str(node.normal_txs[index].functionName):
             passed_liquidity_function = True
-        elif (is_out and node.normal_txs[index].is_to_eoa(node.address)) or (not is_out and node.normal_txs[index].is_in_tx(node.address)):
+            if largest_transaction is None:
+                return None, node
+        elif (is_out and node.normal_txs[index].is_to_eoa(node.address)) or (
+                not is_out and node.normal_txs[index].is_in_tx(node.address)):
 
             # just set the largest_transaction for the first find
             if largest_transaction is None:
                 largest_transaction = node.normal_txs[index]
-                if passed_liquidity_function:
-                    return None, node
-
             elif node.normal_txs[index].get_transaction_amount() >= largest_transaction.get_transaction_amount():
                 # >= amount found then current largest, therefore is not the sole funder
                 if passed_liquidity_function:
@@ -90,9 +86,20 @@ def get_largest_transaction(node: Node, liquidity_function_name: str, is_out, *r
                     exists_duplicate_amount = False
                     largest_transaction = node.normal_txs[index]
 
-    return largest_transaction if not exists_duplicate_amount else None, node
+    return largest_transaction if not exists_duplicate_amount and passed_liquidity_function else None, node
+
+
+def run_chain_on_scammers():
+    result = []
+    for index in range(0, NUM_OF_SCAMMERS_TO_RUN_ON, 1):
+        current_scammer = dataloader.scammers[index]
+        chain = chain_pattern_detection(current_scammer)
+        result.append('Chain of length {}: {}'.format(len(chain), chain))
+
+    print(*result, sep='\n')
 
 
 if __name__ == '__main__':
-    print(*chain_pattern_detection("0x48f0fc8dfc672dd45e53b6c53cd5b09c71d9fbd6"), sep='\n')
-    # chain_pattern_detection("0x48f0fc8dfc672dd45e53b6c53cd5b09c71d9fbd6")
+    run_chain_on_scammers()
+    # print(*chain_pattern_detection("0x48f0fc8dfc672dd45e53b6c53cd5b09c71d9fbd6"), sep='\n')
+    # print(chain_pattern_detection("0x699f93da70298b49100080257e7fd4f44ed1fefa"))
