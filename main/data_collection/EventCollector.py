@@ -66,7 +66,7 @@ class PoolEventCollector:
         chunks = ut.partitioning(0, len(pools), int(len(pools) / len(keys)))
         print("Num Keys: ", len(keys))
         chunk = chunks[job]
-        chunk_addresses = pools[chunk["from"]+80000:(chunk["to"] + 1)]
+        chunk_addresses = pools[chunk["from"]:(chunk["to"] + 1)]
         print(f"DOWNLOAD ALL POOL EVENTS FROM {chunk['from']} TO {chunk['to']} WITH KEY {keys[job]}")
         self.download_all_pool_events(chunk_addresses, dex=dex, explorer=explorer, apikey=keys[job])
 
