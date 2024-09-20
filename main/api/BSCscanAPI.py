@@ -49,8 +49,8 @@ def call_api(module, action, params, apikey=setting.BSCSCAN_API_KEY):
     response_data = response.json()
     print(response_data)
 
-    assert (response_data["message"] == 'Unexpected error, timeout or server too busy. Please try again later' or response_data["status"] == "1" or isinstance(response_data["result"], list))
-    if response_data["message"] == "Unexpected error, timeout or server too busy. Please try again later":
+    assert (response_data["message"] == 'Unexpected error, timeout or server too busy. Please try again later' or response_data["message"] == "NOTOK" or response_data["status"] == "1" or isinstance(response_data["result"], list))
+    if response_data["message"] == "Unexpected error, timeout or server too busy. Please try again later" or response_data["message"] == "NOTOK":
         return call_api(module, action, params, apikey)
     return response_data["result"]
 
