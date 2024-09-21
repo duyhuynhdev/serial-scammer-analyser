@@ -5,7 +5,7 @@ import subprocess
 
 
 class S3FileManager:
-    def __init__(self, bucket_name="serial-scammer-analyser-bucket-test"):
+    def __init__(self, bucket_name="serial-scammer-analyser-bucket"):
         self.bucket_name = bucket_name
         self.s3_client = boto3.client("s3")
 
