@@ -1,5 +1,7 @@
 import concurrent.futures
 import math
+from functools import cached_property
+
 from Crypto.Hash import keccak
 import os
 import json
@@ -26,8 +28,8 @@ def keccak_hash(value):
     :return: hash of value
     """
     hash_func = keccak.new(digest_bits=256)
-    hash_func.update(bytes(value, encoding='utf-8'))
-    return '0x' + hash_func.hexdigest()
+    hash_func.update(bytes(value, encoding="utf-8"))
+    return "0x" + hash_func.hexdigest()
 
 
 def is_contract_address(address):
@@ -36,7 +38,8 @@ def is_contract_address(address):
     code = setting.infura_web3.eth.get_code(Web3.to_checksum_address(address))
     return len(code) > 0
 
-def get_functions_from_ABI(abi, function_type='event'):
+
+def get_functions_from_ABI(abi, function_type="event"):
     """
     Get function list of contract in ABI
     :param abi: ABI
@@ -45,15 +48,15 @@ def get_functions_from_ABI(abi, function_type='event'):
     """
     func_dict = {}
     for item in abi:
-        if item['type'] == function_type:
-            func = item['name'] + '('
-            for count, element in enumerate(item['inputs']):
+        if item["type"] == function_type:
+            func = item["name"] + "("
+            for count, element in enumerate(item["inputs"]):
                 if count == 0:
-                    func += element['type']
+                    func += element["type"]
                 else:
-                    func += ',' + element['type']
+                    func += "," + element["type"]
                 count += 1
-            func += ')'
+            func += ")"
             func_dict.update({func: keccak_hash(func)})
     return func_dict
 
@@ -67,7 +70,10 @@ def partitioning(from_idx, to_idx, chunk_size):
     :return: a list of partition
     """
     num_partitions = math.ceil((to_idx - from_idx) / chunk_size)
-    partitions = [{"from": from_idx + i * chunk_size, "to": from_idx + (i + 1) * chunk_size - 1} for i in range(0, num_partitions)]
+    partitions = [
+        {"from": from_idx + i * chunk_size, "to": from_idx + (i + 1) * chunk_size - 1}
+        for i in range(0, num_partitions)
+    ]
     partitions[-1]["to"] = to_idx
     return partitions
 
@@ -94,21 +100,21 @@ def try_except_assigning(func, failure_value):
 
 
 def write_list_to_file(file_path, list):
-    with open(file_path, 'w') as f:
+    with open(file_path, "w") as f:
         for item in list:
             f.write("%s\n" % item)
         f.close()
 
 
 def append_item_to_file(file_path, item):
-    with open(file_path, 'a') as f:
+    with open(file_path, "a") as f:
         f.write("%s\n" % item)
         f.close()
 
 
 def read_list_from_file(file_path):
     list = []
-    with open(file_path, 'r') as f:
+    with open(file_path, "r") as f:
         for line in f:
             if not line.isspace():
                 item = line[:-1]
@@ -142,7 +148,7 @@ def save_or_append_if_exist(data, output_path):
     save_df = pd.DataFrame.from_records(data)
     if os.path.isfile(output_path):
         # print("APPEND ", len(data), "RECORDS")
-        save_df.to_csv(output_path, mode='a', header=False, index=False)
+        save_df.to_csv(output_path, mode="a", header=False, index=False)
     else:
         # print("SAVE", len(data), "RECORDS")
         save_df.to_csv(output_path, index=False)
@@ -154,55 +160,75 @@ def save_overwrite_if_exist(data, output_path):
     save_df.to_csv(output_path, index=False)
 
 
-def upload_local_file_to_s3(s3_client, file_path, bucket_name, s3_key, config=TransferConfig()):
-    # Providing the default config allows for multipart uploading.
-    s3_client.upload_file(file_path, bucket_name, s3_key, Config=config)
-    return s3_key
+class S3FileManager:
+    def __init__(self, bucket_name="serial-scammer-analyser-bucket"):
+        self.bucket_name = bucket_name
+        self.s3_client = boto3.client("s3")
 
+    @cached_property
+    def current_file_path(self):
+        return Path(__file__)
 
-def upload_local_files_to_s3():
-    """
-    This function uploads the contents of ../../resources/data to the s3 bucket.
-    """
+    @cached_property
+    def project_root(self):
+        for parent in self.current_file_path.parents:
+            if (parent / ".git").exists():
+                return parent
 
-    # Get the current file path
-    current_file_path = Path(__file__)
-    # Get the project root by navigating two levels up
-    project_root = current_file_path.parents[2]
-    # Define the data directory
-    data_directory = project_root / 'resources' / 'data'
+        # If no .git is found, raise an exception
+        raise FileNotFoundError("No project root directory containing '.git' found.")
 
-    bucket_name = "serial-scammer-analyser-bucket"
+    @cached_property
+    def data_directory(self):
+        return self.project_root / "resources" / "data"
 
-    s3_client = boto3.client('s3')
+    def upload_local_file_to_s3(
+        self, file_path, bucket_name, s3_key, config=TransferConfig()
+    ):
+        # Providing the default config allows for multipart uploading.
+        self.s3_client.upload_file(file_path, bucket_name, s3_key, Config=config)
+        return s3_key
 
-    # Collect all the files from a specified directory and its subdirectories,
-    # prepare the corresponding S3 paths for each file, and then upload them concurrently
-    # to an S3 bucket.
-    files_to_upload = []
-    for root, dirs, files in os.walk(data_directory):
-        for file_name in files:
-            local_path = os.path.join(root, file_name)
-            s3_path = os.path.relpath(local_path, data_directory).replace('\\', '/')
+    def upload_local_files_to_s3(self):
+        """
+        This function uploads the contents of ../../resources/data to the s3 bucket.
+        """
+        # Collect all the files from a specified directory and its subdirectories,
+        # prepare the corresponding S3 paths for each file, and then upload them concurrently
+        # to an S3 bucket.
+        files_to_upload = []
+        for root, dirs, files in os.walk(self.data_directory):
+            for file_name in files:
+                local_path = os.path.join(root, file_name)
+                s3_path = os.path.relpath(local_path, self.data_directory).replace(
+                    "\\", "/"
+                )
 
-            files_to_upload.append({'local_path': local_path, 's3_path': s3_path})
+                files_to_upload.append({"local_path": local_path, "s3_path": s3_path})
 
-    with concurrent.futures.ThreadPoolExecutor() as executor:
-        futures = [
-            executor.submit(upload_local_file_to_s3, s3_client, file['local_path'], bucket_name, file['s3_path']) for file in files_to_upload
-        ]
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            futures = [
+                executor.submit(
+                    self.upload_local_file_to_s3,
+                    self.s3_client,
+                    file["local_path"],
+                    self.bucket_name,
+                    file["s3_path"],
+                )
+                for file in files_to_upload
+            ]
 
-        for future in concurrent.futures.as_completed(futures):
-            print(f"File uploaded: {future.result()}")
-
-
+            for future in concurrent.futures.as_completed(futures):
+                print(f"File uploaded: {future.result()}")
 
 
 def get_abi_function_signatures(abi, type):
     functions = []
     for function in abi:
         if function["type"] == type:
-            input_string = ",".join([str(input["type"]) for input in function['inputs']])
+            input_string = ",".join(
+                [str(input["type"]) for input in function["inputs"]]
+            )
             functions.append(function["name"] + "(" + input_string + ")")
     return functions
 
@@ -211,14 +237,10 @@ def get_abi_function_inputs(abi, type):
     functions = {}
     for function in abi:
         if function["type"] == type:
-            input_names = [str(input["name"]) for input in function['inputs']]
+            input_names = [str(input["name"]) for input in function["inputs"]]
             functions[function["name"]] = input_names
     return functions
 
 
 def hex_to_dec(hex_val):
     return int(hex_val, 16)
-
-
-if __name__ == '__main__':
-    upload_local_files_to_s3()
