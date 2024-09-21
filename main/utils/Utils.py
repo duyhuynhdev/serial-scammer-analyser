@@ -182,11 +182,9 @@ class S3FileManager:
     def data_directory(self):
         return self.project_root / "resources" / "data"
 
-    def upload_local_file_to_s3(
-        self, file_path, bucket_name, s3_key, config=TransferConfig()
-    ):
+    def upload_local_file_to_s3(self, file_path, s3_key, config=TransferConfig()):
         # Providing the default config allows for multipart uploading.
-        self.s3_client.upload_file(file_path, bucket_name, s3_key, Config=config)
+        self.s3_client.upload_file(file_path, self.bucket_name, s3_key, Config=config)
         return s3_key
 
     def upload_local_files_to_s3(self):
@@ -210,9 +208,7 @@ class S3FileManager:
             futures = [
                 executor.submit(
                     self.upload_local_file_to_s3,
-                    self.s3_client,
                     file["local_path"],
-                    self.bucket_name,
                     file["s3_path"],
                 )
                 for file in files_to_upload
@@ -244,3 +240,7 @@ def get_abi_function_inputs(abi, type):
 
 def hex_to_dec(hex_val):
     return int(hex_val, 16)
+
+
+if __name__ == "__main__":
+    S3FileManager().upload_local_files_to_s3()
