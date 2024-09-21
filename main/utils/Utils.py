@@ -160,64 +160,6 @@ def save_overwrite_if_exist(data, output_path):
     save_df.to_csv(output_path, index=False)
 
 
-class S3FileManager:
-    def __init__(self, bucket_name="serial-scammer-analyser-bucket"):
-        self.bucket_name = bucket_name
-        self.s3_client = boto3.client("s3")
-
-    @cached_property
-    def current_file_path(self):
-        return Path(__file__)
-
-    @cached_property
-    def project_root(self):
-        for parent in self.current_file_path.parents:
-            if (parent / ".git").exists():
-                return parent
-
-        # If no .git is found, raise an exception
-        raise FileNotFoundError("No project root directory containing '.git' found.")
-
-    @cached_property
-    def data_directory(self):
-        return self.project_root / "resources" / "data"
-
-    def upload_local_file_to_s3(self, file_path, s3_key, config=TransferConfig()):
-        # Providing the default config allows for multipart uploading.
-        self.s3_client.upload_file(file_path, self.bucket_name, s3_key, Config=config)
-        return s3_key
-
-    def upload_local_files_to_s3(self):
-        """
-        This function uploads the contents of ../../resources/data to the s3 bucket.
-        """
-        # Collect all the files from a specified directory and its subdirectories,
-        # prepare the corresponding S3 paths for each file, and then upload them concurrently
-        # to an S3 bucket.
-        files_to_upload = []
-        for root, dirs, files in os.walk(self.data_directory):
-            for file_name in files:
-                local_path = os.path.join(root, file_name)
-                s3_path = os.path.relpath(local_path, self.data_directory).replace(
-                    "\\", "/"
-                )
-
-                files_to_upload.append({"local_path": local_path, "s3_path": s3_path})
-
-        with concurrent.futures.ThreadPoolExecutor() as executor:
-            futures = [
-                executor.submit(
-                    self.upload_local_file_to_s3,
-                    file["local_path"],
-                    file["s3_path"],
-                )
-                for file in files_to_upload
-            ]
-
-            for future in concurrent.futures.as_completed(futures):
-                print(f"File uploaded: {future.result()}")
-
-
 def get_abi_function_signatures(abi, type):
     functions = []
     for function in abi:
@@ -240,7 +182,3 @@ def get_abi_function_inputs(abi, type):
 
 def hex_to_dec(hex_val):
     return int(hex_val, 16)
-
-
-if __name__ == "__main__":
-    S3FileManager().upload_local_files_to_s3()
