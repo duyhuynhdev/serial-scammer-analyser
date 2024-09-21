@@ -1,4 +1,7 @@
+import concurrent.futures
 import math
+from functools import cached_property
+
 from Crypto.Hash import keccak
 import os
 import json
@@ -9,6 +12,10 @@ from web3 import Web3
 
 from utils.Path import Path
 from utils.Settings import Setting
+
+from pathlib import Path
+import boto3
+from boto3.s3.transfer import TransferConfig
 
 setting = Setting()
 path = Path()
@@ -21,8 +28,8 @@ def keccak_hash(value):
     :return: hash of value
     """
     hash_func = keccak.new(digest_bits=256)
-    hash_func.update(bytes(value, encoding='utf-8'))
-    return '0x' + hash_func.hexdigest()
+    hash_func.update(bytes(value, encoding="utf-8"))
+    return "0x" + hash_func.hexdigest()
 
 
 def is_contract_address(address):
@@ -31,7 +38,8 @@ def is_contract_address(address):
     code = setting.infura_web3.eth.get_code(Web3.to_checksum_address(address))
     return len(code) > 0
 
-def get_functions_from_ABI(abi, function_type='event'):
+
+def get_functions_from_ABI(abi, function_type="event"):
     """
     Get function list of contract in ABI
     :param abi: ABI
@@ -40,15 +48,15 @@ def get_functions_from_ABI(abi, function_type='event'):
     """
     func_dict = {}
     for item in abi:
-        if item['type'] == function_type:
-            func = item['name'] + '('
-            for count, element in enumerate(item['inputs']):
+        if item["type"] == function_type:
+            func = item["name"] + "("
+            for count, element in enumerate(item["inputs"]):
                 if count == 0:
-                    func += element['type']
+                    func += element["type"]
                 else:
-                    func += ',' + element['type']
+                    func += "," + element["type"]
                 count += 1
-            func += ')'
+            func += ")"
             func_dict.update({func: keccak_hash(func)})
     return func_dict
 
@@ -62,7 +70,10 @@ def partitioning(from_idx, to_idx, chunk_size):
     :return: a list of partition
     """
     num_partitions = math.ceil((to_idx - from_idx) / chunk_size)
-    partitions = [{"from": from_idx + i * chunk_size, "to": from_idx + (i + 1) * chunk_size - 1} for i in range(0, num_partitions)]
+    partitions = [
+        {"from": from_idx + i * chunk_size, "to": from_idx + (i + 1) * chunk_size - 1}
+        for i in range(0, num_partitions)
+    ]
     partitions[-1]["to"] = to_idx
     return partitions
 
@@ -89,21 +100,21 @@ def try_except_assigning(func, failure_value):
 
 
 def write_list_to_file(file_path, list):
-    with open(file_path, 'w') as f:
+    with open(file_path, "w") as f:
         for item in list:
             f.write("%s\n" % item)
         f.close()
 
 
 def append_item_to_file(file_path, item):
-    with open(file_path, 'a') as f:
+    with open(file_path, "a") as f:
         f.write("%s\n" % item)
         f.close()
 
 
 def read_list_from_file(file_path):
     list = []
-    with open(file_path, 'r') as f:
+    with open(file_path, "r") as f:
         for line in f:
             if not line.isspace():
                 item = line[:-1]
@@ -137,7 +148,7 @@ def save_or_append_if_exist(data, output_path):
     save_df = pd.DataFrame.from_records(data)
     if os.path.isfile(output_path):
         # print("APPEND ", len(data), "RECORDS")
-        save_df.to_csv(output_path, mode='a', header=False, index=False)
+        save_df.to_csv(output_path, mode="a", header=False, index=False)
     else:
         # print("SAVE", len(data), "RECORDS")
         save_df.to_csv(output_path, index=False)
@@ -148,14 +159,14 @@ def save_overwrite_if_exist(data, output_path):
     # print("SAVE", len(data), "RECORDS")
     save_df.to_csv(output_path, index=False)
 
-def save_file_to_S3():
-    pass
 
 def get_abi_function_signatures(abi, type):
     functions = []
     for function in abi:
         if function["type"] == type:
-            input_string = ",".join([str(input["type"]) for input in function['inputs']])
+            input_string = ",".join(
+                [str(input["type"]) for input in function["inputs"]]
+            )
             functions.append(function["name"] + "(" + input_string + ")")
     return functions
 
@@ -164,7 +175,7 @@ def get_abi_function_inputs(abi, type):
     functions = {}
     for function in abi:
         if function["type"] == type:
-            input_names = [str(input["name"]) for input in function['inputs']]
+            input_names = [str(input["name"]) for input in function["inputs"]]
             functions[function["name"]] = input_names
     return functions
 

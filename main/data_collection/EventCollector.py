@@ -82,7 +82,7 @@ class ContractEventCollector:
     def download_download_token_events_by_patch(self, job, dex="univ2"):
         explorer = explorer_api[dex]["explorer"]
         keys = explorer_api[dex]["keys"]
-        pool_labels_path = os.path.join(eval('path.{}_processed_path'.format(dex)), "pool_labels.csv")
+        pool_labels_path = os.path.join(eval('path.{}_processed_path'.format(dex)), "1_pair_pool_labels.csv")
         pool_labels_df = pd.read_csv(pool_labels_path)
         pool_labels_df.fillna("", inplace=True)
         scam_tokens = pool_labels_df[pool_labels_df["is_rp"] != '0']["scam_token"].values
@@ -149,7 +149,7 @@ def clean_fail_data(event, dex="univ2"):
 
 
 if __name__ == '__main__':
-    job =14
+    job = 17
     collector = ContractEventCollector()
-    collector.download_pool_events_by_patch(job)
+    collector.download_download_token_events_by_patch(job)
     # collector.get_event("0x590fcAdC577810658Cc225E26d78C642cf08be4e","Transfer", path.univ2_token_events_path, "univ2")

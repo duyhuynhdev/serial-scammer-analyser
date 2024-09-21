@@ -59,28 +59,31 @@ class FunctionInputDecoder:
     }
 
     def decode_function_input(self, input):
-        data = HexBytes(input)
-        methodId, params = data[:4], data[4:]
-        codec = ABICodec(build_strict_registry())
-        if methodId.hex() not in self.router_functions.keys():
-            # print("Cannot find method ", methodId.hex())
+        try:
+            data = HexBytes(input)
+            methodId, params = data[:4], data[4:]
+            codec = ABICodec(build_strict_registry())
+            if methodId.hex() not in self.router_functions.keys():
+                # print("Cannot find method ", methodId.hex())
+                return []
+            function_info = self.router_functions[methodId.hex()]
+            signature = function_info["signature"]
+            types = function_info["types"]
+            names = function_info["names"]
+            decoded_data = codec.decode(types, HexBytes(params))
+            normalized = map_abi_data(BASE_RETURN_NORMALIZERS, types, decoded_data)
+            parsed =  dict(zip(names, normalized))
+            if "multicall" in signature:
+                parsed_results = []
+                for b in parsed["data"]:
+                    call = HexBytes(b).hex()
+                    parsed_call = self.decode_function_input(call)
+                    parsed_results.extend(parsed_call)
+                return parsed_results
+            return [parsed]
+        except Exception as e:
+            print(e)
             return []
-        function_info = self.router_functions[methodId.hex()]
-        signature = function_info["signature"]
-        types = function_info["types"]
-        names = function_info["names"]
-        decoded_data = codec.decode(types, HexBytes(params))
-        normalized = map_abi_data(BASE_RETURN_NORMALIZERS, types, decoded_data)
-        parsed =  dict(zip(names, normalized))
-        if "multicall" in signature:
-            parsed_results = []
-            for b in parsed["data"]:
-                call = HexBytes(b).hex()
-                parsed_call = self.decode_function_input(call)
-                parsed_results.extend(parsed_call)
-            return parsed_results
-        return [parsed]
-
 
 class EventLogDecoder:
     pool_events = {

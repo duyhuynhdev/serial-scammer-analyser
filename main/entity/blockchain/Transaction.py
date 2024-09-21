@@ -62,6 +62,7 @@ class NormalTransaction(Transaction):
     def is_to_contract(self, owner):
         return not self.is_to_eoa(owner)
 
+
 class InternalTransaction(Transaction):
     def __init__(self, blockNumber=None, timeStamp=None, hash=None, sender=None, to=None, value=None, gas=None, gasUsed=None, contractAddress=None, input=None, isError=None, type=None, errCode=None):
         super().__init__(blockNumber, timeStamp, hash, sender, to, value, gas, gasUsed, contractAddress, input, isError)

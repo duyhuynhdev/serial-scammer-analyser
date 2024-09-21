@@ -1,4 +1,3 @@
-from entity.blockchain.Event import MintEvent, BurnEvent, SwapEvent, TransferEvent
 from entity.blockchain.Transaction import InternalTransaction, NormalTransaction
 from entity.blockchain.DTO import DTO
 from utils import Constant
@@ -29,18 +28,20 @@ class Contract(Address):
 
 
 class ERC20(Contract):
-    def __init__(self, address=None, name=None, symbol=None, supply=None, decimals=None, transfers=None):
+    def __init__(self, address=None, name=None, symbol=None, supply=None, decimals=None, transfers=None, creator=None, creation_tx=None):
         super().__init__(address)
         self.name = name
         self.symbol = symbol
         self.supply = supply
         self.decimals = decimals
         self.transfers = transfers if transfers is not None else []
+        self.creator = creator
+        self.creation_tx = creation_tx
 
 
 class Pool(ERC20):
-    def __init__(self, address=None, token0=None, token1=None, scammers=None, mints=None, burns=None, swaps=None, transfers=None):
-        super().__init__(address, "Uniswap V2", "UNI-V2", None, 18, transfers)
+    def __init__(self, address=None, token0=None, token1=None, scammers=None, mints=None, burns=None, swaps=None, transfers=None, creator=None, creation_tx=None):
+        super().__init__(address, "Uniswap V2", "UNI-V2", None, 18, transfers, creator, creation_tx)
         self.token0: Token = token0
         self.token1: Token = token1
         self.scammers = scammers if scammers is not None else []
@@ -105,5 +106,5 @@ class Pool(ERC20):
 
 
 class Token(ERC20):
-    def __init__(self, address=None, name=None, symbol=None, supply=None, decimals=None, transfers=None):
-        super().__init__(address, name, symbol, supply, decimals, transfers)
+    def __init__(self, address=None, name=None, symbol=None, supply=None, decimals=None, transfers=None, creator=None, creation_tx=None):
+        super().__init__(address, name, symbol, supply, decimals, transfers, creator, creation_tx)

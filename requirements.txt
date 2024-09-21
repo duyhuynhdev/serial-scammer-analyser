@@ -10,3 +10,4 @@ Crypto
 dune-client
 pyvis
 beautifulsoup4
+boto3
