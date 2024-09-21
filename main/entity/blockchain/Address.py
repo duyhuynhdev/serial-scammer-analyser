@@ -1,3 +1,5 @@
+from aiohttp.web_routedef import static
+
 from entity.blockchain.Transaction import InternalTransaction, NormalTransaction
 from entity.blockchain.DTO import DTO
 from utils import Constant
@@ -16,10 +18,19 @@ class Address(DTO):
 
 
 class Account(Address):
-    def __init__(self, address=None, normal_transactions: [NormalTransaction] = None, internal_transactions: [InternalTransaction] = None):
+    def __init__(
+        self,
+        address=None,
+        normal_transactions: [NormalTransaction] = None,
+        internal_transactions: [InternalTransaction] = None,
+    ):
         super().__init__(address, AddressType.eoa)
-        self.normal_transactions = normal_transactions if normal_transactions is not None else []
-        self.internal_transactions = internal_transactions if internal_transactions is not None else []
+        self.normal_transactions = (
+            normal_transactions if normal_transactions is not None else []
+        )
+        self.internal_transactions = (
+            internal_transactions if internal_transactions is not None else []
+        )
 
 
 class Contract(Address):
@@ -28,7 +39,17 @@ class Contract(Address):
 
 
 class ERC20(Contract):
-    def __init__(self, address=None, name=None, symbol=None, supply=None, decimals=None, transfers=None, creator=None, creation_tx=None):
+    def __init__(
+        self,
+        address=None,
+        name=None,
+        symbol=None,
+        supply=None,
+        decimals=None,
+        transfers=None,
+        creator=None,
+        creation_tx=None,
+    ):
         super().__init__(address)
         self.name = name
         self.symbol = symbol
@@ -40,8 +61,22 @@ class ERC20(Contract):
 
 
 class Pool(ERC20):
-    def __init__(self, address=None, token0=None, token1=None, scammers=None, mints=None, burns=None, swaps=None, transfers=None, creator=None, creation_tx=None):
-        super().__init__(address, "Uniswap V2", "UNI-V2", None, 18, transfers, creator, creation_tx)
+    def __init__(
+        self,
+        address=None,
+        token0=None,
+        token1=None,
+        scammers=None,
+        mints=None,
+        burns=None,
+        swaps=None,
+        transfers=None,
+        creator=None,
+        creation_tx=None,
+    ):
+        super().__init__(
+            address, "Uniswap V2", "UNI-V2", None, 18, transfers, creator, creation_tx
+        )
         self.token0: Token = token0
         self.token1: Token = token1
         self.scammers = scammers if scammers is not None else []
@@ -49,10 +84,17 @@ class Pool(ERC20):
         self.burns = burns if burns is not None else []
         self.swaps = swaps if swaps is not None else []
 
+    def get_scam_token(self, scam_token_position):
+        return eval(f"self.token{scam_token_position}")
+
     def get_high_value_position(self):
-        if self.token0 is not None and (self.token0.address.lower() in Constant.HIGH_VALUE_TOKENS):
+        if self.token0 is not None and (
+            self.token0.address.lower() in Constant.HIGH_VALUE_TOKENS
+        ):
             return 0
-        if self.token1 is not None and (self.token1.address.lower() in Constant.HIGH_VALUE_TOKENS):
+        if self.token1 is not None and (
+            self.token1.address.lower() in Constant.HIGH_VALUE_TOKENS
+        ):
             return 1
         return -1
 
@@ -61,8 +103,8 @@ class Pool(ERC20):
         token: Token = eval(f"self.token{position}")
         decimals = int(token.decimals)
         for mint in self.mints:
-            mint_total += float(eval(f"mint.amount{position}")) / 10 ** decimals
-            fee_total += float(mint.gasUsed * mint.gasPrice) / 10 ** 18
+            mint_total += float(eval(f"mint.amount{position}")) / 10**decimals
+            fee_total += float(mint.gasUsed * mint.gasPrice) / 10**18
         return mint_total, fee_total
 
     def get_total_burn_value(self, position):
@@ -70,8 +112,8 @@ class Pool(ERC20):
         token: Token = eval(f"self.token{position}")
         decimals = int(token.decimals)
         for burn in self.burns:
-            burn_total += float(eval(f"burn.amount{position}")) / 10 ** decimals
-            fee_total += float(burn.gasUsed * burn.gasPrice) / 10 ** 18
+            burn_total += float(eval(f"burn.amount{position}")) / 10**decimals
+            fee_total += float(burn.gasUsed * burn.gasPrice) / 10**18
         return burn_total, fee_total
 
     def get_max_swap_value(self, position):
@@ -80,8 +122,8 @@ class Pool(ERC20):
         decimals = int(token.decimals)
         for swap in self.swaps:
             if float(eval(f"swap.amount{position}Out")) > max_swap:
-                max_swap = float(eval(f"swap.amount{position}Out")) / 10 ** decimals
-                swap_fee = float(swap.gasUsed * swap.gasPrice) / 10 ** 18
+                max_swap = float(eval(f"swap.amount{position}Out")) / 10**decimals
+                swap_fee = float(swap.gasUsed * swap.gasPrice) / 10**18
         return max_swap, swap_fee
 
     def get_swap_in_value(self, position, address):
@@ -90,8 +132,8 @@ class Pool(ERC20):
         decimals = int(token.decimals)
         for swap in self.swaps:
             if swap.to.lower() == address.lower():
-                swap_in_total += float(eval(f"swap.amount{position}In")) / 10 ** decimals
-                fee_total += float(swap.gasUsed * swap.gasPrice) / 10 ** 18
+                swap_in_total += float(eval(f"swap.amount{position}In")) / 10**decimals
+                fee_total += float(swap.gasUsed * swap.gasPrice) / 10**18
         return swap_in_total, fee_total
 
     def get_swap_out_value(self, position, address):
@@ -100,11 +142,25 @@ class Pool(ERC20):
         decimals = int(token.decimals)
         for swap in self.swaps:
             if swap.to.lower() == address.lower():
-                swap_out_total += float(eval(f"swap.amount{position}Out")) / 10 ** decimals
-                fee_total += float(swap.gasUsed * swap.gasPrice) / 10 ** 18
+                swap_out_total += (
+                    float(eval(f"swap.amount{position}Out")) / 10**decimals
+                )
+                fee_total += float(swap.gasUsed * swap.gasPrice) / 10**18
         return swap_out_total, fee_total
 
 
 class Token(ERC20):
-    def __init__(self, address=None, name=None, symbol=None, supply=None, decimals=None, transfers=None, creator=None, creation_tx=None):
-        super().__init__(address, name, symbol, supply, decimals, transfers, creator, creation_tx)
+    def __init__(
+        self,
+        address=None,
+        name=None,
+        symbol=None,
+        supply=None,
+        decimals=None,
+        transfers=None,
+        creator=None,
+        creation_tx=None,
+    ):
+        super().__init__(
+            address, name, symbol, supply, decimals, transfers, creator, creation_tx
+        )

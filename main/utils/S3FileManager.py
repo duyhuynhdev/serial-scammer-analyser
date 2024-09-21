@@ -5,8 +5,11 @@ import subprocess
 
 
 class S3FileManager:
-    def __init__(self, bucket_name="serial-scammer-analyser-bucket"):
+    def __init__(
+        self, bucket_name="serial-scammer-analyser-bucket", data_dir="resources/data"
+    ):
         self.bucket_name = bucket_name
+        self.data_dir = Path(data_dir)
         self.s3_client = boto3.client("s3")
 
     @cached_property
@@ -18,13 +21,12 @@ class S3FileManager:
         for parent in self.current_file_path.parents:
             if (parent / ".git").exists():
                 return parent
-
         # If no .git is found, raise an exception
         raise FileNotFoundError("No project root directory containing '.git' found.")
 
     @cached_property
     def data_directory(self):
-        return (self.project_root / "resources" / "data").resolve()
+        return (self.project_root / self.data_dir).resolve()
 
     def sync(self):
         """
