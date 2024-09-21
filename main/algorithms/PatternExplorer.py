@@ -18,7 +18,6 @@ def chain_pattern_detection(scammer_address):
     fwd_chain = []
     current_node = Node.create_node(scammer_address, None, dataloader)
     valid_address_fwd = valid_address_bwd = current_node.address in dataloader.scammers
-    # TODO verify, because can be in list of scammers but have no liquidity calls.
     if valid_address_fwd:
         fwd_chain.append(scammer_address)
 
@@ -118,8 +117,8 @@ def run_chain_on_scammers():
 
     # lower means will write to file more frequently, but lower performance
     # higher means less file writes, but better performance
-    save_file_freq = 10
-    num_scammers_to_run = 200
+    save_file_freq = 20
+    num_scammers_to_run = 1000
     overall_scammers_written = 0
 
     # save to file
@@ -139,4 +138,4 @@ def run_chain_on_scammers():
 if __name__ == '__main__':
     run_chain_on_scammers()
     # print(*chain_pattern_detection("0x48f0fc8dfc672dd45e53b6c53cd5b09c71d9fbd6"), sep='\n')
-    # print(chain_pattern_detection("0x699f93da70298b49100080257e7fd4f44ed1fefa"))
+    # print(chain_pattern_detection("0x03b128f9f285eec926731fcf6d92da7d9f9fe6c8"))
