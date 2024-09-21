@@ -34,7 +34,7 @@ class Transaction(DTO):
         return Web3.to_checksum_address(self.sender) == Web3.to_checksum_address(owner) and (self.to is np.nan or self.to == "")
 
     def is_in_tx(self, owner):
-        if (isinstance(self.to, float) and math.isnan(self.to)) or self.to == "":
+        if (isinstance(self.to, float) and math.isnan(self.to)) or not self.to:
             return False
         return Web3.to_checksum_address(self.to) == Web3.to_checksum_address(owner)
 
