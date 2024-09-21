@@ -1,7 +1,4 @@
-import concurrent.futures
 import math
-from functools import cached_property
-
 from Crypto.Hash import keccak
 import os
 import json
@@ -9,12 +6,9 @@ import re
 import pandas as pd
 import numpy as np
 from web3 import Web3
-
-from utils.Path import Path
 from utils.Settings import Setting
-
 from pathlib import Path
-import boto3
+
 from boto3.s3.transfer import TransferConfig
 
 setting = Setting()
