@@ -16,7 +16,7 @@ class ClusterProfitCalculator:
     @cached_property
     def scammer_nodes(self) -> Set[ClusterNode]:
         """
-        Returns a set of scammer nodes in the cluster
+        Return a set of scammer nodes in the cluster
         """
         return {
             node
@@ -30,7 +30,7 @@ class ClusterProfitCalculator:
     @cached_property
     def scammer_pools(self) -> Set[Pool]:
         """
-        Returns a set of scammer pools belonging to the cluster
+        Return a set of scammer pools belonging to the cluster
         """
         return {
             pool
@@ -90,9 +90,18 @@ class ClusterProfitCalculator:
             ),
             0,  # Default value if no matching transaction is found
         )
-        x = mint_total + fee_total + creation_fee
+        x += mint_total + fee_total + creation_fee
 
         z = 0
+        for washer_node in self.washer_nodes:
+            buy_amount, fee_total_in = pool.get_swap_in_value(
+                high_value_token_position, washer_node.address
+            )
+
+            sell_amount, fee_total_out = pool.get_swap_out_value(
+                high_value_token_position, washer_node.address
+            )
+            z += (buy_amount + fee_total_in) - (sell_amount - fee_total_out)
 
         return y - x - z
 
@@ -108,4 +117,4 @@ if __name__ == "__main__":
     test_cluster = DataLoader.load_cluster(
         "cluster_0x19b98792e98c54f58c705cddf74316aec0999aa6"
     )
-    calculator.calculate(test_cluster)
+    print(calculator.calculate(test_cluster))
