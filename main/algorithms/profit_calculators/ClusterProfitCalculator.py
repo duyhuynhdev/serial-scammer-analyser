@@ -1,10 +1,6 @@
-"""
-TODO: 1. get WT in cluster 2. iterate each pool 3. get a list of scammers of the pool
-"""
-
 from functools import cached_property
 
-from entity.Cluster import ClusterNode
+from entity.Cluster import ClusterNode, Cluster
 from entity.Node import NodeLabel
 from entity.blockchain.Address import Pool
 from typing import Set, List
@@ -13,9 +9,9 @@ from utils import DataLoader
 
 
 class ClusterProfitCalculator:
-    def __init__(self, _cluster: List[ClusterNode]):
+    def __init__(self):
         self.dataloader = DataLoader.DataLoader()
-        self.cluster = _cluster
+        self.cluster = None  # self.cluster will be set in self.calculate()
 
     @cached_property
     def scammer_nodes(self) -> Set[ClusterNode]:
@@ -44,13 +40,21 @@ class ClusterProfitCalculator:
 
     @cached_property
     def washer_nodes(self) -> Set[ClusterNode]:
-        # TODO: check whether swap.to needs to be lowercased
         swap_tos = {
             swap.to.lower() for pool in self.scammer_pools for swap in pool.swaps
         }
         return {node for node in self.cluster if node.address in swap_tos}
 
-    def calculate(self) -> float:
+    def calculate(self, cluster: List[ClusterNode]) -> float:
+        """
+        Reuse the same instance for calculating profits on different clusters.
+        """
+        self.cluster = cluster
+        # Invalidate cached properties for a new cluster
+        self.__dict__.pop("scammer_nodes", None)
+        self.__dict__.pop("scammer_pools", None)
+        self.__dict__.pop("washer_nodes", None)
+
         return sum(
             self.calculate_per_pool(scammer_pool) for scammer_pool in self.scammer_pools
         )
@@ -90,16 +94,18 @@ class ClusterProfitCalculator:
 
         z = 0
 
-        # Label WT nodes
-        """
-        1. Go through all nodes in the cluster
-        2. Look into pools that v swaps tokens with
-        """
         return y - x - z
+
+    def calculate_batch(self, clusters: List[List[ClusterNode]]) -> List[float]:
+        """
+        Batch process multiple clusters by resetting cached properties between calculations.
+        """
+        return [self.calculate(cluster) for cluster in clusters]
 
 
 if __name__ == "__main__":
-    cluster = DataLoader.load_cluster(
+    calculator = ClusterProfitCalculator()
+    test_cluster = DataLoader.load_cluster(
         "cluster_0x19b98792e98c54f58c705cddf74316aec0999aa6"
     )
-    ClusterProfitCalculator(cluster).calculate()
+    calculator.calculate(test_cluster)
