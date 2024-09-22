@@ -23,7 +23,7 @@ def chain_pattern_detection(starter_address):
     if valid_address_fwd:
         fwd_chain.append(starter_address)
 
-    starter_transaction_history = transaction_collector.get_transactions(starter_address)[0]
+    starter_transaction_history = transaction_collector.get_transactions(starter_address)
     current_transaction_history = starter_transaction_history
     current_address = starter_address
 
@@ -63,13 +63,13 @@ def chain_pattern_detection(starter_address):
 
 def get_largest_out_after_remove_liquidity(scammer_address: str, normal_txs=None):
     if normal_txs is None:
-        normal_txs = transaction_collector.get_transactions(scammer_address)[0]
+        normal_txs = transaction_collector.get_transactions(scammer_address)
     return get_largest_transaction(normal_txs, scammer_address, REMOVE_LIQUIDITY_SUBSTRING, True, len(normal_txs) - 1, -1, -1)
 
 
 def get_largest_in_before_add_liquidity(scammer_address: str, normal_txs=None):
     if normal_txs is None:
-        normal_txs = transaction_collector.get_transactions(scammer_address)[0]
+        normal_txs = transaction_collector.get_transactions(scammer_address)
     return get_largest_transaction(normal_txs, scammer_address, ADD_LIQUIDITY_SUBSTRING, False, 0, len(normal_txs), 1)
 
 
@@ -126,12 +126,12 @@ def run_chain_on_scammers():
 
     # lower means will write to file more frequently, but lower performance
     # higher means less file writes, but better performance
-    save_file_freq = 20
-    num_scammers_to_run = 1000
+    save_file_freq = 1000
+    num_scammers_to_run = 100000
     overall_scammers_written = 0
 
     # save to file
-    while overall_scammers_written <= num_scammers_to_run:
+    while overall_scammers_written <= num_scammers_to_run or len(scammers_remaining) > 0:
         with open(scammer_chain_path, "a") as f:
             for _ in range(save_file_freq):
                 current_address = scammers_remaining.pop()
@@ -144,6 +144,6 @@ def run_chain_on_scammers():
 
 
 if __name__ == '__main__':
-    # run_chain_on_scammers()
-    print(*chain_pattern_detection("0x48f0fc8dfc672dd45e53b6c53cd5b09c71d9fbd6"), sep='\n')
+    run_chain_on_scammers()
+    # print(*chain_pattern_detection("0x48f0fc8dfc672dd45e53b6c53cd5b09c71d9fbd6"), sep='\n')
     # print(chain_pattern_detection("0x48f0fc8dfc672dd45e53b6c53cd5b09c71d9fbd6"))
