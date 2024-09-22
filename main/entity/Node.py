@@ -1,3 +1,4 @@
+from aiohttp.web_routedef import static
 from marshmallow.orderedset import OrderedSet
 import json
 
@@ -35,26 +36,44 @@ class NodeLabel:
     EOA = "eoa"  # personal account nodes
     BIG = "big"  # big nodes that contains EOA neighbour > 1K
 
-    def is_scammer(self, node):
-        return self.SCAMMER in node.labels
+    @staticmethod
+    def is_scammer(node):
+        return NodeLabel.SCAMMER in node.labels
 
 
 class Node:
-    def __init__(self, address, path, eoa_neighbours=None, contract_neighbours=None, normal_txs=None,
-                 internal_txs=None, swap_txs=None, contract_creation_txs=None, labels=None,
-                 tag_name=""):
+    def __init__(
+        self,
+        address,
+        path,
+        eoa_neighbours=None,
+        contract_neighbours=None,
+        normal_txs=None,
+        internal_txs=None,
+        swap_txs=None,
+        contract_creation_txs=None,
+        labels=None,
+        tag_name="",
+    ):
         self.address = address
         self.labels = labels if labels is not None else set()
         self.tag_name = tag_name
         self.path = path.copy() if path is not None else []
         self.path.append(self.address)
-        self.eoa_neighbours = OrderedSet(eoa_neighbours) if eoa_neighbours is not None else OrderedSet()
-        self.contract_neighbours = OrderedSet(contract_neighbours) if contract_neighbours is not None else OrderedSet()
+        self.eoa_neighbours = (
+            OrderedSet(eoa_neighbours) if eoa_neighbours is not None else OrderedSet()
+        )
+        self.contract_neighbours = (
+            OrderedSet(contract_neighbours)
+            if contract_neighbours is not None
+            else OrderedSet()
+        )
         self.normal_txs = normal_txs if normal_txs is not None else []
         self.internal_txs = internal_txs if internal_txs is not None else []
         self.swap_txs = swap_txs if swap_txs is not None else []
-        self.contract_creation_txs = contract_creation_txs if contract_creation_txs is not None else []
-
+        self.contract_creation_txs = (
+            contract_creation_txs if contract_creation_txs is not None else []
+        )
 
 
 def create_end_node(address, path, label):
@@ -63,14 +82,32 @@ def create_end_node(address, path, label):
     return node
 
 
-def create_node(address, path, dataloader, label=NodeLabel.EOA, dex='univ2'):
+def create_node(address, path, dataloader, label=NodeLabel.EOA, dex="univ2"):
     transaction_collector = TransactionCollector()
     normal_txs, internal_txs = transaction_collector.get_transactions(address, dex)
-    print("\t CREATE NODE FOR ", address, " WITH NORMAL TX:", len(normal_txs) if normal_txs is not None else 0, "AND INTERNAL TX:", len(internal_txs) if internal_txs is not None else 0)
+    print(
+        "\t CREATE NODE FOR ",
+        address,
+        " WITH NORMAL TX:",
+        len(normal_txs) if normal_txs is not None else 0,
+        "AND INTERNAL TX:",
+        len(internal_txs) if internal_txs is not None else 0,
+    )
     if normal_txs is None and internal_txs is None:
         return create_end_node(address, path, NodeLabel.BLANK)
-    eoa_neighbours, contract_neighbours, swap_txs, contract_creation_txs, labels = get_neighbours_from_transactions(address, normal_txs, internal_txs, dataloader)
-    node = Node(address, path, eoa_neighbours, contract_neighbours, normal_txs, internal_txs, swap_txs, contract_creation_txs)
+    eoa_neighbours, contract_neighbours, swap_txs, contract_creation_txs, labels = (
+        get_neighbours_from_transactions(address, normal_txs, internal_txs, dataloader)
+    )
+    node = Node(
+        address,
+        path,
+        eoa_neighbours,
+        contract_neighbours,
+        normal_txs,
+        internal_txs,
+        swap_txs,
+        contract_creation_txs,
+    )
     node.labels.add(label)
     node.labels.update(labels)
     if (len(normal_txs) + len(internal_txs)) >= Constant.BIG_NODE_TXS:
@@ -86,9 +123,16 @@ def get_scammers_list(scam_token, dataloader):
     return scam_pool, scammers
 
 
-def get_neighbours_from_transactions(scammer_address, normal_txs, internal_txs, dataloader):
+def get_neighbours_from_transactions(
+    scammer_address, normal_txs, internal_txs, dataloader
+):
     function_decoder = FunctionInputDecoder()
-    eoa_neighbours, contract_neighbours, swap_txs, contract_creation_txs = [], [], [], []
+    eoa_neighbours, contract_neighbours, swap_txs, contract_creation_txs = (
+        [],
+        [],
+        [],
+        [],
+    )
     labels = set()
     scammer_neighbours = set()
     normal_accounts = set()
@@ -97,22 +141,36 @@ def get_neighbours_from_transactions(scammer_address, normal_txs, internal_txs, 
             if tx.is_in_tx(scammer_address) and float(tx.value) > 0:
                 eoa_neighbours.append(tx.sender)
                 # check if sender is CEX, MIXER, OR BRIDGE
-                if tx.sender in (dataloader.bridge_addresses | dataloader.mixer_addresses | dataloader.cex_addresses):
+                if tx.sender in (
+                    dataloader.bridge_addresses
+                    | dataloader.mixer_addresses
+                    | dataloader.cex_addresses
+                ):
                     labels.add(NodeLabel.WITHDRAWER)
                 else:
                     normal_accounts.add(tx.sender)
                 if tx.sender in dataloader.scammers:
                     scammer_neighbours.add(tx.sender)
-            elif tx.is_out_tx(scammer_address) and tx.is_to_eoa(scammer_address) and float(tx.value) > 0:
+            elif (
+                tx.is_out_tx(scammer_address)
+                and tx.is_to_eoa(scammer_address)
+                and float(tx.value) > 0
+            ):
                 eoa_neighbours.append(tx.to)
                 # check if receiver is CEX, MIXER, OR BRIDGE
-                if tx.to in (dataloader.bridge_addresses | dataloader.mixer_addresses | dataloader.cex_addresses):
+                if tx.to in (
+                    dataloader.bridge_addresses
+                    | dataloader.mixer_addresses
+                    | dataloader.cex_addresses
+                ):
                     labels.add(NodeLabel.DEPOSITOR)
                 else:
                     normal_accounts.add(tx.to)
                 if tx.to in dataloader.scammers:
                     scammer_neighbours.add(tx.to)
-            elif tx.is_out_tx(scammer_address) and tx.is_creation_contract(scammer_address):
+            elif tx.is_out_tx(scammer_address) and tx.is_creation_contract(
+                scammer_address
+            ):
                 contract_neighbours.append(tx.contractAddress)
             elif tx.is_out_tx(scammer_address) and tx.is_to_contract(scammer_address):
                 parsed_inputs = function_decoder.decode_function_input(tx.input)
@@ -123,7 +181,13 @@ def get_neighbours_from_transactions(scammer_address, normal_txs, internal_txs, 
                     # Get all tokens from paths (each path contains 2 tokens)
                     # The first element of path is the input token, the last is the output token
                     # Hence if path [0] is HV token -> the swap is swap in
-                    scam_tokens = [path[1] for path in paths if (len(path) ==  2) and (path[0].lower() in Constant.HIGH_VALUE_TOKENS) and (path[1].lower() in dataloader.scam_token_pool.keys())]
+                    scam_tokens = [
+                        path[1]
+                        for path in paths
+                        if (len(path) == 2)
+                        and (path[0].lower() in Constant.HIGH_VALUE_TOKENS)
+                        and (path[1].lower() in dataloader.scam_token_pool.keys())
+                    ]
                     # scam_tokens = [token for path in paths for token in path if token.lower() in dataloader.scam_token_pool.keys()]
                     if len(scam_tokens) > 0:
                         labels.add(NodeLabel.WASHTRADER)
@@ -137,13 +201,22 @@ def get_neighbours_from_transactions(scammer_address, normal_txs, internal_txs, 
                             normal_accounts.add(scammers[0])  # add presentative only
             # else:
             # print(f"Transaction {tx.hash} cannot be classified (SKIPPED)")
-    if len(scammer_neighbours) >= 5 and (len(scammer_neighbours) * 1.0 / len(normal_accounts)) > 0.5:
+    if (
+        len(scammer_neighbours) >= 5
+        and (len(scammer_neighbours) * 1.0 / len(normal_accounts)) > 0.5
+    ):
         labels.add(NodeLabel.COORDINATOR)
     if internal_txs is not None and len(internal_txs) > 0:
         # receiver in internal txs of an eoa is always itself
         contract_neighbours.extend([tx.sender for tx in internal_txs])
-    return OrderedSet(eoa_neighbours), OrderedSet(contract_neighbours), swap_txs, contract_creation_txs, labels
+    return (
+        OrderedSet(eoa_neighbours),
+        OrderedSet(contract_neighbours),
+        swap_txs,
+        contract_creation_txs,
+        labels,
+    )
 
 
-if __name__ == '__main__':
-    create_node("0x0ae5a86ea44c76911deed02e48bc61520e925137", None, None, dex='univ2')
+if __name__ == "__main__":
+    create_node("0x0ae5a86ea44c76911deed02e48bc61520e925137", None, None, dex="univ2")

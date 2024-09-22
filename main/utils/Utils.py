@@ -2,14 +2,11 @@ import math
 from Crypto.Hash import keccak
 import os
 import json
-import re
 import pandas as pd
 import numpy as np
 from web3 import Web3
 from utils.Settings import Setting
 from pathlib import Path
-
-from boto3.s3.transfer import TransferConfig
 
 setting = Setting()
 path = Path()

@@ -284,6 +284,7 @@ class DataLoader(object):
             self.scammers,
             self.scammer_pool,
         ) = load_rug_pull_dataset(dex=dex)
+        self.unique_scammers = set(self.scammers)
 
 
 if __name__ == "__main__":
