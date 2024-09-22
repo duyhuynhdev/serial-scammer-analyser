@@ -40,6 +40,9 @@ class ClusterProfitCalculator:
 
     @cached_property
     def washer_nodes(self) -> Set[ClusterNode]:
+        """
+        Return a set of washer nodes in the cluster
+        """
         swap_tos = {
             swap.to.lower() for pool in self.scammer_pools for swap in pool.swaps
         }
@@ -60,6 +63,9 @@ class ClusterProfitCalculator:
         )
 
     def calculate_per_pool(self, pool: Pool) -> float:
+        """
+        Calculate the true profit made in a given pool
+        """
         high_value_token_position = pool.get_high_value_position()
         scam_token_position = 1 - high_value_token_position
 
