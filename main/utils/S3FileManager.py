@@ -8,6 +8,7 @@ class S3FileManager:
     def __init__(
         self, bucket_name="serial-scammer-analyser-bucket", data_dir="resources/data"
     ):
+
         self.bucket_name = bucket_name
         self.data_dir = Path(data_dir)
         self.s3_client = boto3.client("s3")
@@ -54,4 +55,20 @@ class S3FileManager:
 
 
 if __name__ == "__main__":
-    S3FileManager().sync()
+    """
+    1. Instantiate the S3FileManager class by specifying the directory to sync between the S3 bucket and local storage.
+       For example:
+
+       s3_file_manager = S3FileManager(data_dir="resources/data/uniswap")
+
+       - `data_dir` is the path to the local directory that will be synchronized with the corresponding directory in your S3 bucket.
+
+    2. To synchronize files between the S3 bucket and the local directory, simply call the `sync()` method wherever necessary in your program:
+
+       s3_file_manager.sync()
+
+       - This will ensure that any new or modified files in either the local directory or the S3 bucket are synchronized.
+    """
+    # Example usage:
+    s3_file_manager = S3FileManager(data_dir="resources/data/uniswap")
+    s3_file_manager.sync()
