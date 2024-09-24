@@ -2,7 +2,6 @@ import os
 
 from algorithms.ScammerNetworkBuilder import dataloader
 from data_collection.AccountCollector import TransactionCollector
-from entity import Node
 from utils.DataLoader import DataLoader
 from utils.Path import Path
 
@@ -82,8 +81,7 @@ def get_largest_transaction(normal_txs, scammer_address, liquidity_function_name
             passed_liquidity_function = True
             if largest_transaction is None:
                 return None, normal_txs
-        elif (is_out and normal_txs[index].is_to_eoa(scammer_address)) or (
-                not is_out and normal_txs[index].is_in_tx(scammer_address)):
+        elif (is_out and normal_txs[index].is_to_eoa(scammer_address)) or (not is_out and normal_txs[index].is_in_tx(scammer_address)):
 
             # just set the largest_transaction for the first find
             if largest_transaction is None:
@@ -117,7 +115,7 @@ def read_from_csv_as_set(input_path):
 
 
 def run_chain_on_scammers():
-    scammer_chain_path = os.path.join(path.univ2_scammer_chain_path, "scammer_chain.txt")
+    scammer_chain_path = os.path.join(path.univ2_scammer_chain_path, "simple_chain.txt")
 
     existing_addresses = read_from_csv_as_set(scammer_chain_path)
     scammers_remaining = set(dataloader.scammers)
