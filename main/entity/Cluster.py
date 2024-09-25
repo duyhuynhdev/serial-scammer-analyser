@@ -1,12 +1,9 @@
-import networkx as nx
 import pandas as pd
-from networkx import DiGraph, has_path
 from entity import Node
-from entity.Node import NodeLabel, create_node
+from entity.Node import create_node
 from entity.OrderedQueue import OrderedQueue
 from utils import Utils as ut
 import os
-import itertools
 
 
 class ClusterNode:
@@ -45,8 +42,6 @@ class ClusterNode:
 
 
 class Cluster:
-    id_iter = itertools.count()
-
     def __init__(self, address):
         self.id = address
         self.nodes = dict()

@@ -11,6 +11,7 @@ from entity.Cluster import Cluster
 from entity.Node import NodeLabel
 from entity.OrderedQueue import OrderedQueue
 from utils.DataLoader import DataLoader
+from utils.S3Syncer import S3Syncer
 from utils.Settings import Setting
 from utils.Path import Path
 from utils import Utils as ut
@@ -81,19 +82,21 @@ def scammer_grouping(dex='univ2'):
     return groups, isolates
 
 
-# def merge_scammer_groups(dex='univ2'):
-#     scammers = pd.read_csv(os.path.join(eval('path.{}_processed_path'.format(dex)), "1_pair_scammers.csv"))
-#     index_issue = scammers[(scammers["pool"] == scammers["scammer"])].index
-#     scammers.drop(index_issue, inplace=True)
-#     scammers["pool"] = scammers["pool"].str.lower()
-#     scammers["scammer"] = scammers["scammer"].str.lower()
-#     pool_scammers = scammers.groupby('pool')['scammer'].apply(list).to_dict()
-#     scammers_set = pool_scammers.values()
-#     G = nx.from_edgelist(chain.from_iterable(pairwise(e) for e in scammers_set))
-#     G.add_nodes_from(scammers)  # adding single items
-#
-#     groups = list(nx.connected_components(G))
-#     return groups
+def pre_clusterting(dex='univ2'):
+    file_path = os.path.join(eval('path.{}_processed_path'.format(dex)), "scammer_group.csv")
+    groups, isolates = scammer_grouping(dex)
+    data = []
+    id = 1
+    for group in groups:
+        for s in group:
+            data.append({"group_id": id, "scammer": s})
+        id += 1
+    for i in isolates:
+        data.append({"group_id": id, "scammer": s})
+        id += 1
+    print("DATA SIZE", len(data))
+    ut.save_overwrite_if_exist(data, file_path)
+
 
 def is_eoa_node(node):
     if NodeLabel.CONTRACT in node.labels:
@@ -135,16 +138,23 @@ def is_valid_neighbour(node):
     return False
 
 
-def run_clustering(group_index, dex='univ2'):
-    rp = dataloader.scam_pools[group_index]
-    scammers = dataloader.pool_scammers[rp]
+def run_clustering(group_id, dex='univ2'):
+    account_path = eval(f"path.{dex}_account_path")
+    s3_file_manager = S3Syncer(data_dir=account_path)
+    s3_file_manager.sync()
+    if group_id not in dataloader.group_scammers.keys():
+        print(f"CANNOT FIND GROUP {group_id}")
+        return
+    scammers = dataloader.group_scammers[group_id]
+    print(f"LOAD {len(scammers)} SCAMMER FROM GROUP {group_id}")
     scammers.sort()
     if len(scammers) > 0:
         print("*" * 200)
-        print(f"START CLUSTERING (ADDRESS {scammers[0]}) GROUP {group_index}")
+        print(f"START CLUSTERING (ADDRESS {scammers[0]}) GROUP {group_id}")
         explore_scammer_network(scammers, dex)
-        print(f"END CLUSTERING (ADDRESS {scammers[0]}) GROUP {group_index}")
+        print(f"END CLUSTERING (ADDRESS {scammers[0]}) GROUP {group_id}")
         print("*" * 200)
+    s3_file_manager.sync()
 
 
 # load if exist or create a new cluster
@@ -226,28 +236,4 @@ def explore_scammer_network(scammers, dex='univ2'):
 
 
 if __name__ == '__main__':
-    # explore_scammer_network("0x19b98792e98c54f58c705cddf74316aec0999aa6")
-    # explore_scammer_network("0x43e129c47dfd4abcf48a24f6b2d8ba6f49261f39")
-    # explore_scammer_network_by_ignoring_creator("0x48f0fc8dfc672dd45e53b6c53cd5b09c71d9fbd6")
-    # explore_scammer_network("0x81cfe8efdb6c7b7218ddd5f6bda3aa4cd1554fd2")
-    # explore_scammer_network("0x30a9173686eb332ff2bdcea95da3b2860597a19d")
-    # explore_scammer_network("0xb16a24e954739a2bbc68c5d7fbbe2e27f17dfff9")
-    # print(is_contract_address("0x81cfe8efdb6c7b7218ddd5f6bda3aa4cd1554fd2"))
-    # print(len(collect_end_nodes()))
-    # run_clustering(4)
-    # print(ut.hex_to_dec("0x10afe6222f") * ut.hex_to_dec("0x29cbe2")/ 10**18)
-    # print((107143841398 * 2208003)/ 10**18)
-    # print(list(itertools.combinations([1, 3, 5, 7], 2)))
-    file_path = os.path.join(path.univ2_processed_path, "scammer_group.csv")
-    groups, isolates = scammer_grouping()
-    data = []
-    id = 1
-    for group in groups:
-        for s in group:
-            data.append({"group_id": id, "scammer": s})
-        id += 1
-    for i in isolates:
-        data.append({"group_id": id, "scammer": s})
-        id += 1
-    print("DATA SIZE", len(data))
-    ut.save_overwrite_if_exist(data, file_path)
+    run_clustering(1)

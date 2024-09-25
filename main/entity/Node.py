@@ -80,14 +80,15 @@ def create_node(address, path, dataloader, dex='univ2'):
 def get_scammers_list_by_token(scam_token, dataloader):
     scam_pool = dataloader.scam_token_pool[scam_token.lower()]
     scammers = []
-    if scam_pool is not None and scam_pool.lower() in dataloader.pool_scammers.keys():
-        scammers = dataloader.pool_scammers[scam_pool]
+    if scam_pool is not None and scam_pool.lower() in dataloader.pool_group.keys():
+        group_id = dataloader.pool_group[scam_pool]
+        scammers = dataloader.group_scammers[group_id]
     return scammers
 
 
 def get_scammers_list_from_swap_tx(tx, dataloader):
     parsed_inputs = function_decoder.decode_function_input(tx.input)
-    scammers = None
+    scammers = list()
     if (parsed_inputs is not None) and (len(parsed_inputs) > 0):
         # get path inputs from parsed inputs
         paths = [pi["path"] for pi in parsed_inputs if "path" in pi.keys()]
@@ -97,7 +98,7 @@ def get_scammers_list_from_swap_tx(tx, dataloader):
         scam_tokens = [path[1] for path in paths if (len(path) == 2) and (path[0].lower() in Constant.HIGH_VALUE_TOKENS) and (path[1].lower() in dataloader.scam_token_pool.keys())]
         # scam_tokens = [token for path in paths for token in path if token.lower() in dataloader.scam_token_pool.keys()]
         for token in scam_tokens:
-            scammers = get_scammers_list_by_token(token, dataloader)
+            scammers.extend([s for s in get_scammers_list_by_token(token, dataloader) if s not in scammers])
     return scammers
 
 
@@ -149,9 +150,5 @@ def get_neighbours_and_labels(scammer_address, normal_txs, internal_txs, dataloa
     eoa_neighbours = OrderedSet(eoa_neighbours)
     contract_neighbours = OrderedSet(contract_neighbours)
     if len(eoa_neighbours) >= 100:
-        labels.add(NodeLabel.BIG_CONNECTOR) # add this label for debugging
+        labels.add(NodeLabel.BIG_CONNECTOR)  # add this label for debugging
     return eoa_neighbours, contract_neighbours, labels
-
-
-if __name__ == "__main__":
-    create_node("0x0ae5a86ea44c76911deed02e48bc61520e925137", None, None, dex="univ2")

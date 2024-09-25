@@ -1,7 +1,6 @@
 import pandas as pd
 import os
 
-
 from data_collection.AccountCollector import CreatorCollector, TransactionCollector
 from data_collection.EventCollector import ContractEventCollector
 from entity.Cluster import ClusterNode
@@ -137,6 +136,25 @@ def load_token_info(dex="univ2"):
     return dict(zip(token_infos["token"].str.lower(), infos.to_dict("records")))
 
 
+def load_group_scammers(dex="univ2"):
+    file_path = os.path.join(eval('path.{}_processed_path'.format(dex)), "scammer_group.csv")
+    groups = pd.read_csv(file_path)
+    group_scammers = groups.groupby("group_id")["scammer"].apply(list).to_dict()
+    return group_scammers
+
+
+def link_pool_and_group(scammer_pools, group_scammers):
+    pool_group = dict()
+    for group_id in group_scammers.keys():
+        scammers =  group_scammers[group_id]
+        pools = set()
+        for s in scammers:
+            pools.update(scammer_pools[s])
+        for p in pools:
+            pool_group[p] =  group_id
+    return pool_group
+
+
 def load_rug_pull_dataset(dex="univ2"):
     print("LOAD RUG PULL INFO")
     scam_pools = list()
@@ -182,7 +200,7 @@ def load_transaction_by_address(address, dex="univ2"):
 
 
 def load_pool(scammer_address, dataloader, dex="univ2"):
-    pool_addresses = dataloader.scammer_pool[scammer_address.lower()]
+    pool_addresses = dataloader.scammer_pools[scammer_address.lower()]
     pool_event_path = eval("path.{}_pool_events_path".format(dex))
     contract_event_collector = ContractEventCollector()
     creator_collector = CreatorCollector()
@@ -257,9 +275,11 @@ class DataLoader(object):
             self.scam_token_pool,
             self.scam_pools,
             self.scammers,
-            self.scammer_pool,
+            self.scammer_pools,
         ) = load_rug_pull_dataset(dex=dex)
         self.unique_scammers = set(self.scammers)
+        self.group_scammers = load_group_scammers(dex)
+        self.pool_group = link_pool_and_group(self.scammer_pools, self.group_scammers)
 
 
 if __name__ == "__main__":
@@ -273,4 +293,3 @@ if __name__ == "__main__":
     # print(pool.get_max_swap_value(pos))
     # print(pool.get_total_mint_value(pos))
     # print(pool.get_total_burn_value(pos))
-
