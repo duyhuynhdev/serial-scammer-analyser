@@ -62,7 +62,7 @@ class Pool(ERC20):
         decimals = int(token.decimals)
         for mint in self.mints:
             mint_total += float(eval(f"mint.amount{position}")) / 10 ** decimals
-            fee_total += float(mint.gasUsed * mint.gasPrice) / 10 ** 18
+            fee_total += float(mint.gasUsed * mint.gasPrice) / 10 ** Constant.WETH_BNB_DECIMALS
         return mint_total, fee_total
 
     def get_total_burn_value(self, position):
@@ -71,7 +71,7 @@ class Pool(ERC20):
         decimals = int(token.decimals)
         for burn in self.burns:
             burn_total += float(eval(f"burn.amount{position}")) / 10 ** decimals
-            fee_total += float(burn.gasUsed * burn.gasPrice) / 10 ** 18
+            fee_total += float(burn.gasUsed * burn.gasPrice) / 10 ** Constant.WETH_BNB_DECIMALS
         return burn_total, fee_total
 
     def get_max_swap_value(self, position):
@@ -81,7 +81,7 @@ class Pool(ERC20):
         for swap in self.swaps:
             if float(eval(f"swap.amount{position}Out")) > max_swap:
                 max_swap = float(eval(f"swap.amount{position}Out")) / 10 ** decimals
-                swap_fee = float(swap.gasUsed * swap.gasPrice) / 10 ** 18
+                swap_fee = float(swap.gasUsed * swap.gasPrice) / 10 ** Constant.WETH_BNB_DECIMALS
         return max_swap, swap_fee
 
     def get_swap_in_value(self, position, address):
@@ -91,7 +91,7 @@ class Pool(ERC20):
         for swap in self.swaps:
             if swap.to.lower() == address.lower():
                 swap_in_total += float(eval(f"swap.amount{position}In")) / 10 ** decimals
-                fee_total += float(swap.gasUsed * swap.gasPrice) / 10 ** 18
+                fee_total += float(swap.gasUsed * swap.gasPrice) / 10 ** Constant.WETH_BNB_DECIMALS
         return swap_in_total, fee_total
 
     def get_swap_out_value(self, position, address):
@@ -101,7 +101,7 @@ class Pool(ERC20):
         for swap in self.swaps:
             if swap.to.lower() == address.lower():
                 swap_out_total += float(eval(f"swap.amount{position}Out")) / 10 ** decimals
-                fee_total += float(swap.gasUsed * swap.gasPrice) / 10 ** 18
+                fee_total += float(swap.gasUsed * swap.gasPrice) / 10 ** Constant.WETH_BNB_DECIMALS
         return swap_out_total, fee_total
 
 
