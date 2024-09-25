@@ -1,3 +1,5 @@
+from aiohttp.web_routedef import static
+
 from entity.blockchain.Transaction import InternalTransaction, NormalTransaction
 from entity.blockchain.DTO import DTO
 from utils import Constant
@@ -48,6 +50,9 @@ class Pool(ERC20):
         self.mints = mints if mints is not None else []
         self.burns = burns if burns is not None else []
         self.swaps = swaps if swaps is not None else []
+
+    def get_scam_token(self, scam_token_position):
+        return eval(f"self.token{scam_token_position}")
 
     def get_high_value_position(self):
         if self.token0 is not None and (self.token0.address.lower() in Constant.HIGH_VALUE_TOKENS):

@@ -1,7 +1,7 @@
+from aiohttp.web_routedef import static
 from marshmallow.orderedset import OrderedSet
 import json
 
-from networkx.classes import nodes
 from web3 import Web3
 from data_collection.DataDecoder import FunctionInputDecoder
 from utils import Constant
@@ -41,8 +41,9 @@ class NodeLabel:
     BIG = "big"  # big nodes that contains EOA neighbour > 500 txs
     BIG_CONNECTOR = "big_connector"  # node connect with > 100 nodes
 
-    def is_scammer(self, node):
-        return self.SCAMMER in node.labels
+    @staticmethod
+    def is_scammer(node):
+        return NodeLabel.SCAMMER in node.labels
 
 
 class Node:
@@ -152,5 +153,5 @@ def get_neighbours_and_labels(scammer_address, normal_txs, internal_txs, dataloa
     return eoa_neighbours, contract_neighbours, labels
 
 
-if __name__ == '__main__':
-    create_node("0x0ae5a86ea44c76911deed02e48bc61520e925137", None, None, dex='univ2')
+if __name__ == "__main__":
+    create_node("0x0ae5a86ea44c76911deed02e48bc61520e925137", None, None, dex="univ2")
