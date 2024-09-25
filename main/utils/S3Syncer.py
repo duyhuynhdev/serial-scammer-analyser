@@ -25,7 +25,7 @@ class S3Syncer:
             if (parent / "requirements.txt").exists():
                 return parent
         # If no .git is found, raise an exception
-        raise FileNotFoundError("No project root directory containing '.git' found.")
+        raise FileNotFoundError("No project root directory containing 'requirements.txt' found.")
 
     @cached_property
     def data_directory(self):
@@ -65,19 +65,25 @@ class S3Syncer:
 
 if __name__ == "__main__":
     """
-    1. Instantiate the S3FileManager class by specifying the directory to sync between the S3 bucket and local storage.
-       For example:
+    1. Install aws-cli (https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) 
+    
+    2. Run the aws configure command in your terminal. This will prompt you to enter your AWS credentials. If you 
+    don't have these credentials, reach out to your project manager to obtain them.  
+    
+    3. Instantiate the S3FileManager class by specifying the directory to sync between the S3 bucket and local storage.
+       
+       For example: s3_file_manager = S3FileManager(data_dir="resources/data/uniswap")
 
-       s3_file_manager = S3FileManager(data_dir="resources/data/uniswap")
+       Note that `data_dir` is the path to the local directory that will be synchronized with the corresponding 
+       directory in your S3 bucket.
 
-       - `data_dir` is the path to the local directory that will be synchronized with the corresponding directory in your S3 bucket.
-
-    2. To synchronize files between the S3 bucket and the local directory, simply call the `sync()` method wherever
+    4. To synchronize files between the S3 bucket and the local directory, simply call the `sync()` method wherever
        necessary in your program:
 
        s3_file_manager.sync()
 
-       - This will ensure that any new or modified files in either the local directory or the S3 bucket are synchronized.
+       Note that this will ensure that any new or modified files in either the local directory or the S3 bucket are 
+       synchronized.
     """
     # Example usage:
 
