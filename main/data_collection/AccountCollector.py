@@ -128,6 +128,7 @@ class TransactionCollector:
             print()
         api = explorer_api[dex]["explorer"]
         keys = explorer_api[dex]["keys"]
+        key_idx = key_idx % len(keys)
         normal_txs_path = os.path.join(eval('path.{}_normal_tx_path'.format(dex)), f"{address}.csv")
         parsed_normal_txs = []
         parsed_internal_txs = []
