@@ -12,7 +12,8 @@ transaction_collector = TransactionCollector()
 
 REMOVE_LIQUIDITY_SUBSTRING = "removeLiquidity"
 ADD_LIQUIDITY_SUBSTRING = "addLiquidity"
-PERCENTAGE_THRESHOLD = 0.9
+OUT_PERCENTAGE_THRESHOLD = 0.9
+IN_PERCENTAGE_THRESHOLD = 1.0
 END_NODES = (
         dataloader.bridge_addresses | dataloader.defi_addresses | dataloader.cex_addresses | dataloader.MEV_addresses
         | dataloader.mixer_addresses | dataloader.wallet_addresses | dataloader.other_addresses)
@@ -40,17 +41,41 @@ def find_start_shape(scammer_address):
     return list
 
 
-def get_address_after_remove_liquidity(scammer_address: str, normal_txs=None):
-    if normal_txs is None:
-        normal_txs = transaction_collector.get_transactions(scammer_address)
-    return get_largest_address(normal_txs, scammer_address, REMOVE_LIQUIDITY_SUBSTRING, True, len(normal_txs) - 1,
-                               -1, -1)
+def find_liquidity_transactions_in_pool(scammer_address):
+    def calc_liquidity_amount(event, use_value):
+        return event.amount0 / 10 ** 18 if use_value == 0 else event.amount1 / 10 ** 18
+
+    # key: transaction hash, value: liquidity added/removed
+    liquidity_transactions_pool = {}
+    scammer_pool = load_pool(scammer_address, dataloader)
+    for pool_index in range(len(scammer_pool)):
+        eth_pos = scammer_pool[pool_index].get_high_value_position()
+        # add liquidity
+        for mint in scammer_pool[pool_index].mints:
+            liquidity_amount = calc_liquidity_amount(mint, eth_pos)
+            liquidity_transactions_pool[mint.transactionHash] = liquidity_amount
+        # remove liquidity
+        for burn in scammer_pool[pool_index].burns:
+            liquidity_amount = calc_liquidity_amount(burn, eth_pos)
+            liquidity_transactions_pool[burn.transactionHash] = liquidity_amount
+
+    return liquidity_transactions_pool
 
 
-def get_address_before_add_liquidity(scammer_address: str, normal_txs=None):
-    if normal_txs is None:
-        normal_txs = transaction_collector.get_transactions(scammer_address)
-    return get_largest_address(normal_txs, scammer_address, ADD_LIQUIDITY_SUBSTRING, False, 0, len(normal_txs), 1)
+def get_funder_and_beneficiary(scammer_address):
+    liquidity_transactions_dict = find_liquidity_transactions_in_pool(scammer_address)
+    address_before = get_address_before_add_liquidity(scammer_address, liquidity_transactions_dict)
+    address_after = get_address_after_remove_liquidity(scammer_address, liquidity_transactions_dict)
+
+    return address_before, address_after
+
+
+def get_address_after_remove_liquidity(scammer_address: str, liquidity_transactions_dict):
+    return get_largest_address(scammer_address, liquidity_transactions_dict, REMOVE_LIQUIDITY_SUBSTRING, True)
+
+
+def get_address_before_add_liquidity(scammer_address: str, liquidity_transactions_dict):
+    return get_largest_address(scammer_address, liquidity_transactions_dict, ADD_LIQUIDITY_SUBSTRING, False)
 
 
 def is_valid_address(is_out, transaction, scammer_address):
@@ -61,30 +86,27 @@ def is_valid_address(is_out, transaction, scammer_address):
     return False
 
 
-def get_liquidity_amount(liquidity_transaction: NormalTransaction):
-    if ADD_LIQUIDITY_SUBSTRING in str(liquidity_transaction.functionName):
-        return liquidity_transaction.get_transaction_amount()
-    elif REMOVE_LIQUIDITY_SUBSTRING in str(liquidity_transaction.functionName):
-        scammer_pool = load_pool(liquidity_transaction.sender, dataloader)
-        for pool_index in range(len(scammer_pool)):
-            eth_pos = scammer_pool[pool_index].get_high_value_position()
-            for burn in scammer_pool[pool_index].burns:
-                if burn.transactionHash == liquidity_transaction.hash:
-                    return burn.amount0 / 10 ** 18 if eth_pos == 0 else burn.amount1 / 10 ** 18
-    raise Exception('Could not determine liquidity transaction value. Likely the remove liquidity hash id could not be found')
-
-
-def get_largest_address(normal_txs, scammer_address, liquidity_function_name: str, is_out, *range_loop_args):
-    liquidity_transaction = None
+def get_largest_address(scammer_address, liquidity_transactions_dict, liquidity_function_name: str, is_out):
+    normal_txs = transaction_collector.get_transactions(scammer_address)
+    if is_out:
+        range_loop_args = [len(normal_txs) - 1, -1, -1]
+    else:
+        range_loop_args = [0, len(normal_txs), 1]
+    liquidity_transaction_found = False
+    liquidity_amount = 0
     exists_duplicate_amount = False
     largest_transaction = None
     for index in range(range_loop_args[0], range_loop_args[1], range_loop_args[2]):
         # if liquidity is added but no respective IN/OUT transaction is found, just exit
-        if not liquidity_transaction and liquidity_function_name in str(normal_txs[index].functionName) and not normal_txs[index].isError:
-            if largest_transaction is None:
-                return ''
-            liquidity_transaction = normal_txs[index]
-            break
+        if not liquidity_transaction_found and liquidity_function_name in str(normal_txs[index].functionName) and not normal_txs[index].isError:
+            candidate_liquidity_amount = liquidity_transactions_dict.get(normal_txs[index].hash)
+            # only consider an add/remove liquidity if it's in the pool
+            if candidate_liquidity_amount is not None:
+                if largest_transaction is None:
+                    return ''
+                liquidity_amount = liquidity_transactions_dict[normal_txs[index].hash]
+                liquidity_transaction_found = True
+                break
         # if it's an IN or an OUT transaction
         elif is_valid_address(is_out, normal_txs[index], scammer_address):
             # for first find and not empty, nothing to compare to so set largest as first one
@@ -99,9 +121,9 @@ def get_largest_address(normal_txs, scammer_address, liquidity_function_name: st
                     exists_duplicate_amount = False
                     largest_transaction = normal_txs[index]
 
-    if liquidity_transaction and largest_transaction:
-        liquidity_amount = get_liquidity_amount(liquidity_transaction)
-        passed_threshold = largest_transaction.get_transaction_amount() / liquidity_amount >= PERCENTAGE_THRESHOLD
+    if liquidity_transaction_found and largest_transaction:
+        passed_threshold = largest_transaction.get_transaction_amount() / liquidity_amount >= (
+            OUT_PERCENTAGE_THRESHOLD if is_out else IN_PERCENTAGE_THRESHOLD)
         if passed_threshold and not exists_duplicate_amount:
             return largest_transaction.to if is_out else largest_transaction.sender
     return ''
@@ -139,7 +161,8 @@ def write_scammer_funders_and_beneficiary():
         with open(input_path, "a") as f:
             for _ in range(save_file_freq):
                 current_address = scammers_remaining.pop()
-                print('Checking address {} now'.format(current_address))
+                # print('Checking address {} now'.format(current_address))
+                # TODO update this
                 funder = get_address_before_add_liquidity(current_address)
                 beneficiary = get_address_after_remove_liquidity(current_address)
                 string_to_write = '{}, {}, {}\n'.format(current_address, funder, beneficiary)
@@ -148,7 +171,6 @@ def write_scammer_funders_and_beneficiary():
 
 
 if __name__ == '__main__':
-    address_before = get_address_before_add_liquidity('0x2a1262dcac084c9054184bbe4d709bfe7ed46e6e')
-    address_after = get_address_after_remove_liquidity('0x2a1262dcac084c9054184bbe4d709bfe7ed46e6e')
-    print('before address: {}, after address: {}'.format(address_before, address_after))
+    funder, beneficiary = get_funder_and_beneficiary('0xb89c501e28acd743a577b94fc66fb6f2bfd75186')
+    print('before address: {}, after address: {}'.format(funder, beneficiary))
     # write_scammer_funders_and_beneficiary()
