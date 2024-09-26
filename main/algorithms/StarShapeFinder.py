@@ -1,8 +1,8 @@
+import itertools
 import os
 from enum import Enum
 
 from data_collection.AccountCollector import TransactionCollector
-from entity.blockchain.Transaction import Transaction, NormalTransaction
 from utils.DataLoader import DataLoader, load_pool
 from utils.Path import Path
 
@@ -20,25 +20,35 @@ END_NODES = (
 
 
 class StarShape(Enum):
+    __order__ = 'IN OUT IN_OUT'
     IN = 1  # satellites to center
     OUT = 2  # center to satellites
     IN_OUT = 3  # mix of IN and OUT
 
 
-# TODO
-# Given a scammer address, you need to return any IN, OUT and IN_OUT stars that they're part of.
-# Suppose for a given scammer, it's a candidate of type IN (there is an OUT after its last scam),
-# then you must go back to the center, verify if there exists other satellite nodes that would satisfy the IN star requirement.
+def find_star_shapes(scammer_address):
+    dummy_dict = {"processed_address": scammer_address,
+                  "star_shapes": [{
+                      "IN": {
+                          "satellite_size": 5,
+                          "center": "0xrandom_center",
+                          "satellites": ["0x_satellite_1", "0x_satellite_2", "0x_satellite_3", "0x_satellite_4", "0x_satellite_5"]
+                      }}
+                  ]}
 
-# If some other satellite nodes are possibly part of another star, we don't care. Just return ALL the stars
-# this current scammer_address is part of.
+    input_path = os.path.join(path.univ2_star_shape_path, "scammer_in_out_addresses.txt")
+    dict = read_from_in_out_scamemr_as_dict(input_path)
+    print('Done with dict')
 
-# TODO you also need to validate that an address is either exclusively IN, OUT or IN_OUT.
-#  E.g., if you verify an IN node, you need to make sure that it isn't an IN_OUT
-def find_start_shape(scammer_address):
-    # TODO implement
-    list = [scammer_address]
-    return list
+    # funder, beneficiary = get_funder_and_beneficiary(scammer_address)
+
+
+    #
+    # input_path = os.path.join(path.univ2_star_shape_path, "{}.json".format(scammer_address))
+    #
+    # with open(input_path, "w") as outfile:
+    #     json.dump(dummy_dict, outfile, indent=2)
+    return None
 
 
 def find_liquidity_transactions_in_pool(scammer_address):
@@ -50,14 +60,9 @@ def find_liquidity_transactions_in_pool(scammer_address):
     scammer_pool = load_pool(scammer_address, dataloader)
     for pool_index in range(len(scammer_pool)):
         eth_pos = scammer_pool[pool_index].get_high_value_position()
-        # add liquidity
-        for mint in scammer_pool[pool_index].mints:
-            liquidity_amount = calc_liquidity_amount(mint, eth_pos)
-            liquidity_transactions_pool[mint.transactionHash] = liquidity_amount
-        # remove liquidity
-        for burn in scammer_pool[pool_index].burns:
-            liquidity_amount = calc_liquidity_amount(burn, eth_pos)
-            liquidity_transactions_pool[burn.transactionHash] = liquidity_amount
+        for liquidity_trans in itertools.chain(scammer_pool[pool_index].mints, scammer_pool[pool_index].burns):
+            liquidity_amount = calc_liquidity_amount(liquidity_trans, eth_pos)
+            liquidity_transactions_pool[liquidity_trans.transactionHash] = liquidity_amount
 
     return liquidity_transactions_pool
 
@@ -129,6 +134,20 @@ def get_largest_address(scammer_address, liquidity_transactions_dict, liquidity_
     return ''
 
 
+def read_from_in_out_scamemr_as_dict(input_path):
+    file = open(input_path)
+    funder_beneficiary_dict = {}
+
+    for line in file:
+        row = line.rstrip('\n').split(', ')
+        funder_beneficiary_dict.update({row[0]: (row[1], row[2])})
+
+    # remove the first line in the csv
+    funder_beneficiary_dict.pop('address')
+    file.close()
+
+    return funder_beneficiary_dict
+
 def read_from_csv(input_path):
     file = open(input_path)
     read_addresses = set()
@@ -144,7 +163,7 @@ def read_from_csv(input_path):
 
 
 def write_scammer_funders_and_beneficiary():
-    input_path = os.path.join(path.univ2_scammer_chain_path, "scammer_in_out_addresses.txt")
+    input_path = os.path.join(path.univ2_star_shape_path, "scammer_in_out_addresses.txt")
     processed_addresses = read_from_csv(input_path)
     scammers_remaining = set(dataloader.scammers)
     # remove already written scammers from remaining
@@ -153,8 +172,8 @@ def write_scammer_funders_and_beneficiary():
 
     # lower means will write to file more frequently, but lower performance
     # higher means less file writes, but better performance
-    save_file_freq = 20
-    num_scammers_to_run = 100
+    save_file_freq = 1000
+    num_scammers_to_run = 200000
     overall_scammers_written = 0
 
     while overall_scammers_written <= num_scammers_to_run and len(scammers_remaining) > 0:
@@ -162,15 +181,14 @@ def write_scammer_funders_and_beneficiary():
             for _ in range(save_file_freq):
                 current_address = scammers_remaining.pop()
                 # print('Checking address {} now'.format(current_address))
-                # TODO update this
-                funder = get_address_before_add_liquidity(current_address)
-                beneficiary = get_address_after_remove_liquidity(current_address)
+                funder, beneficiary = get_funder_and_beneficiary(current_address)
                 string_to_write = '{}, {}, {}\n'.format(current_address, funder, beneficiary)
                 f.write(string_to_write)
                 overall_scammers_written += 1
 
 
 if __name__ == '__main__':
-    funder, beneficiary = get_funder_and_beneficiary('0xb89c501e28acd743a577b94fc66fb6f2bfd75186')
-    print('before address: {}, after address: {}'.format(funder, beneficiary))
+    # in_funder, out_beneficiary = get_funder_and_beneficiary('0xb89c501e28acd743a577b94fc66fb6f2bfd75186')
+    # print('before address: {}, after address: {}'.format(in_funder, out_beneficiary))
     # write_scammer_funders_and_beneficiary()
+    find_star_shapes('0x1e9760ca688834aa94f7630e350eccb40cddbf67')

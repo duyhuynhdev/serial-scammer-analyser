@@ -196,14 +196,14 @@ def load_pool(scammer_address, dataloader, dex="univ2"):
     contract_event_collector = ContractEventCollector()
     pools = []
     for pool_address in pool_addresses:
-        transfer_list = contract_event_collector.get_event(
-            pool_address, "Transfer", pool_event_path, dex
-        )
-        transfers = [TransferEvent().from_dict(e) for e in transfer_list]
-        swaps_list = contract_event_collector.get_event(
-            pool_address, "Swap", pool_event_path, dex
-        )
-        swaps = [SwapEvent().from_dict(e) for e in swaps_list]
+        # transfer_list = contract_event_collector.get_event(
+        #     pool_address, "Transfer", pool_event_path, dex
+        # )
+        # transfers = [TransferEvent().from_dict(e) for e in transfer_list]
+        # swaps_list = contract_event_collector.get_event(
+        #     pool_address, "Swap", pool_event_path, dex
+        # )
+        # swaps = [SwapEvent().from_dict(e) for e in swaps_list]
         burns_list = contract_event_collector.get_event(
             pool_address, "Burn", pool_event_path, dex
         )
@@ -232,8 +232,8 @@ def load_pool(scammer_address, dataloader, dex="univ2"):
             scammers,
             mints,
             burns,
-            swaps,
-            transfers,
+            # swaps,
+            # transfers,
             # pool_creation["contractCreator"],
             # pool_creation["txHash"],
         )
