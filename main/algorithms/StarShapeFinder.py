@@ -1,4 +1,5 @@
 import itertools
+import json
 import os
 from enum import Enum
 
@@ -14,41 +15,85 @@ REMOVE_LIQUIDITY_SUBSTRING = "removeLiquidity"
 ADD_LIQUIDITY_SUBSTRING = "addLiquidity"
 OUT_PERCENTAGE_THRESHOLD = 0.9
 IN_PERCENTAGE_THRESHOLD = 1.0
+MIN_NUMBER_OF_SATELLITES = 5
+ALL_SCAMMERS = set(dataloader.scammers)
 END_NODES = (
         dataloader.bridge_addresses | dataloader.defi_addresses | dataloader.cex_addresses | dataloader.MEV_addresses
         | dataloader.mixer_addresses | dataloader.wallet_addresses | dataloader.other_addresses)
 
 
 class StarShape(Enum):
-    __order__ = 'IN OUT IN_OUT'
     IN = 1  # satellites to center
     OUT = 2  # center to satellites
     IN_OUT = 3  # mix of IN and OUT
 
 
+def is_not_blank(s):
+    return bool(s and not s.isspace())
+
+
+def determine_assigned_star_shape(scammer_address, scammer_dict):
+    f_b_tuple = scammer_dict.get(scammer_address)
+    if f_b_tuple is None:
+        f_b_tuple = get_funder_and_beneficiary(scammer_address)
+    star_shapes = set()
+    # if the funder and beneficiary are the same given they're not blank, then it can only be an IN_OUT star
+    if f_b_tuple[0] == f_b_tuple[1] and is_not_blank(f_b_tuple[0]):
+        star_shapes.add(StarShape.IN_OUT)
+    else:
+        # if there is a funder, then it's an OUT satellite
+        if is_not_blank(f_b_tuple[0]):
+            star_shapes.add(StarShape.OUT)
+        # if there is a beneficiary, then it's an IN satellite
+        if is_not_blank(f_b_tuple[1]):
+            star_shapes.add(StarShape.IN)
+
+    return star_shapes
+
+
 def find_star_shapes(scammer_address):
-    dummy_dict = {"processed_address": scammer_address,
-                  "star_shapes": [{
-                      "IN": {
-                          "satellite_size": 5,
-                          "center": "0xrandom_center",
-                          "satellites": ["0x_satellite_1", "0x_satellite_2", "0x_satellite_3", "0x_satellite_4", "0x_satellite_5"]
-                      }}
-                  ]}
+    json_dict = {"processed_address": scammer_address,
+                 "star_shapes": []}
 
     input_path = os.path.join(path.univ2_star_shape_path, "scammer_in_out_addresses.txt")
-    dict = read_from_in_out_scamemr_as_dict(input_path)
-    print('Done with dict')
+    scammer_dict = read_from_in_out_scammer_as_dict(input_path)
 
-    # funder, beneficiary = get_funder_and_beneficiary(scammer_address)
+    possible_star_shapes = determine_assigned_star_shape(scammer_address, scammer_dict)
 
+    for star_shape in possible_star_shapes:
+        satellite_nodes = set()
+        # find satellite node for an IN/OUT star shape
+        center_address = scammer_dict[scammer_address][1 if star_shape == StarShape.IN else 0]
+        normal_txs = transaction_collector.get_transactions(center_address)
+        for transaction in normal_txs:
+            # TODO may not work for IN_OUT. The idea is we don't have to check again for IN_OUT
+            # TODO be careful for the IN_OUT case when getting the right .to or .sender
+            if is_valid_address(star_shape == StarShape.OUT, transaction, center_address):
+                transaction_address = transaction.to if star_shape == StarShape.OUT else transaction.sender
+                if transaction_address in ALL_SCAMMERS:
+                    satellite_star_shapes = determine_assigned_star_shape(transaction_address, scammer_dict)
+                    if star_shape in satellite_star_shapes:
+                        satellite_nodes.add(transaction_address)
 
-    #
-    # input_path = os.path.join(path.univ2_star_shape_path, "{}.json".format(scammer_address))
-    #
-    # with open(input_path, "w") as outfile:
-    #     json.dump(dummy_dict, outfile, indent=2)
-    return None
+        # TODO check back to constant that is 5
+        # MIN_NUMBER_OF_Satellite
+        if len(satellite_nodes) >= 1:
+            json_dict["star_shapes"].append({
+                star_shape.name: {
+                    "satellite_size": len(satellite_nodes),
+                    "center_address": center_address,
+                    "satellites": list(satellite_nodes)
+                }
+            })
+
+    # TODO move writing outside since we don't want to write every single time
+    # TODO and also add to processed_star_scammers
+    input_path = os.path.join(path.univ2_star_shape_path, "{}.json".format(scammer_address))
+
+    with open(input_path, "w") as outfile:
+        json.dump(json_dict, outfile, indent=2)
+
+    return json_dict
 
 
 def find_liquidity_transactions_in_pool(scammer_address):
@@ -134,7 +179,7 @@ def get_largest_address(scammer_address, liquidity_transactions_dict, liquidity_
     return ''
 
 
-def read_from_in_out_scamemr_as_dict(input_path):
+def read_from_in_out_scammer_as_dict(input_path):
     file = open(input_path)
     funder_beneficiary_dict = {}
 
@@ -147,6 +192,7 @@ def read_from_in_out_scamemr_as_dict(input_path):
     file.close()
 
     return funder_beneficiary_dict
+
 
 def read_from_csv(input_path):
     file = open(input_path)
@@ -191,4 +237,4 @@ if __name__ == '__main__':
     # in_funder, out_beneficiary = get_funder_and_beneficiary('0xb89c501e28acd743a577b94fc66fb6f2bfd75186')
     # print('before address: {}, after address: {}'.format(in_funder, out_beneficiary))
     # write_scammer_funders_and_beneficiary()
-    find_star_shapes('0x1e9760ca688834aa94f7630e350eccb40cddbf67')
+    find_star_shapes('0xc7df5da2cf8dcaa8858c06dada7cf9eba3c71fbf')
