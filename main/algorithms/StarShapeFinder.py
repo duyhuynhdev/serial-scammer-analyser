@@ -1,5 +1,4 @@
 import itertools
-import json
 import os
 from enum import Enum
 
@@ -16,7 +15,7 @@ ADD_LIQUIDITY_SUBSTRING = "addLiquidity"
 OUT_PERCENTAGE_THRESHOLD = 0.9
 IN_PERCENTAGE_THRESHOLD = 1.0
 MIN_NUMBER_OF_SATELLITES = 5
-ALL_SCAMMERS = set(dataloader.scammers)
+ALL_SCAMMERS = frozenset(dataloader.scammers)
 END_NODES = (
         dataloader.bridge_addresses | dataloader.defi_addresses | dataloader.cex_addresses | dataloader.MEV_addresses
         | dataloader.mixer_addresses | dataloader.wallet_addresses | dataloader.other_addresses)
@@ -52,8 +51,7 @@ def determine_assigned_star_shape(scammer_address, scammer_dict):
 
 
 def find_star_shapes(scammer_address):
-    json_dict = {"processed_address": scammer_address,
-                 "star_shapes": []}
+    stars = []
 
     input_path = os.path.join(path.univ2_star_shape_path, "scammer_in_out_addresses.txt")
     scammer_dict = read_from_in_out_scammer_as_dict(input_path)
@@ -66,8 +64,6 @@ def find_star_shapes(scammer_address):
         center_address = scammer_dict[scammer_address][1 if star_shape == StarShape.IN else 0]
         normal_txs = transaction_collector.get_transactions(center_address)
         for transaction in normal_txs:
-            # TODO may not work for IN_OUT. The idea is we don't have to check again for IN_OUT
-            # TODO be careful for the IN_OUT case when getting the right .to or .sender
             if is_valid_address(star_shape == StarShape.OUT, transaction, center_address):
                 transaction_address = transaction.to if star_shape == StarShape.OUT else transaction.sender
                 if transaction_address in ALL_SCAMMERS:
@@ -75,25 +71,11 @@ def find_star_shapes(scammer_address):
                     if star_shape in satellite_star_shapes:
                         satellite_nodes.add(transaction_address)
 
-        # TODO check back to constant that is 5
-        # MIN_NUMBER_OF_Satellite
-        if len(satellite_nodes) >= 1:
-            json_dict["star_shapes"].append({
-                star_shape.name: {
-                    "satellite_size": len(satellite_nodes),
-                    "center_address": center_address,
-                    "satellites": list(satellite_nodes)
-                }
-            })
+        if len(satellite_nodes) >= MIN_NUMBER_OF_SATELLITES:
+            list_to_add = [star_shape.name, center_address, len(satellite_nodes), satellite_nodes]
+            stars.append(list_to_add)
 
-    # TODO move writing outside since we don't want to write every single time
-    # TODO and also add to processed_star_scammers
-    input_path = os.path.join(path.univ2_star_shape_path, "{}.json".format(scammer_address))
-
-    with open(input_path, "w") as outfile:
-        json.dump(json_dict, outfile, indent=2)
-
-    return json_dict
+    return stars
 
 
 def find_liquidity_transactions_in_pool(scammer_address):
@@ -208,8 +190,87 @@ def read_from_csv(input_path):
     return read_addresses
 
 
+# TODO BUG: If a satellite node B is written in a star from satellite node A, we don't end up running the star
+# discovered for satellite B, hence we miss out on the possibly IN or OUT star.
+def process_stars_on_all_scammers():
+    processed_files_names = ["in_stars.csv", "out_stars.csv", "in_out_stars.csv"]
+    processed_files_paths = []
+    processed_scammers = set()
+
+    # 3 processed file names
+    for file_name in processed_files_names:
+        input_path = os.path.join(path.univ2_star_shape_path, file_name)
+        processed_files_paths.append(input_path)
+        file = open(input_path)
+        for line in file:
+            row = line.rstrip('\n').split(', ')
+            for index in range(2, len(row)):
+                if is_not_blank(row[index]):
+                    processed_scammers.add(row[index])
+        file.close()
+
+    # remove the first line in the csvs
+    processed_scammers.remove('satellites')
+
+    # the list where there is no star for associated scammer
+    input_path = os.path.join(path.univ2_star_shape_path, "scammers_with_no_star.csv")
+    processed_files_paths.append(input_path)
+    file = open(input_path)
+    for line in file:
+        row = line.rstrip('\n')
+        if is_not_blank(row):
+            processed_scammers.add(row)
+
+    file.close()
+
+    # remove the first line in the csv
+    processed_scammers.remove('scammer_address')
+
+    # remove already processed scammer
+    scammers_remaining = set(dataloader.scammers)
+    for processed_scammer in processed_scammers:
+        scammers_remaining.remove(processed_scammer)
+
+    # start processing the writing
+    save_file_freq = 100
+    scammers_to_run = 10000
+    scammers_ran = 0
+
+    while scammers_ran < scammers_to_run and len(scammers_remaining) > 0:
+        for _ in range(save_file_freq):
+            with (open(processed_files_paths[0], "a") as in_file, open(processed_files_paths[1], "a") as out_file,
+                  open(processed_files_paths[2], "a") as in_out_file, open(processed_files_paths[3], "a") as no_star_file):
+                current_scammer_to_run = scammers_remaining.pop()
+                all_stars_result = find_star_shapes(current_scammer_to_run)
+                # DEBUG LOGGING
+                # print("Result for scammer {}: {}".format(current_scammer_to_run, all_stars_result))
+
+                # no stars found, write that to no_star_file and remove from the scammers remaining
+                if len(all_stars_result) == 0:
+                    no_star_file.write(current_scammer_to_run + '\n')
+                else:
+                    for star in all_stars_result:
+                        star_type = star[0]
+                        file_to_write_to = None
+                        if star_type == StarShape.IN.name:
+                            file_to_write_to = in_file
+                        elif star_type == StarShape.OUT.name:
+                            file_to_write_to = out_file
+                        elif star_type == StarShape.IN_OUT.name:
+                            file_to_write_to = in_out_file
+                        string_to_write = '{}, {}, {}\n'.format(star[1], star[2], ', '.join(star[3]))
+                        file_to_write_to.write(string_to_write)
+                        # remove the remaining scammers from the list
+                        for satellite_scammer in star[3]:
+                            scammers_remaining.discard(satellite_scammer)
+
+                scammers_ran += 1
+
+
+# no need to call this anymore
 def write_scammer_funders_and_beneficiary():
     input_path = os.path.join(path.univ2_star_shape_path, "scammer_in_out_addresses.txt")
+
     processed_addresses = read_from_csv(input_path)
     scammers_remaining = set(dataloader.scammers)
     # remove already written scammers from remaining
@@ -222,7 +283,7 @@ def write_scammer_funders_and_beneficiary():
     num_scammers_to_run = 200000
     overall_scammers_written = 0
 
-    while overall_scammers_written <= num_scammers_to_run and len(scammers_remaining) > 0:
+    while overall_scammers_written < num_scammers_to_run and len(scammers_remaining) > 0:
         with open(input_path, "a") as f:
             for _ in range(save_file_freq):
                 current_address = scammers_remaining.pop()
@@ -234,7 +295,6 @@ def write_scammer_funders_and_beneficiary():
 
 
 if __name__ == '__main__':
-    # in_funder, out_beneficiary = get_funder_and_beneficiary('0xb89c501e28acd743a577b94fc66fb6f2bfd75186')
-    # print('before address: {}, after address: {}'.format(in_funder, out_beneficiary))
-    # write_scammer_funders_and_beneficiary()
-    find_star_shapes('0xc7df5da2cf8dcaa8858c06dada7cf9eba3c71fbf')
+    process_stars_on_all_scammers()
+    # result = find_star_shapes('0xc7df5da2cf8dcaa8858c06dada7cf9eba3c71fbf')
+    # [print(a) for a in result]
