@@ -1,3 +1,7 @@
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(sys.path[0])))
+
 import utils.Utils as ut
 from tqdm import tqdm
 import os

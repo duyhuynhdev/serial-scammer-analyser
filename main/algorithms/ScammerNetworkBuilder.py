@@ -1,26 +1,22 @@
-import glob
+
+import sys
 import os
-import math
+sys.path.append( os.path.join(os.path.dirname(sys.path[0])))
+
 import numpy as np
-import pandas as pd
-from tqdm import tqdm
 from data_collection.AccountCollector import CreatorCollector, TransactionCollector
 from data_collection.EventCollector import ContractEventCollector
 from entity import Node
 from entity.Cluster import Cluster
 from entity.Node import NodeLabel
-from entity.OrderedQueue import OrderedQueue
 from utils.DataLoader import DataLoader
 from utils.S3Syncer import S3Syncer
 from utils.Settings import Setting
 from utils.Path import Path
 from utils import Utils as ut
-from utils import Constant
-import logging
 import networkx as nx
 import itertools
 from tqdm import tqdm
-
 path = Path()
 setting = Setting()
 dataloader = DataLoader()
@@ -140,8 +136,8 @@ def is_valid_neighbour(node):
 
 def run_clustering(group_id, dex='univ2'):
     account_path = eval(f"path.{dex}_account_path")
-    s3_file_manager = S3Syncer(data_dir=account_path)
-    s3_file_manager.sync()
+    # s3_file_manager = S3Syncer(data_dir=account_path)
+    # s3_file_manager.sync()
     if group_id not in dataloader.group_scammers.keys():
         print(f"CANNOT FIND GROUP {group_id}")
         return
@@ -154,7 +150,7 @@ def run_clustering(group_id, dex='univ2'):
         explore_scammer_network(scammers, dex)
         print(f"END CLUSTERING (ADDRESS {scammers[0]}) GROUP {group_id}")
         print("*" * 100)
-    s3_file_manager.sync()
+    # s3_file_manager.sync()
 
 
 # load if exist or create a new cluster
