@@ -149,11 +149,11 @@ def run_clustering(group_id, dex='univ2'):
     print(f"LOAD {len(scammers)} SCAMMER FROM GROUP {group_id}")
     scammers.sort()
     if len(scammers) > 0:
-        print("*" * 200)
+        print("*" * 100)
         print(f"START CLUSTERING (ADDRESS {scammers[0]}) GROUP {group_id}")
         explore_scammer_network(scammers, dex)
         print(f"END CLUSTERING (ADDRESS {scammers[0]}) GROUP {group_id}")
-        print("*" * 200)
+        print("*" * 100)
     s3_file_manager.sync()
 
 
@@ -236,4 +236,4 @@ def explore_scammer_network(scammers, dex='univ2'):
 
 
 if __name__ == '__main__':
-    run_clustering(1)
+    run_clustering(2)

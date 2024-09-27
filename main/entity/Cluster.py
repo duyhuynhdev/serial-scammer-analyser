@@ -89,13 +89,16 @@ class Cluster:
         traversed_file = os.path.join(in_path, f"traversed_{self.id}.txt")
         if os.path.exists(queue_file):
             print("LOAD EXISTING QUEUE")
-            queue_df = pd.read_csv(queue_file)
-            for idx, row in queue_df.iterrows():
-                path = row['path'].split(';') if 'path' in row else []
-                if row["address"] in path:
-                    path.remove(row["address"])
-                node = create_node(row["address"], path, dataloader)
-                queue.put(node)
+            try:
+                queue_df = pd.read_csv(queue_file)
+                for idx, row in queue_df.iterrows():
+                    path = row['path'].split(';') if 'path' in row else []
+                    if row["address"] in path:
+                        path.remove(row["address"])
+                    node = create_node(row["address"], path, dataloader)
+                    queue.put(node)
+            except Exception as e:
+                print("CANNOT LOAD QUEUE FILE INTO DF >> START FROM SCRATCH")
         if os.path.exists(traversed_file):
             print("LOAD EXISTING TRAVERSAL LIST")
             traversed_nodes = set(ut.read_list_from_file(traversed_file))
