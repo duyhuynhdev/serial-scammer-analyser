@@ -277,7 +277,7 @@ class DataLoader(object):
             self.scammers,
             self.scammer_pools,
         ) = load_rug_pull_dataset(dex=dex)
-        self.unique_scammers = set(self.scammers)
+        self.scammers_set = set(self.scammers)
         self.group_scammers = load_group_scammers(dex)
         self.pool_group = link_pool_and_group(self.scammer_pools, self.group_scammers)
 

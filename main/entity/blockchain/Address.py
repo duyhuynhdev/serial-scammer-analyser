@@ -1,9 +1,14 @@
-from aiohttp.web_routedef import static
+from typing import Set, Tuple
 
+from aiohttp.web_routedef import static
+from enum import Enum
 from entity.blockchain.Transaction import InternalTransaction, NormalTransaction
 from entity.blockchain.DTO import DTO
 from utils import Constant
 
+class SwapDirection(Enum):
+    IN = "In"
+    OUT = "Out"
 
 class AddressType:
     eoa = "EOA"
@@ -50,9 +55,11 @@ class Pool(ERC20):
         self.mints = mints if mints is not None else []
         self.burns = burns if burns is not None else []
         self.swaps = swaps if swaps is not None else []
+        self.high_value_token_position = self.get_high_value_position()
+        self.scam_token_position = 1 - self.high_value_token_position
 
-    def get_scam_token(self, scam_token_position):
-        return eval(f"self.token{scam_token_position}")
+    def get_scam_token(self):
+        return eval(f"self.token{self.scam_token_position}")
 
     def get_high_value_position(self):
         if self.token0 is not None and (self.token0.address.lower() in Constant.HIGH_VALUE_TOKENS):
@@ -61,53 +68,39 @@ class Pool(ERC20):
             return 1
         return -1
 
-    def get_total_mint_value(self, position):
+    def get_total_mint_value(self):
         mint_total, fee_total = 0, 0
-        token: Token = eval(f"self.token{position}")
+        token: Token = eval(f"self.token{self.high_value_token_position}")
         decimals = int(token.decimals)
         for mint in self.mints:
-            mint_total += float(eval(f"mint.amount{position}")) / 10 ** decimals
+            mint_total += float(eval(f"mint.amount{self.high_value_token_position}")) / 10 ** decimals
             fee_total += float(mint.gasUsed * mint.gasPrice) / 10 ** Constant.WETH_BNB_DECIMALS
         return mint_total, fee_total
 
-    def get_total_burn_value(self, position):
+    def get_total_burn_value(self):
         burn_total, fee_total = 0, 0
-        token: Token = eval(f"self.token{position}")
+        token: Token = eval(f"self.token{self.high_value_token_position}")
         decimals = int(token.decimals)
         for burn in self.burns:
-            burn_total += float(eval(f"burn.amount{position}")) / 10 ** decimals
+            burn_total += float(eval(f"burn.amount{self.high_value_token_position}")) / 10 ** decimals
             fee_total += float(burn.gasUsed * burn.gasPrice) / 10 ** Constant.WETH_BNB_DECIMALS
         return burn_total, fee_total
 
-    def get_max_swap_value(self, position):
-        max_swap, swap_fee = 0, 0
-        token: Token = eval(f"self.token{position}")
+    def get_total_swap_value(self, addresses: Set[str], direction: SwapDirection) -> Tuple[float, float]:
+        """
+        Return the total swap amount (buy/sell) by the addresses in the cluster within this pool.
+        swap_direction should be either 'In' for buy or 'Out' for sell.
+        """
+        swap_total, fee_total = 0.0, 0.0
+        token: Token = eval(f"self.token{self.high_value_token_position}")
         decimals = int(token.decimals)
-        for swap in self.swaps:
-            if float(eval(f"swap.amount{position}Out")) > max_swap:
-                max_swap = float(eval(f"swap.amount{position}Out")) / 10 ** decimals
-                swap_fee = float(swap.gasUsed * swap.gasPrice) / 10 ** Constant.WETH_BNB_DECIMALS
-        return max_swap, swap_fee
 
-    def get_swap_in_value(self, position, address):
-        swap_in_total, fee_total = 0, 0
-        token: Token = eval(f"self.token{position}")
-        decimals = int(token.decimals)
         for swap in self.swaps:
-            if swap.to.lower() == address.lower():
-                swap_in_total += float(eval(f"swap.amount{position}In")) / 10 ** decimals
+            if swap.to.lower() in addresses:
+                swap_total += float(eval(f"swap.amount{self.high_value_token_position}{direction.value}")) / 10 ** decimals
                 fee_total += float(swap.gasUsed * swap.gasPrice) / 10 ** Constant.WETH_BNB_DECIMALS
-        return swap_in_total, fee_total
 
-    def get_swap_out_value(self, position, address):
-        swap_out_total, fee_total = 0, 0
-        token: Token = eval(f"self.token{position}")
-        decimals = int(token.decimals)
-        for swap in self.swaps:
-            if swap.to.lower() == address.lower():
-                swap_out_total += float(eval(f"swap.amount{position}Out")) / 10 ** decimals
-                fee_total += float(swap.gasUsed * swap.gasPrice) / 10 ** Constant.WETH_BNB_DECIMALS
-        return swap_out_total, fee_total
+        return swap_total, fee_total
 
 
 class Token(ERC20):
