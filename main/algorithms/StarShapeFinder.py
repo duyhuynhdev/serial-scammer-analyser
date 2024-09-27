@@ -192,15 +192,25 @@ def read_from_csv(input_path):
 
 # TODO BUG: If a satellite node B is written in a star from satellite node A, we don't end up running the star
 # discovered for satellite B, hence we miss out on the possibly IN or OUT star.
+# best solution:
+# can run no star scammers and in_out_stars in sync with others, but cannot run IN/OUT stars at same time since this'll exclude the
+# existing nodes
+# exclude OUT stars
 def process_stars_on_all_scammers():
-    processed_files_names = ["in_stars.csv", "out_stars.csv", "in_out_stars.csv"]
+    processed_files_names = ["in_stars.csv",
+                             "out_stars.csv",
+                             "in_out_stars.csv"]
     processed_files_paths = []
     processed_scammers = set()
 
     # 3 processed file names
     for file_name in processed_files_names:
+        # skip out_stars for now
         input_path = os.path.join(path.univ2_star_shape_path, file_name)
         processed_files_paths.append(input_path)
+        # TODO remove later - ignore OUT file for now
+        if file_name == "out_stars.csv":
+            continue
         file = open(input_path)
         for line in file:
             row = line.rstrip('\n').split(', ')
@@ -232,11 +242,12 @@ def process_stars_on_all_scammers():
         scammers_remaining.remove(processed_scammer)
 
     # start processing the writing
-    save_file_freq = 100
-    scammers_to_run = 10000
+    save_file_freq = 1000
+    scammers_to_run = 100000
     scammers_ran = 0
 
     while scammers_ran < scammers_to_run and len(scammers_remaining) > 0:
+        print("Scammers ran {} and scammers left {}".format(scammers_ran, len(scammers_remaining)))
         for _ in range(save_file_freq):
             with (open(processed_files_paths[0], "a") as in_file, open(processed_files_paths[1], "a") as out_file,
                   open(processed_files_paths[2], "a") as in_out_file, open(processed_files_paths[3], "a") as no_star_file):
@@ -244,6 +255,7 @@ def process_stars_on_all_scammers():
                 all_stars_result = find_star_shapes(current_scammer_to_run)
                 # DEBUG LOGGING
                 # print("Result for scammer {}: {}".format(current_scammer_to_run, all_stars_result))
+
 
                 # no stars found, write that to no_star_file and remove from the scammers remaining
                 if len(all_stars_result) == 0:
@@ -255,7 +267,9 @@ def process_stars_on_all_scammers():
                         if star_type == StarShape.IN.name:
                             file_to_write_to = in_file
                         elif star_type == StarShape.OUT.name:
-                            file_to_write_to = out_file
+                            # TODO remove later - ignore OUT file for now
+                            continue
+                            # file_to_write_to = out_file
                         elif star_type == StarShape.IN_OUT.name:
                             file_to_write_to = in_out_file
                         string_to_write = '{}, {}, {}\n'.format(star[1], star[2], ', '.join(star[3]))
