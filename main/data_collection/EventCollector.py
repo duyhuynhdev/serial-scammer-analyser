@@ -7,10 +7,10 @@ import pandas as pd
 
 from data_collection import DataDecoder
 from utils.Settings import Setting
-from utils.Path import Path
+from utils.ProjectPath import ProjectPath
 from api import EtherscanAPI, BSCscanAPI
 
-path = Path()
+path = ProjectPath()
 setting = Setting()
 
 key_index = 0

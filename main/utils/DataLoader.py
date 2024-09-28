@@ -7,9 +7,9 @@ from entity.Cluster import ClusterNode
 from entity.blockchain.Address import Pool, Token
 from entity.blockchain.Event import TransferEvent, SwapEvent, BurnEvent, MintEvent
 from utils.Settings import Setting
-from utils.Path import Path
+from utils.ProjectPath import ProjectPath
 
-path = Path()
+path = ProjectPath()
 setting = Setting()
 
 bridge_files = ["bridge.csv", "bridge_addresses.csv"]

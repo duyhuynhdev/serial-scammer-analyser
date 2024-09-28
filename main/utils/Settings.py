@@ -1,9 +1,9 @@
 import configparser
 import os
 from web3 import Web3
-from utils.Path import Path
+from utils.ProjectPath import ProjectPath
 
-path = Path()
+path = ProjectPath()
 
 
 class Setting(object):

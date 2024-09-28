@@ -1,12 +1,12 @@
 import os
 
 
-class Path(object):
+class ProjectPath(object):
     instance = None
 
     def __new__(cls):
         if not hasattr(cls, 'instance') or cls.instance is None:
-            cls.instance = super(Path, cls).__new__(cls)
+            cls.instance = super(ProjectPath, cls).__new__(cls)
         return cls.instance
 
     def __init__(self):
@@ -64,3 +64,4 @@ class Path(object):
 
         # Trapdoor path
         self.trapdoor_data_root_path = os.path.join(ROOT_FOLDER, "trapdoor_data")
+

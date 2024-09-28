@@ -6,10 +6,10 @@ import os
 import pandas as pd
 from web3 import Web3
 from utils.Settings import Setting
-from utils.Path import Path
+from utils.ProjectPath import ProjectPath
 from api import CoinMarketCapAPI, OtherAPI, EtherscanAPI, BSCscanAPI
 
-path = Path()
+path = ProjectPath()
 setting = Setting()
 
 uni_chunks = [{'from': 0, 'to': 69999}, {'from': 70000, 'to': 139999}, {'from': 140000, 'to': 209999}, {'from': 210000, 'to': 279999}, {'from': 280000, 'to': 349999},

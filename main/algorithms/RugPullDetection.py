@@ -8,12 +8,12 @@ import os
 import pandas as pd
 from utils import Constant
 from utils.Settings import Setting
-from utils.Path import Path
+from utils.ProjectPath import ProjectPath
 from api import EtherscanAPI, BSCscanAPI
 from data_collection.EventCollector import ContractEventCollector
 import numpy as np
 
-path = Path()
+path = ProjectPath()
 setting = Setting()
 
 key_index = 0

@@ -5,7 +5,7 @@ import pandas as pd
 
 from data_collection.AccountCollector import TransactionCollector
 from utils.Settings import Setting
-from utils.Path import Path
+from utils.ProjectPath import ProjectPath
 from api import EtherscanAPI, BSCscanAPI
 from EventCollector import ContractEventCollector
 from ContractCollector import PoolInfoCollector, TokenInfoCollector
@@ -13,7 +13,7 @@ from AccountCollector import CreatorCollector
 import numpy as np
 from web3 import Web3
 
-path = Path()
+path = ProjectPath()
 setting = Setting()
 
 key_index = 0

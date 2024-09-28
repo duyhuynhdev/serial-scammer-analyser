@@ -12,12 +12,12 @@ from entity.Node import NodeLabel
 from utils.DataLoader import DataLoader
 from utils.S3Syncer import S3Syncer
 from utils.Settings import Setting
-from utils.Path import Path
+from utils.ProjectPath import ProjectPath
 from utils import Utils as ut
 import networkx as nx
 import itertools
 from tqdm import tqdm
-path = Path()
+path = ProjectPath()
 setting = Setting()
 dataloader = DataLoader()
 contract_event_collector = ContractEventCollector()
@@ -136,7 +136,7 @@ def is_valid_neighbour(node):
 
 def run_clustering(group_id, dex='univ2'):
     account_path = eval(f"path.{dex}_account_path")
-    # s3_file_manager = S3Syncer(data_dir=account_path)
+    # s3_file_manager = S3Syncer(abs_local_path=account_path)
     # s3_file_manager.sync()
     if group_id not in dataloader.group_scammers.keys():
         print(f"CANNOT FIND GROUP {group_id}")
