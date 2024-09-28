@@ -32,16 +32,16 @@ class Transaction(DTO):
             return 0
         return int(self.value) / 10 ** Constant.WETH_BNB_DECIMALS
 
-    def is_creation_contract(self, owner):
-        return Web3.to_checksum_address(self.sender) == Web3.to_checksum_address(owner) and (self.to is np.nan or self.to == "")
+    def is_creation_contract(self):
+        return (isinstance(self.to, float) and math.isnan(self.to)) or not self.to
 
     def is_in_tx(self, owner):
-        if (isinstance(self.to, float) and math.isnan(self.to)) or not self.to:
+        if self.is_creation_contract():
             return False
         return Web3.to_checksum_address(self.to) == Web3.to_checksum_address(owner)
 
     def is_out_tx(self, owner):
-        return (Web3.to_checksum_address(self.sender) == Web3.to_checksum_address(owner)) and (not self.is_creation_contract(owner))
+        return (Web3.to_checksum_address(self.sender) == Web3.to_checksum_address(owner)) and (not self.is_creation_contract())
 
 
 class NormalTransaction(Transaction):

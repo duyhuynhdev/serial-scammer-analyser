@@ -100,12 +100,12 @@ def is_eoa_node(node):
     for ntx in node.normal_txs:
         if ntx.sender.lower() == node.address.lower():  # sender of normal txs must be EOA
             return True
-        if (ntx.to is np.nan or ntx.to == "") and ntx.contractAddress.lower() == node.address.lower():  # address is a contract created by an EOA
+        if ntx.is_creation_contract() and ntx.contractAddress.lower() == node.address.lower():  # address is a contract created by an EOA
             return False
     for itx in node.internal_txs:
         if itx.sender.lower() == node.address.lower():  # sender of normal txs must be contract
             return False
-        if (itx.to is np.nan or itx.to == "") and itx.contractAddress.lower() == node.address.lower():  # address is a contract created by a contract
+        if itx.is_creation_contract() and itx.contractAddress.lower() == node.address.lower():  # address is a contract created by a contract
             return False
     return True
 
