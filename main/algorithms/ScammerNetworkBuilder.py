@@ -233,3 +233,6 @@ def explore_scammer_network(scammers, dex='univ2'):
 
 if __name__ == '__main__':
     run_clustering(2)
+
+    # node = Node.create_node("0x18ec985b94e3b332d979d54c7e89f55d7358de33",[] ,dataloader, 'univ2')
+    # print(len(node.eoa_neighbours))

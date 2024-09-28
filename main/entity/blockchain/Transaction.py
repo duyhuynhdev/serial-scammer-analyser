@@ -59,7 +59,7 @@ class NormalTransaction(Transaction):
         return int(self.gasPrice * self.gasUsed) / 10 ** Constant.WETH_BNB_DECIMALS
 
     def is_to_eoa(self, owner):
-        return (self.is_out_tx(owner) and ((self.functionName is np.nan) or (self.functionName == "")))
+        return self.is_out_tx(owner) and ((isinstance(self.functionName, float) and math.isnan(self.functionName)) or not self.functionName)
 
     def is_to_contract(self, owner):
         return not self.is_to_eoa(owner)

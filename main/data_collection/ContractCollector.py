@@ -336,8 +336,10 @@ class ContractSourceCodeCollector:
 
 
 if __name__ == '__main__':
+    # done: 0, 4, 8, 24
+    # fail: 9, 10, 11
     collector = PoolInfoCollector()
-    job = 0
+    job = 14
     collector.pancakeswap_token_download(job)
     # pancakeswap_pools_download(job)
     # # download_popular_tokens()
