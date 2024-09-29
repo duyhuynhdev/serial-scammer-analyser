@@ -11,3 +11,4 @@ dune-client
 pyvis
 beautifulsoup4
 boto3
+more-itertools
