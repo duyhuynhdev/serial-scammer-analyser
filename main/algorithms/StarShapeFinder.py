@@ -73,7 +73,7 @@ def find_star_shapes(scammer_address):
                         satellite_nodes.add(transaction_address)
 
         if len(satellite_nodes) >= MIN_NUMBER_OF_SATELLITES:
-            list_to_add = [star_shape.name, center_address, len(satellite_nodes), satellite_nodes]
+            list_to_add = [star_shape, center_address, len(satellite_nodes), satellite_nodes]
             stars.append(list_to_add)
 
     return stars
@@ -111,6 +111,7 @@ def get_address_before_add_liquidity(scammer_address: str, liquidity_transaction
     return get_largest_address(scammer_address, liquidity_transactions_dict, ADD_LIQUIDITY_SUBSTRING, False)
 
 
+# TODO need to update
 def is_valid_address(is_out, transaction, scammer_address):
     if is_out:
         return transaction.is_to_eoa(scammer_address) and transaction.to not in END_NODES
@@ -203,11 +204,10 @@ def process_stars_on_all_scammers():
                     if is_not_blank(row[index]):
                         set_to_remove.remove(row)
 
-
     in_stars_path = os.path.join(path.univ2_star_shape_path, "in_stars.csv")
     out_stars_path = os.path.join(path.univ2_star_shape_path, "out_stars.csv")
     in_out_stars_path = os.path.join(path.univ2_star_shape_path, "in_out_stars.csv")
-    no_stars_path = os.path.join(path.univ2_star_shape_path, "scammers_with_no_star.csv")
+    no_stars_path = os.path.join(path.univ2_star_shape_path, "no_star.csv")
 
     in_scammers_remaining = set(dataloader.scammers)
 
@@ -235,35 +235,49 @@ def process_stars_on_all_scammers():
     scammers_to_run = 120000
     scammers_ran = 0
 
+    pop_from_in = True
+
     # TODO update this logic to alternate from a pop() from each
-    while scammers_ran < scammers_to_run and len(scammers_remaining) > 0:
-        print("Scammers ran {} and scammers left {}".format(scammers_ran, len(scammers_remaining)))
+    while scammers_ran < scammers_to_run and len(in_scammers_remaining) + len(out_scammers_remaining) > 0:
+        print("Scammers ran {} and scammers left {}".format(scammers_ran, len(in_scammers_remaining) + len(out_scammers_remaining)))
         for _ in range(save_file_freq):
-            with (open(processed_files_paths[0], "a") as in_file, open(processed_files_paths[1], "a") as out_file,
-                  open(processed_files_paths[2], "a") as in_out_file, open(processed_files_paths[3], "a") as no_star_file):
-                current_scammer_to_run = scammers_remaining.pop()
+            with (open(in_stars_path, "a") as in_file, open(out_stars_path, "a") as out_file,
+                  open(in_out_stars_path, "a") as in_out_file, open(no_stars_path, "a") as no_star_file):
+                current_scammer_to_run = in_scammers_remaining.pop if pop_from_in else out_scammers_remaining.pop()
                 all_stars_result = find_star_shapes(current_scammer_to_run)
+                pop_from_in = not pop_from_in
+
                 # DEBUG LOGGING
                 # print("Result for scammer {}: {}".format(current_scammer_to_run, all_stars_result))
 
-                # no stars found, write that to no_star_file and remove from the scammers remaining
+                # if no stars are found, write to the no_stars.csv
+                # and remove the popped element from the other set
                 if len(all_stars_result) == 0:
                     no_star_file.write(current_scammer_to_run + '\n')
+                    out_scammers_remaining.discard(current_scammer_to_run)
+                    in_scammers_remaining.discard(current_scammer_to_run)
                 else:
                     for star in all_stars_result:
                         star_type = star[0]
                         file_to_write_to = None
-                        if star_type == StarShape.IN.name:
+                        # remove the remaining scammers from the list for respective IN/OUT file or both if it's an IN_OUT star
+                        if star_type == StarShape.IN:
                             file_to_write_to = in_file
-                        elif star_type == StarShape.OUT.name:
+                            for satellite_scammer in star[3]:
+                                in_scammers_remaining.discard(satellite_scammer)
+                        elif star_type == StarShape.OUT:
                             file_to_write_to = out_file
-                        elif star_type == StarShape.IN_OUT.name:
+                            for satellite_scammer in star[3]:
+                                out_scammers_remaining.discard(satellite_scammer)
+                        elif star_type == StarShape.IN_OUT:
                             file_to_write_to = in_out_file
+                            # an IN_OUT satellites cannot be part of another star so remove from both
+                            for satellite_scammer in star[3]:
+                                out_scammers_remaining.discard(satellite_scammer)
+                                in_scammers_remaining.discard(satellite_scammer)
+
                         string_to_write = '{}, {}, {}\n'.format(star[1], star[2], ', '.join(star[3]))
                         file_to_write_to.write(string_to_write)
-                        # remove the remaining scammers from the list
-                        for satellite_scammer in star[3]:
-                            scammers_remaining.discard(satellite_scammer)
 
                 scammers_ran += 1
 
