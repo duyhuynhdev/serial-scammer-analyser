@@ -89,10 +89,10 @@ class ClusterProfitCalculator:
         """
         y = 0.0
 
-        burn_total, fee_total = pool.calculate_burn_value_and_fees()
+        burn_total, fee_total = pool.calculate_total_burn_value_and_fees()
         y += burn_total - fee_total
 
-        sell_total, fee_total = pool.calculate_swap_value_and_fees(self.node_addresses_in_cluster, SwapDirection.OUT)
+        sell_total, fee_total = pool.calculate_total_swap_value_and_fees(self.node_addresses_in_cluster, SwapDirection.OUT)
         y += sell_total - fee_total
 
         return y
@@ -107,7 +107,7 @@ class ClusterProfitCalculator:
         """
         x = 0.0
 
-        mint_total, fee_total = pool.calculate_mint_value_and_fees()
+        mint_total, fee_total = pool.calculate_total_mint_value_and_fees()
         token_creation_fee = self.calculate_token_creation_fee(pool)
 
         x += mint_total + fee_total + token_creation_fee
@@ -166,7 +166,7 @@ class ClusterProfitCalculator:
         """
         z = 0.0
 
-        buy_total, fee_total = pool.calculate_swap_value_and_fees(self.node_addresses_in_cluster, SwapDirection.IN)
+        buy_total, fee_total = pool.calculate_total_swap_value_and_fees(self.node_addresses_in_cluster, SwapDirection.IN)
         z += buy_total + fee_total
         return z
 
@@ -185,7 +185,6 @@ class ClusterProfitCalculator:
         Batch process multiple clusters.
         """
         return [self.calculate(cluster_name) for cluster_name in cluster_names]
-
 
 
 if __name__ == "__main__":

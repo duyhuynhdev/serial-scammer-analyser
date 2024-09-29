@@ -72,7 +72,7 @@ class Pool(ERC20):
             return 1
         raise HighValueTokenNotFound("Neither token0 nor token1 are in HIGH_VALUE_TOKENS.")
 
-    def calculate_value_and_fees(self, items, amount_attr: str) -> Tuple[float, float]:
+    def calculate_total_value_and_fees(self, items, amount_attr: str) -> Tuple[float, float]:
         """
         Generic method to calculate the total values and fees from a list of transactions.
         :param items: List of transaction objects (mints, burns, swaps).
@@ -90,15 +90,15 @@ class Pool(ERC20):
         return total_value, total_fees
 
 
-    def calculate_mint_value_and_fees(self) -> Tuple[float, float]:
-        return self.calculate_value_and_fees(self.mints, f"amount{self.high_value_token_position}")
+    def calculate_total_mint_value_and_fees(self) -> Tuple[float, float]:
+        return self.calculate_total_value_and_fees(self.mints, f"amount{self.high_value_token_position}")
 
-    def calculate_burn_value_and_fees(self) -> Tuple[float, float]:
-        return self.calculate_value_and_fees(self.burns, f"amount{self.high_value_token_position}")
+    def calculate_total_burn_value_and_fees(self) -> Tuple[float, float]:
+        return self.calculate_total_value_and_fees(self.burns, f"amount{self.high_value_token_position}")
 
-    def calculate_swap_value_and_fees(self, addresses: Set[str], direction: SwapDirection) -> Tuple[float, float]:
+    def calculate_total_swap_value_and_fees(self, addresses: Set[str], direction: SwapDirection) -> Tuple[float, float]:
         filtered_swaps = [swap for swap in self.swaps if swap.to.lower() in addresses]
-        return self.calculate_value_and_fees(filtered_swaps, f"amount{self.high_value_token_position}{direction.value}")
+        return self.calculate_total_value_and_fees(filtered_swaps, f"amount{self.high_value_token_position}{direction.value}")
 
 
 class Token(ERC20):
