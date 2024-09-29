@@ -64,10 +64,10 @@ class ClusterProfitCalculator:
     def calculate_y_per_pool(self, pool: Pool) -> float:
         y = 0.0
 
-        burn_total, fee_total = pool.get_total_burn_value()
+        burn_total, fee_total = pool.calculate_burn_value_and_fees()
         y += burn_total - fee_total
 
-        sell_total, fee_total = pool.get_total_swap_value(self.node_addresses_in_cluster, SwapDirection.OUT)
+        sell_total, fee_total = pool.calculate_swap_value_and_fees(self.node_addresses_in_cluster, SwapDirection.OUT)
         y += sell_total - fee_total
 
         return y
@@ -75,7 +75,7 @@ class ClusterProfitCalculator:
     def calculate_x_per_pool(self, pool: Pool) -> float:
         x = 0.0
 
-        mint_total, fee_total = pool.get_total_mint_value()
+        mint_total, fee_total = pool.calculate_min_value_and_fees()
         scam_token = pool.get_scam_token()
         normal_txs, _ = DataLoader.load_transaction_by_address(scam_token.creator)
         token_creation_fee = next(
@@ -93,7 +93,7 @@ class ClusterProfitCalculator:
     def calculate_z_per_pool(self, pool: Pool) -> float:
         z = 0.0
 
-        buy_total, fee_total = pool.get_total_swap_value(self.node_addresses_in_cluster, SwapDirection.IN)
+        buy_total, fee_total = pool.calculate_swap_value_and_fees(self.node_addresses_in_cluster, SwapDirection.IN)
         z += buy_total + fee_total
         return z
 

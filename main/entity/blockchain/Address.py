@@ -6,6 +6,10 @@ from entity.blockchain.Transaction import InternalTransaction, NormalTransaction
 from entity.blockchain.DTO import DTO
 from utils import Constant
 
+class HighValueTokenNotFound(Exception):
+    """Custom exception when a high-value token is not found"""
+    pass
+
 class SwapDirection(Enum):
     IN = "In"
     OUT = "Out"
@@ -66,41 +70,35 @@ class Pool(ERC20):
             return 0
         if self.token1 is not None and (self.token1.address.lower() in Constant.HIGH_VALUE_TOKENS):
             return 1
-        return -1
+        raise HighValueTokenNotFound("Neither token0 nor token1 are in HIGH_VALUE_TOKENS.")
 
-    def get_total_mint_value(self):
-        mint_total, fee_total = 0, 0
-        token: Token = eval(f"self.token{self.high_value_token_position}")
-        decimals = int(token.decimals)
-        for mint in self.mints:
-            mint_total += float(eval(f"mint.amount{self.high_value_token_position}")) / 10 ** decimals
-            fee_total += float(mint.gasUsed * mint.gasPrice) / 10 ** Constant.WETH_BNB_DECIMALS
-        return mint_total, fee_total
-
-    def get_total_burn_value(self):
-        burn_total, fee_total = 0, 0
-        token: Token = eval(f"self.token{self.high_value_token_position}")
-        decimals = int(token.decimals)
-        for burn in self.burns:
-            burn_total += float(eval(f"burn.amount{self.high_value_token_position}")) / 10 ** decimals
-            fee_total += float(burn.gasUsed * burn.gasPrice) / 10 ** Constant.WETH_BNB_DECIMALS
-        return burn_total, fee_total
-
-    def get_total_swap_value(self, addresses: Set[str], direction: SwapDirection) -> Tuple[float, float]:
+    def calculate_value_and_fees(self, items, amount_attr: str) -> Tuple[float, float]:
         """
-        Return the total swap amount (buy/sell) by the addresses in the cluster within this pool.
-        swap_direction should be either 'In' for buy or 'Out' for sell.
+        Generic method to calculate the total values and fees from a list of transactions.
+        :param items: List of transaction objects (mints, burns, swaps).
+        :param amount_attr: The attribute of the item to be evaluated for the amount.
+        :return: A tuple of total value and total fees.
         """
-        swap_total, fee_total = 0.0, 0.0
+        total_value, total_fees = 0, 0
         token: Token = eval(f"self.token{self.high_value_token_position}")
-        decimals = int(token.decimals)
+        decimals = int(token.decimals) 
+        
+        for item in items:
+            total_value += float(eval(f"item.{amount_attr}")) / 10 ** decimals
+            total_fees += float(item.gasUsed * item.gasPrice) / 10 ** Constant.WETH_BNB_DECIMALS
 
-        for swap in self.swaps:
-            if swap.to.lower() in addresses:
-                swap_total += float(eval(f"swap.amount{self.high_value_token_position}{direction.value}")) / 10 ** decimals
-                fee_total += float(swap.gasUsed * swap.gasPrice) / 10 ** Constant.WETH_BNB_DECIMALS
+        return total_value, total_fees
 
-        return swap_total, fee_total
+
+    def calculate_min_value_and_fees(self):
+        return self.calculate_value_and_fees(self.mints, f"amount{self.high_value_token_position}")
+
+    def calculate_burn_value_and_fees(self):
+        return self.calculate_value_and_fees(self.burns, f"amount{self.high_value_token_position}")
+
+    def calculate_swap_value_and_fees(self, addresses: Set[str], direction: SwapDirection) -> Tuple[float, float]:
+        filtered_swaps = [swap for swap in self.swaps if swap.to.lower() in addresses]
+        return self.calculate_value_and_fees(filtered_swaps, f"amount{self.high_value_token_position}{direction.value}")
 
 
 class Token(ERC20):
