@@ -1,10 +1,10 @@
 from typing import Set, Tuple
 
-from aiohttp.web_routedef import static
 from enum import Enum
 from entity.blockchain.Transaction import InternalTransaction, NormalTransaction
 from entity.blockchain.DTO import DTO
 from utils import Constant
+
 
 class HighValueTokenNotFound(Exception):
     """Custom exception when a high-value token is not found"""
@@ -90,10 +90,10 @@ class Pool(ERC20):
         return total_value, total_fees
 
 
-    def calculate_min_value_and_fees(self):
+    def calculate_mint_value_and_fees(self) -> Tuple[float, float]:
         return self.calculate_value_and_fees(self.mints, f"amount{self.high_value_token_position}")
 
-    def calculate_burn_value_and_fees(self):
+    def calculate_burn_value_and_fees(self) -> Tuple[float, float]:
         return self.calculate_value_and_fees(self.burns, f"amount{self.high_value_token_position}")
 
     def calculate_swap_value_and_fees(self, addresses: Set[str], direction: SwapDirection) -> Tuple[float, float]:
