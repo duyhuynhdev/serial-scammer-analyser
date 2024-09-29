@@ -31,7 +31,7 @@ def is_not_blank(s):
     return bool(s and not s.isspace())
 
 
-def determine_assigned_star_shape(scammer_address, scammer_dict):
+def determine_assigned_star_shape_and_f_b(scammer_address, scammer_dict):
     f_b_tuple = scammer_dict.get(scammer_address)
     if f_b_tuple is None:
         f_b_tuple = get_funder_and_beneficiary(scammer_address)
@@ -47,7 +47,7 @@ def determine_assigned_star_shape(scammer_address, scammer_dict):
         if is_not_blank(f_b_tuple[1]):
             star_shapes.add(StarShape.IN)
 
-    return star_shapes
+    return star_shapes, f_b_tuple
 
 
 def find_star_shapes(scammer_address):
@@ -56,7 +56,7 @@ def find_star_shapes(scammer_address):
     input_path = os.path.join(path.univ2_star_shape_path, "scammer_in_out_addresses.txt")
     scammer_dict = read_from_in_out_scammer_as_dict(input_path)
 
-    possible_star_shapes = determine_assigned_star_shape(scammer_address, scammer_dict)
+    possible_star_shapes = determine_assigned_star_shape_and_f_b(scammer_address, scammer_dict)[0]
 
     for star_shape in possible_star_shapes:
         satellite_nodes = set()
@@ -67,8 +67,9 @@ def find_star_shapes(scammer_address):
             if is_valid_address(star_shape == StarShape.OUT, transaction, center_address):
                 transaction_address = transaction.to if star_shape == StarShape.OUT else transaction.sender
                 if transaction_address in ALL_SCAMMERS:
-                    satellite_star_shapes = determine_assigned_star_shape(transaction_address, scammer_dict)
-                    if star_shape in satellite_star_shapes:
+                    satellite_star_shapes, fb_tuple = determine_assigned_star_shape_and_f_b(transaction_address, scammer_dict)
+                    same_funder_or_beneficiary = center_address == (fb_tuple[0] if star_shape == StarShape.OUT else fb_tuple[1])
+                    if star_shape in satellite_star_shapes and same_funder_or_beneficiary:
                         satellite_nodes.add(transaction_address)
 
         if len(satellite_nodes) >= MIN_NUMBER_OF_SATELLITES:
@@ -204,13 +205,11 @@ def process_stars_on_all_scammers():
     processed_scammers = set()
 
     # 3 processed file names
+    # TODO you need to run on all unique IN and all unique OUT
     for file_name in processed_files_names:
         # skip out_stars for now
         input_path = os.path.join(path.univ2_star_shape_path, file_name)
         processed_files_paths.append(input_path)
-        # TODO remove later - ignore OUT file for now
-        if file_name == "out_stars.csv":
-            continue
         file = open(input_path)
         for line in file:
             row = line.rstrip('\n').split(', ')
@@ -243,7 +242,7 @@ def process_stars_on_all_scammers():
 
     # start processing the writing
     save_file_freq = 1000
-    scammers_to_run = 100000
+    scammers_to_run = 120000
     scammers_ran = 0
 
     while scammers_ran < scammers_to_run and len(scammers_remaining) > 0:
@@ -309,6 +308,7 @@ def write_scammer_funders_and_beneficiary():
 
 
 if __name__ == '__main__':
-    process_stars_on_all_scammers()
-    # result = find_star_shapes('0xc7df5da2cf8dcaa8858c06dada7cf9eba3c71fbf')
+    # process_stars_on_all_scammers()
+    result = find_star_shapes('0xfe63d76bbfc48a892a148f9854f4598ba5f20ab8')
+    # result = get_funder_and_beneficiary('0x94f5628f2ab2efbb60d71400ad71be27fd91fe20')
     # [print(a) for a in result]

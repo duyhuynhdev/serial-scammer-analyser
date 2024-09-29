@@ -77,7 +77,7 @@ def get_largest_transaction(normal_txs, scammer_address, liquidity_function_name
     exists_duplicate_amount = False
     largest_transaction = None
     for index in range(range_loop_args[0], range_loop_args[1], range_loop_args[2]):
-        if not passed_liquidity_function and liquidity_function_name in str(normal_txs[index].functionName):
+        if not passed_liquidity_function and liquidity_function_name in str(normal_txs[index].functionName) and not normal_txs[index].isError:
             passed_liquidity_function = True
             if largest_transaction is None:
                 return None, normal_txs
