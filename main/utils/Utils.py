@@ -5,8 +5,11 @@ import json
 import pandas as pd
 import numpy as np
 from web3 import Web3
+from entity.blockchain.Transaction import NormalTransaction
 from utils.Settings import Setting
 from pathlib import Path
+from more_itertools import one
+from typing import List
 
 setting = Setting()
 path = Path()
@@ -175,3 +178,9 @@ def get_abi_function_inputs(abi, type):
 
 def hex_to_dec(hex_val):
     return int(hex_val, 16)
+
+def get_transaction_by_hash(transactions: List[NormalTransaction], expected_hash: str) -> NormalTransaction:
+    """Retrieve the transaction with the specified hash from a list of transactions."""
+    return one(
+        tx for tx in transactions if tx.hash.lower() == expected_hash.lower()
+    )

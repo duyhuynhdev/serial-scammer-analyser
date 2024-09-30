@@ -9,7 +9,7 @@ from utils.ProjectPath import ProjectPath
 
 class S3Syncer:
     def __init__(
-        self, abs_local_dir: str, bucket_name="serial-scammer-analyser-bucket-test"
+        self, abs_local_dir: str, bucket_name="serial-scammer-analyser-bucket"
     ):
         self.s3_client = boto3.client("s3")
         self.abs_local_dir = abs_local_dir
