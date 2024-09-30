@@ -34,6 +34,7 @@ class ProjectPath(object):
         self.univ2_public_addresses_path = os.path.join(self.univ2_processed_path, "public_addresses")
         self.univ2_cluster_path = os.path.join(self.univ2_processed_path, "cluster")
         self.univ2_scammer_chain_path = os.path.join(self.univ2_base_path, "scammer_chain")
+        self.univ2_star_shape_path = os.path.join(self.univ2_base_path, "star_shape")
         self.univ2_visited_scammer_path = os.path.join(self.univ2_processed_path, "visited_scammers")
 
         self.panv2_base_path = os.path.join(self.data_root_path, "pancakeswap")
@@ -64,4 +65,3 @@ class ProjectPath(object):
 
         # Trapdoor path
         self.trapdoor_data_root_path = os.path.join(ROOT_FOLDER, "trapdoor_data")
-
