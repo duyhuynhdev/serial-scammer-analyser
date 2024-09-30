@@ -110,6 +110,8 @@ def append_item_to_file(file_path, item):
 
 def read_list_from_file(file_path):
     list = []
+    if not os.path.exists(file_path):
+        return []
     with open(file_path, "r") as f:
         for line in f:
             if not line.isspace():

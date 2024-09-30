@@ -301,13 +301,17 @@ class ContractSourceCodeCollector:
         api = explorer_api[dex]["explorer"]
         keys = explorer_api[dex]["keys"]
         key = keys[job % len(keys)]
+        chunks = ut.partitioning(0, len(addresses), int(len(addresses) / len(keys)))
+        chunk = chunks[job]
+        chunk_addresses = addresses[chunk["from"]:(chunk["to"] + 1)]
+        print(f'START DOWNLOADING DATA (JOB {job}/ {len(chunks)} CHUNKS):{chunk["from"]}_{chunk["to"]} (size: {len(chunk_addresses)})')
+        print(f'WITH KEY {key}')
         error_path = os.path.join(source_code_path, "error_addresses.txt")
         empty_path = os.path.join(source_code_path, "empty_addresses.txt")
         downloaded_addresses = ut.read_list_from_file(error_path)
         downloaded_addresses.extend(ut.read_list_from_file(empty_path))
-        print("Size:", len(addresses))
         count = 0
-        for address in tqdm(addresses):
+        for address in tqdm(chunk_addresses):
             print("START TO GET SOURCE CODE OF ", address)
             output_file_name = address + ".sol"
             output_path = os.path.join(source_code_path, output_file_name)
@@ -335,16 +339,36 @@ class ContractSourceCodeCollector:
                 traceback.print_exc()
 
 
+def download_token_contract(job, dex="univ2"):
+    rp_pools = pd.read_csv(
+        os.path.join(
+            eval("path.{}_processed_path".format(dex)), "1_pair_pool_labels.csv"
+        )
+    )
+    rp_pools.fillna("", inplace=True)
+    rp_pools = rp_pools[rp_pools["is_rp"] != 0]
+    rp_pools["scam_token"] = rp_pools["scam_token"].str.lower()
+    addresses = rp_pools["scam_token"].values.tolist()
+    contract_source_code_collector = ContractSourceCodeCollector()
+    contract_source_code_collector.download_source_codes(job, addresses, dex)
+
 if __name__ == '__main__':
-    # done: 0, 4, 5, 8, 24
+    # done: 0,1, 3, 4, 5, 8, 24
     # fail: 9, 10, 11
-    collector = PoolInfoCollector()
-    job = 14
-    collector.pancakeswap_token_download(job)
+    # collector = PoolInfoCollector()
+    # job = 23
+    # collector.pancakeswap_token_download(job)
+    ######################################
     # pancakeswap_pools_download(job)
-    # # download_popular_tokens()
+    ####################################
+    # download_popular_tokens()
+    ###################################
     # collector =  PoolDataCollector()
     # collector.merge_all_pools(pancake_chunks, "panv2")
     # collector.merge_all_pool_infos(uni_chunks, dex="univ2")
+    ###########################################
     # collector = TokenInfoCollector()
     # collector.download_tokens_info(6)
+    ###############################################
+    job = 17
+    download_token_contract(job, dex="univ2")

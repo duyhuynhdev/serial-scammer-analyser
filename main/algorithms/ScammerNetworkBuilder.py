@@ -130,10 +130,15 @@ def is_end_node(address):
 
 
 def is_valid_neighbour(node):
-    if is_eoa_node(node) and (NodeLabel.BIG not in node.labels
+    is_eoa = is_eoa_node(node)
+    if is_eoa and (NodeLabel.BIG not in node.labels
                               or NodeLabel.COORDINATOR in node.labels
                               or NodeLabel.WASHTRADER in node.labels):
         return True
+    if not is_eoa:
+        print("FP EOA NODE >> CHANGE LABEL TO CONTRACT")
+        node.labels.remove(NodeLabel.EOA)
+        node.labels.add(NodeLabel.CONTRACT)
     return False
 
 
@@ -218,6 +223,7 @@ def explore_scammer_network(group_id, scammers, dex='univ2', max_iter = 0):
                     eoa_node = Node.create_node(eoa_neighbour_address, root.path, dataloader, existing_groups, dex)
                     cluster.add_node(eoa_node)
                     if is_valid_neighbour(eoa_node):
+
                         queue.put(eoa_node)
                     else:
                         traversed_nodes.add(eoa_neighbour_address)

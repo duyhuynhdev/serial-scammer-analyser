@@ -38,10 +38,22 @@ class Transaction(DTO):
     def is_in_tx(self, owner):
         if self.is_creation_contract():
             return False
-        return Web3.to_checksum_address(self.to) == Web3.to_checksum_address(owner)
+        try:
+            to = Web3.to_checksum_address(self.to)
+            owner = Web3.to_checksum_address(owner)
+        except Exception as e:
+            return False
+        return to == owner
 
     def is_out_tx(self, owner):
-        return (Web3.to_checksum_address(self.sender) == Web3.to_checksum_address(owner)) and (not self.is_creation_contract())
+        if self.is_creation_contract():
+            return False
+        try:
+            sender = Web3.to_checksum_address(self.sender)
+            owner = Web3.to_checksum_address(owner)
+        except Exception as e:
+            return False
+        return sender == owner
 
 
 class NormalTransaction(Transaction):
