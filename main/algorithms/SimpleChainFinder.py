@@ -3,10 +3,10 @@ import os
 from algorithms.ScammerNetworkBuilder import dataloader
 from data_collection.AccountCollector import TransactionCollector
 from utils.DataLoader import DataLoader
-from utils.Path import Path
+from utils.ProjectPath import ProjectPath
 
 dataloader = DataLoader()
-path = Path()
+path = ProjectPath()
 transaction_collector = TransactionCollector()
 
 REMOVE_LIQUIDITY_SUBSTRING = "removeLiquidity"

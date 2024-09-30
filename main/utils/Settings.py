@@ -1,9 +1,9 @@
 import configparser
 import os
 from web3 import Web3
-from utils.Path import Path
+from utils.ProjectPath import ProjectPath
 
-path = Path()
+path = ProjectPath()
 
 
 class Setting(object):
@@ -21,7 +21,7 @@ class Setting(object):
         self.INFURA_ETH_NODE_URL = config.get("INFURA", "ETH_NODE_URL")
         self.INFURA_BSC_NODE_URL = config.get("INFURA", "BSC_NODE_URL")
         self.INFURA_API_KEYS = config.get("INFURA", "API_KEYS").split(" ")
-        self.INFURA_API_MAIN_KEY = self.INFURA_API_KEYS[0]
+        self.INFURA_API_MAIN_KEY = self.INFURA_API_KEYS[8]
 
         self.ETHERSCAN_BASE_URL = config.get("ETHERSCAN", "ETHERSCAN_BASE_URL")
         self.ETHERSCAN_API_KEYS = config.get("ETHERSCAN", "API_KEYS").split(" ")

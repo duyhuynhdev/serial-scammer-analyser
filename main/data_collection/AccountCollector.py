@@ -6,10 +6,10 @@ import pandas as pd
 
 from entity.blockchain.Transaction import NormalTransaction, InternalTransaction
 from utils.Settings import Setting
-from utils.Path import Path
+from utils.ProjectPath import ProjectPath
 from api import EtherscanAPI, BSCscanAPI
 
-path = Path()
+path = ProjectPath()
 setting = Setting()
 explorer_api = {
     "univ2": {"explorer": EtherscanAPI, "keys": setting.ETHERSCAN_API_KEYS},
@@ -127,6 +127,7 @@ class TransactionCollector:
             print()
         api = explorer_api[dex]["explorer"]
         keys = explorer_api[dex]["keys"]
+        key_idx = key_idx % len(keys)
         normal_txs_path = os.path.join(eval('path.{}_normal_tx_path'.format(dex)), f"{address}.csv")
         parsed_normal_txs = []
         parsed_internal_txs = []

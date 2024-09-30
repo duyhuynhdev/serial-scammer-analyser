@@ -1,5 +1,5 @@
 from utils.Settings import Setting
-from utils.Path import Path
+from utils.ProjectPath import ProjectPath
 from hexbytes import HexBytes
 from web3._utils.normalizers import BASE_RETURN_NORMALIZERS
 from eth_abi.codec import ABICodec
@@ -9,7 +9,7 @@ from web3._utils.abi import (
 )
 import utils.Utils as ut
 
-path = Path()
+path = ProjectPath()
 setting = Setting()
 
 

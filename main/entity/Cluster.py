@@ -1,23 +1,20 @@
-import networkx as nx
 import pandas as pd
-from networkx import DiGraph, has_path
 from entity import Node
-from entity.Node import NodeLabel, create_node
+from entity.Node import create_node
 from entity.OrderedQueue import OrderedQueue
 from utils import Utils as ut
 import os
-import itertools
 
 
 class ClusterNode:
     def __init__(self, address, path, eoa_nb, contract_nb, normal_txs, internal_txs, labels):
         self.address = address
-        self.path = path.copy if path is not Node else [address]
         self.eoa_nb = eoa_nb
         self.contract_nb = contract_nb
         self.normal_txs = normal_txs
         self.internal_txs = internal_txs
         self.labels = labels
+        self.path = path.copy() if path is not Node else [address]
 
     def to_full_node(self, dataloader):
         if self.address in self.path:
@@ -29,12 +26,12 @@ class ClusterNode:
     @staticmethod
     def from_dict(data):
         address = data['address']
-        path = data['path'].split(';') if 'path' in data else []
         eoa_nb = data['eoa_nb'] if 'eoa_nb' in data else None
         contract_nb = data['contract_nb'] if 'contract_nb' in data else None
         normal_txs = data['normal_txs'] if 'normal_txs' in data else None
         internal_txs = data['internal_txs'] if 'internal_txs' in data else None
         labels = data['labels'].split(';') if 'labels' in data else []
+        path = data['path'].split('>>') if 'path' in data else []
         return ClusterNode(address,
                            path,
                            eoa_nb,
@@ -45,8 +42,6 @@ class ClusterNode:
 
 
 class Cluster:
-    id_iter = itertools.count()
-
     def __init__(self, address):
         self.id = address
         self.nodes = dict()
@@ -70,12 +65,12 @@ class Cluster:
     def write_node(self, outpath, n: Node):
         node_list_file = os.path.join(outpath, f"cluster_{self.id}.csv")
         data = [{"address": n.address,
-                 "path": ";".join(n.path),
                  "eoa_n": len(n.eoa_neighbours),
                  "contract_n": len(n.contract_neighbours),
                  "normal": len(n.normal_txs),
                  "internal": len(n.internal_txs),
-                 "labels": ";".join(n.labels)}]
+                 "labels": ";".join(n.labels),
+                 "path": ">>".join(n.path)}]
         ut.save_or_append_if_exist(data, node_list_file)
 
     def write_queue(self, outpath, q: OrderedQueue, traversed_nodes):
@@ -94,13 +89,16 @@ class Cluster:
         traversed_file = os.path.join(in_path, f"traversed_{self.id}.txt")
         if os.path.exists(queue_file):
             print("LOAD EXISTING QUEUE")
-            queue_df = pd.read_csv(queue_file)
-            for idx, row in queue_df.iterrows():
-                path = row['path'].split(';') if 'path' in row else []
-                if row["address"] in path:
-                    path.remove(row["address"])
-                node = create_node(row["address"], path, dataloader)
-                queue.put(node)
+            try:
+                queue_df = pd.read_csv(queue_file)
+                for idx, row in queue_df.iterrows():
+                    path = row['path'].split(';') if 'path' in row else []
+                    if row["address"] in path:
+                        path.remove(row["address"])
+                    node = create_node(row["address"], path, dataloader)
+                    queue.put(node)
+            except Exception as e:
+                print("CANNOT LOAD QUEUE FILE INTO DF >> START FROM SCRATCH")
         if os.path.exists(traversed_file):
             print("LOAD EXISTING TRAVERSAL LIST")
             traversed_nodes = set(ut.read_list_from_file(traversed_file))
@@ -120,10 +118,11 @@ class Cluster:
         data = []
         for n in self.nodes.values():
             data.append({"address": n.address,
-                         "path": [], #skip_path
                          "eoa_nb": n.eoa_nb,
                          "contract_nb": n.contract_nb,
                          "normal_txs": n.normal_txs,
                          "internal_txs": n.internal_txs,
-                         "labels": ";".join(n.labels)})
+                         "labels": ";".join(n.labels),
+                         "path": ">>".join(n.path)
+                         })
         ut.save_overwrite_if_exist(data, node_list_file)

@@ -1,13 +1,15 @@
+import traceback
+
 import utils.Utils as ut
 from tqdm import tqdm
 import os
 import pandas as pd
 from web3 import Web3
 from utils.Settings import Setting
-from utils.Path import Path
-from api import CoinMarketCapAPI, OtherAPI
+from utils.ProjectPath import ProjectPath
+from api import CoinMarketCapAPI, OtherAPI, EtherscanAPI, BSCscanAPI
 
-path = Path()
+path = ProjectPath()
 setting = Setting()
 
 uni_chunks = [{'from': 0, 'to': 69999}, {'from': 70000, 'to': 139999}, {'from': 140000, 'to': 209999}, {'from': 210000, 'to': 279999}, {'from': 280000, 'to': 349999},
@@ -24,6 +26,11 @@ infura_api = {
               "pool_abi": setting.UNIV2_POOL_ABI, "token_abi": setting.ETH_TOKEN_ABI},
     "panv2": {"node_url": setting.INFURA_BSC_NODE_URL, "num_pairs": setting.PANV2_NUM_OF_PAIRS, "factory_abi": setting.PANV2_FACTORY_ABI, "factory_address": setting.PANV2_FACTORY_ADDRESS,
               "pool_abi": setting.PANV2_POOL_ABI, "token_abi": setting.BSC_TOKEN_ABI},
+}
+
+explorer_api = {
+    "univ2": {"explorer": EtherscanAPI, "keys": setting.ETHERSCAN_API_KEYS},
+    "panv2": {"explorer": BSCscanAPI, "keys": setting.BSCSCAN_API_KEYS},
 }
 
 key_idx = 0
@@ -288,9 +295,51 @@ class PopularTokenDataCollector:
         self.get_cgk_top_token()
 
 
+class ContractSourceCodeCollector:
+    def download_source_codes(self, job, addresses, dex="univ2"):
+        source_code_path = eval(f"path.{dex}_token_source_code_path")
+        api = explorer_api[dex]["explorer"]
+        keys = explorer_api[dex]["keys"]
+        key = keys[job % len(keys)]
+        error_path = os.path.join(source_code_path, "error_addresses.txt")
+        empty_path = os.path.join(source_code_path, "empty_addresses.txt")
+        downloaded_addresses = ut.read_list_from_file(error_path)
+        downloaded_addresses.extend(ut.read_list_from_file(empty_path))
+        print("Size:", len(addresses))
+        count = 0
+        for address in tqdm(addresses):
+            print("START TO GET SOURCE CODE OF ", address)
+            output_file_name = address + ".sol"
+            output_path = os.path.join(source_code_path, output_file_name)
+            if address in downloaded_addresses:
+                count += 1
+                print(output_path + " exist --> SKIP(", count, ")")
+                continue
+            if os.path.isfile(output_path):
+                count += 1
+                print(output_path + " exist --> SKIP(", count, ")")
+                continue
+            try:
+                response = api.get_contract_verified_source_code(address, key)
+                source_code = response[0]["SourceCode"]
+                if source_code.strip() == "":
+                    print("EMPTY SOURCE CODE:", address)
+                    ut.append_item_to_file(empty_path, address)
+                else:
+                    with open(output_path, 'w') as f:
+                        f.write(source_code)
+                        f.close()
+            except Exception as ex:
+                print("FAILED TO GET SOURCE CODE OF:", address)
+                ut.append_item_to_file(error_path, address)
+                traceback.print_exc()
+
+
 if __name__ == '__main__':
+    # done: 0, 4, 8, 24
+    # fail: 9, 10, 11
     collector = PoolInfoCollector()
-    job = 9
+    job = 14
     collector.pancakeswap_token_download(job)
     # pancakeswap_pools_download(job)
     # # download_popular_tokens()

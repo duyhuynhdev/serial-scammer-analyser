@@ -1,8 +1,5 @@
 import pandas as pd
 import os
-import networkx as nx
-from itertools import chain, pairwise
-from tqdm import tqdm
 
 from data_collection.AccountCollector import CreatorCollector, TransactionCollector
 from data_collection.EventCollector import ContractEventCollector
@@ -10,9 +7,9 @@ from entity.Cluster import ClusterNode
 from entity.blockchain.Address import Pool, Token
 from entity.blockchain.Event import TransferEvent, SwapEvent, BurnEvent, MintEvent
 from utils.Settings import Setting
-from utils.Path import Path
+from utils.ProjectPath import ProjectPath
 
-path = Path()
+path = ProjectPath()
 setting = Setting()
 creator_collector = CreatorCollector()
 
@@ -140,6 +137,25 @@ def load_token_info(dex="univ2"):
     return dict(zip(token_infos["token"].str.lower(), infos.to_dict("records")))
 
 
+def load_group_scammers(dex="univ2"):
+    file_path = os.path.join(eval('path.{}_processed_path'.format(dex)), "scammer_group.csv")
+    groups = pd.read_csv(file_path)
+    group_scammers = groups.groupby("group_id")["scammer"].apply(list).to_dict()
+    return group_scammers
+
+
+def link_pool_and_group(scammer_pools, group_scammers):
+    pool_group = dict()
+    for group_id in group_scammers.keys():
+        scammers =  group_scammers[group_id]
+        pools = set()
+        for s in scammers:
+            pools.update(scammer_pools[s])
+        for p in pools:
+            pool_group[p] =  group_id
+    return pool_group
+
+
 def load_rug_pull_dataset(dex="univ2"):
     print("LOAD RUG PULL INFO")
     scam_pools = list()
@@ -165,13 +181,7 @@ def load_rug_pull_dataset(dex="univ2"):
     rp_pools["scam_token"] = rp_pools["scam_token"].str.lower()
     scam_pools.extend(rp_pools["pool"].unique())
     scam_token_pool = dict(zip(rp_pools["scam_token"], rp_pools["pool"]))
-    return (
-        pool_scammers,
-        scam_token_pool,
-        scam_pools,
-        scammers["scammer"].str.lower().to_list(),
-        scammer_pools,
-    )
+    return pool_scammers, scam_token_pool, scam_pools, set(scammers["scammer"].str.lower().to_list()), scammer_pools
 
 
 def load_cluster(name, dex="univ2"):
@@ -191,7 +201,7 @@ def load_transaction_by_address(address, dex="univ2"):
 
 
 def load_pool(scammer_address, dataloader, dex="univ2"):
-    pool_addresses = dataloader.scammer_pool[scammer_address.lower()]
+    pool_addresses = dataloader.scammer_pools[scammer_address.lower()]
     pool_event_path = eval("path.{}_pool_events_path".format(dex))
     contract_event_collector = ContractEventCollector()
     pools = []
@@ -241,23 +251,6 @@ def load_pool(scammer_address, dataloader, dex="univ2"):
     return pools
 
 
-def merge_scammer_groups(dex="univ2"):
-    scammers = pd.read_csv(
-        os.path.join(eval("path.{}_processed_path".format(dex)), "1_pair_scammers.csv")
-    )
-    index_issue = scammers[(scammers["pool"] == scammers["scammer"])].index
-    scammers.drop(index_issue, inplace=True)
-    scammers["pool"] = scammers["pool"].str.lower()
-    scammers["scammer"] = scammers["scammer"].str.lower()
-    pool_scammers = scammers.groupby("pool")["scammer"].apply(list).to_dict()
-    scammers_set = pool_scammers.values()
-    G = nx.from_edgelist(chain.from_iterable(pairwise(e) for e in scammers_set))
-    G.add_nodes_from(set.union(*map(set, scammers_set)))  # adding single items
-
-    groups = list(nx.connected_components(G))
-    return groups
-
-
 class DataLoader(object):
     def __init__(self, dex="univ2"):
         ### ALL ADDRESSES MUST BE IN LOWER CASES ###
@@ -282,14 +275,16 @@ class DataLoader(object):
             self.scam_token_pool,
             self.scam_pools,
             self.scammers,
-            self.scammer_pool,
+            self.scammer_pools,
         ) = load_rug_pull_dataset(dex=dex)
-        self.unique_scammers = set(self.scammers)
+        self.scammers_set = set(self.scammers)
+        self.group_scammers = load_group_scammers(dex)
+        self.pool_group = link_pool_and_group(self.scammer_pools, self.group_scammers)
 
 
 if __name__ == "__main__":
     # dataloader = DataLoader(dex='univ2')
-    # print(load_cluster("cluster_0x7f0a9d794bba0a588f4c8351d8549bb5f76a34c4", dex='univ2'))
+    print(load_cluster("cluster_0x7f0a9d794bba0a588f4c8351d8549bb5f76a34c4", dex='univ2'))
     # print(load_token_info(dex='univ2'))
     # pool = load_pool("0x19b98792e98c54f58c705cddf74316aec0999aa6", DataLoader(dex='univ2'))
     # pos = pool.get_high_value_position()
@@ -298,5 +293,3 @@ if __name__ == "__main__":
     # print(pool.get_max_swap_value(pos))
     # print(pool.get_total_mint_value(pos))
     # print(pool.get_total_burn_value(pos))
-    groups = merge_scammer_groups(dex="univ2")
-    print(len(groups))

@@ -1,41 +1,120 @@
-import glob
-import os
 
-from tqdm import tqdm
-from data_collection.AccountCollector import CreatorCollector
+import sys
+import os
+sys.path.append( os.path.join(os.path.dirname(sys.path[0])))
+
+import numpy as np
+from data_collection.AccountCollector import CreatorCollector, TransactionCollector
+from data_collection.EventCollector import ContractEventCollector
 from entity import Node
 from entity.Cluster import Cluster
 from entity.Node import NodeLabel
-from entity.OrderedQueue import OrderedQueue
 from utils.DataLoader import DataLoader
+from utils.S3Syncer import S3Syncer
 from utils.Settings import Setting
-from utils.Path import Path
+from utils.ProjectPath import ProjectPath
 from utils import Utils as ut
-from utils import Constant
-import logging
-
-path = Path()
+import networkx as nx
+import itertools
+from tqdm import tqdm
+path = ProjectPath()
 setting = Setting()
 dataloader = DataLoader()
+contract_event_collector = ContractEventCollector()
+transaction_collector = TransactionCollector()
 
 
-def run_clustering(index, dex='univ2'):
-    rp = dataloader.scam_pools[index]
-    scammers = dataloader.pool_scammers[rp]
-    scammers.sort()
-    if len(scammers) > 0:
-        print("*" * 200)
-        print(f"START CLUSTERING (ADDRESS {scammers[0]}) IDX {index}")
-        explore_scammer_network(scammers, dex)
-        print(f"END CLUSTERING (ADDRESS {scammers[0]}) IDX {index}")
-        print("*" * 200)
+def get_related_scammer_from_pool_events(pool, event_path, dataloader, dex='univ2'):
+    pool_transfers = contract_event_collector.get_event(pool, "Transfer", event_path, dex)
+    pool_swaps = contract_event_collector.get_event(pool, "Swap", event_path, dex)
+    connected_scammer = set()
+    for transfer in pool_transfers:
+        if transfer["sender"].lower() in dataloader.scammers:
+            connected_scammer.add(transfer["sender"].lower())
+        if transfer["to"].lower() in dataloader.scammers:
+            connected_scammer.add(transfer["to"].lower())
+    for swap in pool_swaps:
+        if swap["sender"].lower() in dataloader.scammers:
+            connected_scammer.add(swap["sender"].lower())
+        if swap["to"].lower() in dataloader.scammers:
+            connected_scammer.add(swap["to"].lower())
+    print(f"FOUND {len(connected_scammer)} SCAM INVESTOR FROM POOL {pool}")
+    return connected_scammer
 
 
-def check_if_end_node(address):
+def get_scam_neighbours(address, dataloader, dex='univ2'):
+    normal_txs, _ = transaction_collector.get_transactions(address, dex)
+    connected_scammer = set()
+    for tx in normal_txs:
+        if tx.sender.lower() in dataloader.scammers:
+            connected_scammer.add(tx.sender.lower())
+        if not isinstance(tx.to, float) and tx.to != "" and tx.to.lower() in dataloader.scammers:
+            connected_scammer.add(tx.to.lower())
+    print(f"FOUND {len(connected_scammer)} SCAM NEIGHBOURS FROM ADDRESS {address}")
+    return connected_scammer
+
+
+def scammer_grouping(dex='univ2'):
+    graph = nx.Graph()
+    event_path = eval('path.{}_pool_events_path'.format(dex))
+    for pool in tqdm(dataloader.pool_scammers):
+        scammers = set(dataloader.pool_scammers[pool])
+        scammers.update(get_related_scammer_from_pool_events(pool, event_path, dataloader, dex))
+        scam_neighbours = set()
+        for s in scammers:
+            sn = get_scam_neighbours(s, dataloader, dex)
+            scam_neighbours.update(sn)
+        scammers.update(scam_neighbours)
+        if len(scammers) == 1:
+            for ss in scammers:
+                if not graph.has_node(ss):
+                    graph.add_node(ss)
+        adj_list = list(itertools.combinations(scammers, 2))
+        for u, v in adj_list:
+            graph.add_edge(u, v)
+    print("GRAPH HAVE", len(nx.nodes(graph)), "NODES")
+    groups = list(nx.connected_components(graph))
+    isolates = set(nx.isolates(graph))
+    return groups, isolates
+
+
+def pre_clusterting(dex='univ2'):
+    file_path = os.path.join(eval('path.{}_processed_path'.format(dex)), "scammer_group.csv")
+    groups, isolates = scammer_grouping(dex)
+    data = []
+    id = 1
+    for group in groups:
+        for s in group:
+            data.append({"group_id": id, "scammer": s})
+        id += 1
+    for i in isolates:
+        data.append({"group_id": id, "scammer": s})
+        id += 1
+    print("DATA SIZE", len(data))
+    ut.save_overwrite_if_exist(data, file_path)
+
+
+def is_eoa_node(node):
+    if NodeLabel.CONTRACT in node.labels:
+        return False
+    for ntx in node.normal_txs:
+        if ntx.sender.lower() == node.address.lower():  # sender of normal txs must be EOA
+            return True
+        if ntx.is_creation_contract() and ntx.contractAddress.lower() == node.address.lower():  # address is a contract created by an EOA
+            return False
+    for itx in node.internal_txs:
+        if itx.sender.lower() == node.address.lower():  # sender of normal txs must be contract
+            return False
+        if itx.is_creation_contract() and itx.contractAddress.lower() == node.address.lower():  # address is a contract created by a contract
+            return False
+    return True
+
+
+def is_end_node(address):
     if address.lower() in dataloader.bridge_addresses:
         return True, NodeLabel.BRIDGE
-    if address.lower() in dataloader.defi_addresses:
-        return True, NodeLabel.DEFI
+    if address.lower() in dataloader.cex_addresses:
+        return True, NodeLabel.CEX
     if address.lower() in dataloader.MEV_addresses:
         return True, NodeLabel.MEV
     if address.lower() in dataloader.mixer_addresses:
@@ -47,13 +126,40 @@ def check_if_end_node(address):
     return False, None
 
 
+def is_valid_neighbour(node):
+    if is_eoa_node(node) and (NodeLabel.BIG not in node.labels
+                              or NodeLabel.COORDINATOR in node.labels
+                              or NodeLabel.WASHTRADER in node.labels):
+        return True
+    return False
+
+
+def run_clustering(group_id, dex='univ2'):
+    account_path = eval(f"path.{dex}_account_path")
+    # s3_file_manager = S3Syncer(abs_local_path=account_path)
+    # s3_file_manager.sync()
+    if group_id not in dataloader.group_scammers.keys():
+        print(f"CANNOT FIND GROUP {group_id}")
+        return
+    scammers = dataloader.group_scammers[group_id]
+    print(f"LOAD {len(scammers)} SCAMMER FROM GROUP {group_id}")
+    scammers.sort()
+    if len(scammers) > 0:
+        print("*" * 100)
+        print(f"START CLUSTERING (ADDRESS {scammers[0]}) GROUP {group_id}")
+        explore_scammer_network(scammers, dex)
+        print(f"END CLUSTERING (ADDRESS {scammers[0]}) GROUP {group_id}")
+        print("*" * 100)
+    # s3_file_manager.sync()
+
+
 # load if exist or create a new cluster
 def init(scammer_address, scammers, cluster_path, dex):
     # create node for an address with downloading all transactions and discovering/classifying neighbours
     cluster = Cluster(scammer_address)
     cluster.load_cluster(cluster_path)
     queue, traversed_nodes = cluster.read_queue(cluster_path, dataloader)
-    node = Node.create_node(scammer_address, [], dataloader, NodeLabel.SCAMMER, dex)
+    node = Node.create_node(scammer_address, [], dataloader, dex)
     for s in [n for n in scammers if n != scammer_address]:
         node.eoa_neighbours.add(s)
     if node.address not in traversed_nodes:
@@ -62,37 +168,22 @@ def init(scammer_address, scammers, cluster_path, dex):
     return cluster, queue, traversed_nodes
 
 
-def load_visited_scammers(vs_path, cluster_vs_path):
-    visited_scammers = []
-    vs_files = glob.glob(os.path.join(vs_path, "*.txt"))
-    for file in vs_files:
-        #load all vs from other cluster except the running one
-        if file == cluster_vs_path:
-            continue
-        visited_scammers.extend(ut.read_list_from_file(file))
-    return set(visited_scammers)
-
-
 def explore_scammer_network(scammers, dex='univ2'):
     cluster_path = eval('path.{}_cluster_path'.format(dex))
-    vs_path = eval('path.{}_visited_scammer_path'.format(dex))
     scammer_address = scammers[0]
-    cluster_vs_path = os.path.join(vs_path, scammer_address + "visited_scammers.txt")
-    # load vs from other cluster
-    visited_scammers = load_visited_scammers(vs_path, cluster_vs_path)
-    # vs list for this cluster
-    cluster_visited_scammers = set()
     if ut.is_contract_address(scammer_address):
         return None, list()
     # create node for an address with downloading all transactions and discovering/classifying neighbours
     cluster, queue, traversed_nodes = init(scammer_address, scammers, cluster_path, dex)
-    traversed_nodes.update(visited_scammers)
     count = 0
     # start exploring
     while not queue.empty():
         print("QUEUE LEN", queue.qsize())
         print("SCANNED NODES", len(traversed_nodes))
         root: Node.Node = queue.get()
+        if not is_eoa_node(root):
+            print("ROOT IS A CONTRACT >> SKIP")
+            continue
         print("\t ROOT ADDRESS", root.address)
         print("\t PATH", " -> ".join(root.path))
         if root.address in traversed_nodes:
@@ -101,56 +192,38 @@ def explore_scammer_network(scammers, dex='univ2'):
         print("\t EOA NODES", len(root.eoa_neighbours))
         print("\t CONTRACT NODES", len(root.contract_neighbours))
         print("\t LABELS", root.labels)
-
-        if NodeLabel.BIG in root.labels:
-            if (NodeLabel.COORDINATOR not in root.labels) and (NodeLabel.WASHTRADER not in root.labels) and (root.address.lower() not in dataloader.scammers):
-                print("SKIP BIG NODE")
-                print("=" * 100)
-                continue
-            if ut.is_contract_address(root.address):
-                print("SKIP CONTRACT NODE")
-                print("=" * 100)
-                continue
         # EOA neighbours
         for eoa_neighbour_address in root.eoa_neighbours:
             eoa_neighbour_address = eoa_neighbour_address.lower()
-            if (eoa_neighbour_address not in traversed_nodes) and (eoa_neighbour_address not in queue.addresses):
-                check_endnode, label = check_if_end_node(eoa_neighbour_address)
-                if check_endnode:
+            if ((eoa_neighbour_address not in traversed_nodes)
+                    and (eoa_neighbour_address not in queue.addresses)
+                    and not cluster.is_address_exist(eoa_neighbour_address)):
+                endnode_check, endnode_label = is_end_node(eoa_neighbour_address)
+                if endnode_check:
                     # add all end nodes into traversed nodes
                     traversed_nodes.add(eoa_neighbour_address)
-                    if not cluster.is_address_exist(eoa_neighbour_address):
-                        eoa_end_node = Node.create_end_node(eoa_neighbour_address, root.path, label)
-                        cluster.add_node(eoa_end_node)
+                    eoa_end_node = Node.create_end_node(eoa_neighbour_address, root.path, endnode_label)
+                    cluster.add_node(eoa_end_node)
                 else:
-                    if not cluster.is_address_exist(eoa_neighbour_address):
-                        label = NodeLabel.EOA
-                        if eoa_neighbour_address.lower() in dataloader.scammers:
-                            label = NodeLabel.SCAMMER
-                            cluster_visited_scammers.add(eoa_neighbour_address)
-                        eoa_node = Node.create_node(eoa_neighbour_address, root.path, dataloader, label, dex)
-                        cluster.add_node(eoa_node)
-                        # put unvisited neighbours into queue
+                    eoa_node = Node.create_node(eoa_neighbour_address, root.path, dataloader, dex)
+                    cluster.add_node(eoa_node)
+                    if is_valid_neighbour(eoa_node):
                         queue.put(eoa_node)
-        # Contract neighbours
+                    else:
+                        traversed_nodes.add(eoa_neighbour_address)
+        # Create end nodes for all contract neighbours
         for contract_neighbour_address in root.contract_neighbours:
             contract_neighbour_address = contract_neighbour_address.lower()
-            if contract_neighbour_address not in traversed_nodes:
-                if not cluster.is_address_exist(contract_neighbour_address):
-                    traversed_nodes.add(contract_neighbour_address)
-                    check_endnode, label = check_if_end_node(contract_neighbour_address)
-                    if check_endnode:
-                        contract_end_node = Node.create_end_node(contract_neighbour_address, root.path, label)
-                        cluster.add_node(contract_end_node)
-                    else:
-                        contract_end_node = Node.create_end_node(contract_neighbour_address, root.path, NodeLabel.UC)
-                    cluster.add_node(contract_end_node)
+            if contract_neighbour_address not in traversed_nodes and not cluster.is_address_exist(contract_neighbour_address):
+                traversed_nodes.add(contract_neighbour_address)
+                endnode_check, endnode_label = is_end_node(contract_neighbour_address)
+                contract_end_node = Node.create_end_node(contract_neighbour_address, root.path, endnode_label if endnode_check else NodeLabel.CONTRACT)
+                cluster.add_node(contract_end_node)
         count += 1
         if count == 10:
-            print(">>> SAVE QUEUE & CLUSTER STATE")
+            print(">>> SAVE QUEUE & CLUSTER STATE <<<")
             cluster.export(cluster_path)
             cluster.write_queue(cluster_path, queue, traversed_nodes)
-            ut.write_list_to_file(cluster_vs_path, cluster_visited_scammers)
             count = 0
         print("=" * 100)
     cluster.export(cluster_path)
@@ -159,14 +232,7 @@ def explore_scammer_network(scammers, dex='univ2'):
 
 
 if __name__ == '__main__':
-    # explore_scammer_network("0x19b98792e98c54f58c705cddf74316aec0999aa6")
-    # explore_scammer_network("0x43e129c47dfd4abcf48a24f6b2d8ba6f49261f39")
-    # explore_scammer_network_by_ignoring_creator("0x48f0fc8dfc672dd45e53b6c53cd5b09c71d9fbd6")
-    # explore_scammer_network("0x81cfe8efdb6c7b7218ddd5f6bda3aa4cd1554fd2")
-    # explore_scammer_network("0x30a9173686eb332ff2bdcea95da3b2860597a19d")
-    # explore_scammer_network("0xb16a24e954739a2bbc68c5d7fbbe2e27f17dfff9")
-    # print(is_contract_address("0x81cfe8efdb6c7b7218ddd5f6bda3aa4cd1554fd2"))
-    # print(len(collect_end_nodes()))
-    run_clustering(4)
-    # print(ut.hex_to_dec("0x10afe6222f") * ut.hex_to_dec("0x29cbe2")/ 10**18)
-    # print((107143841398 * 2208003)/ 10**18)
+    run_clustering(2)
+
+    # node = Node.create_node("0x18ec985b94e3b332d979d54c7e89f55d7358de33",[] ,dataloader, 'univ2')
+    # print(len(node.eoa_neighbours))

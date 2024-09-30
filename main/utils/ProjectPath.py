@@ -1,12 +1,12 @@
 import os
 
 
-class Path(object):
+class ProjectPath(object):
     instance = None
 
     def __new__(cls):
         if not hasattr(cls, 'instance') or cls.instance is None:
-            cls.instance = super(Path, cls).__new__(cls)
+            cls.instance = super(ProjectPath, cls).__new__(cls)
         return cls.instance
 
     def __init__(self):
@@ -28,6 +28,8 @@ class Path(object):
         self.univ2_pool_events_path = os.path.join(self.univ2_pool_path, "events")
         self.univ2_token_path = os.path.join(self.univ2_base_path, "token")
         self.univ2_token_events_path = os.path.join(self.univ2_token_path, "events")
+        self.univ2_token_source_code_path = os.path.join(self.univ2_token_path, "solidity")
+        self.univ2_token_ast_path = os.path.join(self.univ2_token_path, "ast")
         self.univ2_processed_path = os.path.join(self.univ2_base_path, "processed")
         self.univ2_public_addresses_path = os.path.join(self.univ2_processed_path, "public_addresses")
         self.univ2_cluster_path = os.path.join(self.univ2_processed_path, "cluster")
@@ -44,6 +46,8 @@ class Path(object):
         self.panv2_pool_events_path = os.path.join(self.panv2_pool_path, "events")
         self.panv2_token_path = os.path.join(self.panv2_base_path, "token")
         self.panv2_token_events_path = os.path.join(self.panv2_token_path, "events")
+        self.panv2_token_source_code_path = os.path.join(self.panv2_token_path, "solidity")
+        self.panv2_token_ast_path = os.path.join(self.panv2_token_path, "ast")
         self.panv2_processed_path = os.path.join(self.panv2_base_path, "processed")
         self.panv2_public_addresses_path = os.path.join(self.panv2_processed_path, "public_addresses")
         self.panv2_cluster_path = os.path.join(self.panv2_processed_path, "cluster")
@@ -61,3 +65,4 @@ class Path(object):
 
         # Trapdoor path
         self.trapdoor_data_root_path = os.path.join(ROOT_FOLDER, "trapdoor_data")
+

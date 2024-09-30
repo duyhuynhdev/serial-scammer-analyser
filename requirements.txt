@@ -6,8 +6,9 @@ tqdm
 regex
 wordcloud
 networkx
-Crypto
+pycryptodome
 dune-client
 pyvis
 beautifulsoup4
 boto3
+more-itertools

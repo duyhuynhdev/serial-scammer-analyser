@@ -7,10 +7,10 @@ import pandas as pd
 
 from data_collection import DataDecoder
 from utils.Settings import Setting
-from utils.Path import Path
+from utils.ProjectPath import ProjectPath
 from api import EtherscanAPI, BSCscanAPI
 
-path = Path()
+path = ProjectPath()
 setting = Setting()
 
 key_index = 0
@@ -111,10 +111,9 @@ class ContractEventCollector:
         if not os.path.exists(event_logs_path):  # if not exist , starts download corresponding event
             while key_index < len(explorer_api[dex]["keys"]):
                 try:
-                    collector = ContractEventCollector()
                     explorer = explorer_api[dex]["explorer"]
                     api_key = explorer_api[dex]["keys"][key_index]
-                    collector.download_event(address, event, event_path, dex="univ2", explorer=explorer, apikey=api_key)
+                    self.download_event(address, event, event_path, dex="univ2", explorer=explorer, apikey=api_key)
                     break
                 except Exception as e:
                     # try other key if error occurs
