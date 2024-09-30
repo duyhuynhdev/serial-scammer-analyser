@@ -4,10 +4,11 @@ from enum import Enum
 
 from data_collection.AccountCollector import TransactionCollector
 from utils.DataLoader import DataLoader, load_pool
-from utils.Path import Path
+from utils.ProjectPath import ProjectPath
+from utils.Utils import is_contract_address
 
 dataloader = DataLoader()
-path = Path()
+path = ProjectPath()
 transaction_collector = TransactionCollector()
 
 REMOVE_LIQUIDITY_SUBSTRING = "removeLiquidity"
@@ -53,7 +54,7 @@ def determine_assigned_star_shape_and_f_b(scammer_address, scammer_dict):
 def find_star_shapes(scammer_address):
     stars = []
 
-    input_path = os.path.join(path.univ2_star_shape_path, "scammer_in_out_addresses.txt")
+    input_path = os.path.join(path.univ2_star_shape_path, "scammer_in_out_addresses.csv")
     scammer_dict = read_from_in_out_scammer_as_dict(input_path)
 
     possible_star_shapes = determine_assigned_star_shape_and_f_b(scammer_address, scammer_dict)[0]
@@ -159,7 +160,10 @@ def get_largest_address(scammer_address, liquidity_transactions_dict, liquidity_
         passed_threshold = largest_transaction.get_transaction_amount() / liquidity_amount >= (
             OUT_PERCENTAGE_THRESHOLD if is_out else IN_PERCENTAGE_THRESHOLD)
         if passed_threshold and not exists_duplicate_amount:
-            return largest_transaction.to if is_out else largest_transaction.sender
+            if is_out and not is_contract_address(largest_transaction.to):
+                return largest_transaction.to
+            elif not is_out:
+                return largest_transaction.sender
     return ''
 
 
@@ -284,7 +288,7 @@ def process_stars_on_all_scammers():
 
 # no need to call this anymore
 def write_scammer_funders_and_beneficiary():
-    input_path = os.path.join(path.univ2_star_shape_path, "scammer_in_out_addresses.txt")
+    input_path = os.path.join(path.univ2_star_shape_path, "scammer_in_out_addresses.csv")
 
     processed_addresses = read_from_csv(input_path)
     scammers_remaining = set(dataloader.scammers)
@@ -313,4 +317,4 @@ if __name__ == '__main__':
     # process_stars_on_all_scammers()
     # result = find_star_shapes('0x94f5628f2ab2efbb60d71400ad71be27fd91fe20')
     result = get_funder_and_beneficiary('0x94f5628f2ab2efbb60d71400ad71be27fd91fe20')
-    # [print(a) for a in result]
+    [print(a) for a in result]
