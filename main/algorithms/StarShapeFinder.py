@@ -286,7 +286,7 @@ def process_stars_on_all_scammers():
                 scammers_ran += 1
 
 
-# no need to call this anymore
+# method to write given scammer funders and beneficiary.
 def write_scammer_funders_and_beneficiary():
     input_path = os.path.join(path.univ2_star_shape_path, "scammer_in_out_addresses.csv")
 
@@ -303,6 +303,7 @@ def write_scammer_funders_and_beneficiary():
     overall_scammers_written = 0
 
     while overall_scammers_written < num_scammers_to_run and len(scammers_remaining) > 0:
+        print("Scammers ran {} and scammers left {}".format(overall_scammers_written, len(scammers_remaining)))
         with open(input_path, "a") as f:
             for _ in range(save_file_freq):
                 current_address = scammers_remaining.pop()
@@ -312,9 +313,10 @@ def write_scammer_funders_and_beneficiary():
                 f.write(string_to_write)
                 overall_scammers_written += 1
 
+    print("Finished writing scammers")
 
 if __name__ == '__main__':
+    write_scammer_funders_and_beneficiary()
     # process_stars_on_all_scammers()
     # result = find_star_shapes('0x94f5628f2ab2efbb60d71400ad71be27fd91fe20')
-    result = get_funder_and_beneficiary('0x94f5628f2ab2efbb60d71400ad71be27fd91fe20')
-    [print(a) for a in result]
+    # [print(a) for a in result]
