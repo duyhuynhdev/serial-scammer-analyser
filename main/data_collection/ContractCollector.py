@@ -336,7 +336,7 @@ class ContractSourceCodeCollector:
 
 
 if __name__ == '__main__':
-    # done: 0, 4, 8, 24
+    # done: 0, 4, 5, 8, 24
     # fail: 9, 10, 11
     collector = PoolInfoCollector()
     job = 14

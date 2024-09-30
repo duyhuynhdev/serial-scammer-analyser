@@ -67,26 +67,37 @@ def create_end_node(address, path, label):
     return node
 
 
-def create_node(address, path, dataloader, dex='univ2'):
+def create_node(address, path, dataloader,  existing_groups=None, dex='univ2'):
+    if existing_groups is None:
+        existing_groups = set()
     normal_txs, internal_txs = transaction_collector.get_transactions(address, dex)
     print("\t CREATE NODE FOR ", address, " WITH NORMAL TX:", len(normal_txs) if normal_txs is not None else 0, "AND INTERNAL TX:", len(internal_txs) if internal_txs is not None else 0)
     if normal_txs is None and internal_txs is None:
         return create_end_node(address, path, NodeLabel.BLANK)
-    eoa_neighbours, contract_neighbours, labels = get_neighbours_and_labels(address, normal_txs, internal_txs, dataloader)
+    eoa_neighbours, contract_neighbours, labels = get_neighbours_and_labels(address, normal_txs, internal_txs, dataloader, existing_groups)
     node = Node(address, path, eoa_neighbours, contract_neighbours, normal_txs, internal_txs, labels)
     return node
 
 
-def get_scammers_list_by_token(scam_token, dataloader):
+def get_scammers_list_by_token(scam_token, dataloader, existing_groups=None):
+    if existing_groups is None:
+        existing_groups = set()
     scam_pool = dataloader.scam_token_pool[scam_token.lower()]
     scammers = []
     if scam_pool is not None and scam_pool.lower() in dataloader.pool_group.keys():
         group_id = dataloader.pool_group[scam_pool]
+        if group_id in existing_groups:
+            # print(f"\t\tFOUND A SWAP ON POOL {scam_pool} in GROUP {group_id} (SKIP BECAUSE THE GROUP HAS BEEN ADDED)")
+            return []
+        existing_groups.add(group_id)
         scammers = dataloader.group_scammers[group_id]
+        # print(f"\t\tFOUND A SWAP ON POOL {scam_pool} in GROUP {group_id} SIZE {len(scammers)}")
     return scammers
 
 
-def get_scammers_list_from_swap_tx(tx, dataloader):
+def get_scammers_list_from_swap_tx(tx, dataloader, existing_groups=None):
+    if existing_groups is None:
+        existing_groups = set()
     parsed_inputs = function_decoder.decode_function_input(tx.input)
     scammers = list()
     if (parsed_inputs is not None) and (len(parsed_inputs) > 0):
@@ -98,11 +109,13 @@ def get_scammers_list_from_swap_tx(tx, dataloader):
         scam_tokens = [path[1] for path in paths if (len(path) == 2) and (path[0].lower() in Constant.HIGH_VALUE_TOKENS) and (path[1].lower() in dataloader.scam_token_pool.keys())]
         # scam_tokens = [token for path in paths for token in path if token.lower() in dataloader.scam_token_pool.keys()]
         for token in scam_tokens:
-            scammers.extend([s for s in get_scammers_list_by_token(token, dataloader) if s not in scammers])
+            scammers.extend([s for s in get_scammers_list_by_token(token, dataloader, existing_groups) if s not in scammers])
     return scammers
 
 
-def get_neighbours_and_labels(scammer_address, normal_txs, internal_txs, dataloader):
+def get_neighbours_and_labels(scammer_address, normal_txs, internal_txs, dataloader,  existing_groups=None):
+    if existing_groups is None:
+        existing_groups = set()
     eoa_neighbours, contract_neighbours = [], []
     labels = set()
     scammer_neighbours = set()
@@ -136,8 +149,9 @@ def get_neighbours_and_labels(scammer_address, normal_txs, internal_txs, dataloa
             elif tx.is_out_tx(scammer_address) and tx.is_creation_contract():
                 contract_neighbours.append(tx.contractAddress)
             elif tx.is_out_tx(scammer_address) and tx.is_to_contract(scammer_address):
-                scammers = get_scammers_list_from_swap_tx(tx, dataloader)
+                scammers = get_scammers_list_from_swap_tx(tx, dataloader, existing_groups)
                 if scammers is not None and len(scammers) > 0:
+                    print("\t\t FOUND A SCAM SWAP ON NEW GROUP")
                     labels.add(NodeLabel.WASHTRADER)
                     eoa_neighbours.extend(scammers)
                     scammer_neighbours.add(scammers[0])  # add presentative only

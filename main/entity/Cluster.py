@@ -16,10 +16,12 @@ class ClusterNode:
         self.labels = labels
         self.path = path.copy() if path is not Node else [address]
 
-    def to_full_node(self, dataloader):
+    def to_full_node(self, dataloader, existing_groups=None):
+        if existing_groups is None:
+            existing_groups = set()
         if self.address in self.path:
             self.path.remove(self.address)
-        full_node = create_node(self.address, self.path, dataloader)
+        full_node = create_node(self.address, self.path, dataloader, existing_groups)
         full_node.labels = self.labels
         return full_node
 
@@ -42,9 +44,10 @@ class ClusterNode:
 
 
 class Cluster:
-    def __init__(self, address):
-        self.id = address
+    def __init__(self, gid):
+        self.id = gid
         self.nodes = dict()
+        self.groups = set()
 
     def __contains__(self, node):
         return node.address in self.nodes.keys()
@@ -61,6 +64,9 @@ class Cluster:
                             len(node.internal_txs),
                             node.labels)
         self.nodes[cnode.address] = cnode
+
+    def add_group(self, group):
+        self.groups.add(group)
 
     def write_node(self, outpath, n: Node):
         node_list_file = os.path.join(outpath, f"cluster_{self.id}.csv")
@@ -85,6 +91,7 @@ class Cluster:
     def read_queue(self, in_path, dataloader):
         queue = OrderedQueue()
         traversed_nodes = set()
+        existing_groups = set()
         queue_file = os.path.join(in_path, f"queue_{self.id}.csv")
         traversed_file = os.path.join(in_path, f"traversed_{self.id}.txt")
         if os.path.exists(queue_file):
@@ -95,7 +102,7 @@ class Cluster:
                     path = row['path'].split(';') if 'path' in row else []
                     if row["address"] in path:
                         path.remove(row["address"])
-                    node = create_node(row["address"], path, dataloader)
+                    node = create_node(row["address"], path, dataloader, existing_groups)
                     queue.put(node)
             except Exception as e:
                 print("CANNOT LOAD QUEUE FILE INTO DF >> START FROM SCRATCH")
