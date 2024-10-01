@@ -253,10 +253,8 @@ def process_stars_on_all_scammers():
                 # and remove the popped element from the other set
                 if len(all_stars_result) == 0:
                     no_star_file.write(current_scammer_to_run + '\n')
-                    if pop_from_in:
-                        out_scammers_remaining.remove(current_scammer_to_run)
-                    elif not pop_from_in:
-                        in_scammers_remaining.remove(current_scammer_to_run)
+                    out_scammers_remaining.discard(current_scammer_to_run)
+                    in_scammers_remaining.discard(current_scammer_to_run)
                 else:
                     for star in all_stars_result:
                         star_type = star[0]
@@ -265,17 +263,17 @@ def process_stars_on_all_scammers():
                         if star_type == StarShape.IN:
                             file_to_write_to = in_file
                             for satellite_scammer in star[3]:
-                                in_scammers_remaining.remove(satellite_scammer)
+                                in_scammers_remaining.discard(satellite_scammer)
                         elif star_type == StarShape.OUT:
                             file_to_write_to = out_file
                             for satellite_scammer in star[3]:
-                                out_scammers_remaining.remove(satellite_scammer)
+                                out_scammers_remaining.discard(satellite_scammer)
                         elif star_type == StarShape.IN_OUT:
                             file_to_write_to = in_out_file
                             # an IN_OUT satellites cannot be part of another star so remove from both
                             for satellite_scammer in star[3]:
-                                out_scammers_remaining.remove(satellite_scammer)
-                                in_scammers_remaining.remove(satellite_scammer)
+                                in_scammers_remaining.discard(satellite_scammer)
+                                out_scammers_remaining.discard(satellite_scammer)
 
                         string_to_write = '{}, {}, {}\n'.format(star[1], star[2], ', '.join(star[3]))
                         file_to_write_to.write(string_to_write)
