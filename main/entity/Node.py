@@ -98,7 +98,7 @@ def get_scammers_list_by_token(scam_token, dataloader, existing_groups=None):
 def get_scammers_list_from_swap_tx(tx, dataloader, existing_groups=None):
     if existing_groups is None:
         existing_groups = set()
-    parsed_inputs = function_decoder.decode_function_input(tx.input)
+    is_swap, parsed_inputs = function_decoder.decode_function_input(tx.input)
     scammers = list()
     if (parsed_inputs is not None) and (len(parsed_inputs) > 0):
         # get path inputs from parsed inputs
@@ -146,7 +146,7 @@ def get_neighbours_and_labels(scammer_address, normal_txs, internal_txs, dataloa
                     normal_accounts.add(tx.to)
                 if tx.to in dataloader.scammers:
                     scammer_neighbours.add(tx.to)
-            elif tx.is_out_tx(scammer_address) and tx.is_creation_contract():
+            elif tx.is_out_tx(scammer_address) and tx.is_creation_contract_tx():
                 contract_neighbours.append(tx.contractAddress)
             elif tx.is_out_tx(scammer_address) and tx.is_to_contract(scammer_address):
                 scammers = get_scammers_list_from_swap_tx(tx, dataloader, existing_groups)

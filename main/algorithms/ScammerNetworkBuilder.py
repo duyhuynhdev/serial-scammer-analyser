@@ -17,85 +17,11 @@ from utils.S3Syncer import S3Syncer
 from utils.Settings import Setting
 from utils.ProjectPath import ProjectPath
 from utils import Utils as ut
-import networkx as nx
-import itertools
-from tqdm import tqdm
 path = ProjectPath()
 setting = Setting()
 dataloader = DataLoader()
 contract_event_collector = ContractEventCollector()
 transaction_collector = TransactionCollector()
-
-
-def get_related_scammer_from_pool_events(pool, event_path, dataloader, dex='univ2'):
-    pool_transfers = contract_event_collector.get_event(pool, "Transfer", event_path, dex)
-    pool_swaps = contract_event_collector.get_event(pool, "Swap", event_path, dex)
-    connected_scammer = set()
-    for transfer in pool_transfers:
-        if transfer["sender"].lower() in dataloader.scammers:
-            connected_scammer.add(transfer["sender"].lower())
-        if transfer["to"].lower() in dataloader.scammers:
-            connected_scammer.add(transfer["to"].lower())
-    for swap in pool_swaps:
-        if swap["sender"].lower() in dataloader.scammers:
-            connected_scammer.add(swap["sender"].lower())
-        if swap["to"].lower() in dataloader.scammers:
-            connected_scammer.add(swap["to"].lower())
-    print(f"FOUND {len(connected_scammer)} SCAM INVESTOR FROM POOL {pool}")
-    return connected_scammer
-
-
-def get_scam_neighbours(address, dataloader, dex='univ2'):
-    normal_txs, _ = transaction_collector.get_transactions(address, dex)
-    connected_scammer = set()
-    for tx in normal_txs:
-        if tx.sender.lower() in dataloader.scammers:
-            connected_scammer.add(tx.sender.lower())
-        if not isinstance(tx.to, float) and tx.to != "" and tx.to.lower() in dataloader.scammers:
-            connected_scammer.add(tx.to.lower())
-    print(f"FOUND {len(connected_scammer)} SCAM NEIGHBOURS FROM ADDRESS {address}")
-    return connected_scammer
-
-
-def scammer_grouping(dex='univ2'):
-    graph = nx.Graph()
-    event_path = eval('path.{}_pool_events_path'.format(dex))
-    for pool in tqdm(dataloader.pool_scammers):
-        scammers = set(dataloader.pool_scammers[pool])
-        scammers.update(get_related_scammer_from_pool_events(pool, event_path, dataloader, dex))
-        scam_neighbours = set()
-        for s in scammers:
-            sn = get_scam_neighbours(s, dataloader, dex)
-            scam_neighbours.update(sn)
-        scammers.update(scam_neighbours)
-        if len(scammers) == 1:
-            for ss in scammers:
-                if not graph.has_node(ss):
-                    graph.add_node(ss)
-        adj_list = list(itertools.combinations(scammers, 2))
-        for u, v in adj_list:
-            graph.add_edge(u, v)
-    print("GRAPH HAVE", len(nx.nodes(graph)), "NODES")
-    groups = list(nx.connected_components(graph))
-    isolates = set(nx.isolates(graph))
-    return groups, isolates
-
-
-def pre_clusterting(dex='univ2'):
-    file_path = os.path.join(eval('path.{}_processed_path'.format(dex)), "scammer_group.csv")
-    groups, isolates = scammer_grouping(dex)
-    data = []
-    id = 1
-    for group in groups:
-        for s in group:
-            data.append({"group_id": id, "scammer": s})
-        id += 1
-    for i in isolates:
-        data.append({"group_id": id, "scammer": s})
-        id += 1
-    print("DATA SIZE", len(data))
-    ut.save_overwrite_if_exist(data, file_path)
-
 
 def is_eoa_node(node):
     if NodeLabel.CONTRACT in node.labels:
@@ -103,12 +29,12 @@ def is_eoa_node(node):
     for ntx in node.normal_txs:
         if ntx.sender.lower() == node.address.lower():  # sender of normal txs must be EOA
             return True
-        if ntx.is_creation_contract() and ntx.contractAddress.lower() == node.address.lower():  # address is a contract created by an EOA
+        if ntx.is_creation_contract_tx() and ntx.contractAddress.lower() == node.address.lower():  # address is a contract created by an EOA
             return False
     for itx in node.internal_txs:
         if itx.sender.lower() == node.address.lower():  # sender of normal txs must be contract
             return False
-        if itx.is_creation_contract() and itx.contractAddress.lower() == node.address.lower():  # address is a contract created by a contract
+        if itx.is_creation_contract_tx() and itx.contractAddress.lower() == node.address.lower():  # address is a contract created by a contract
             return False
     return True
 

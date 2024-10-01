@@ -111,7 +111,8 @@ class PoolDataCollector:
 
 class PoolInfoCollector:
     def download_tokens_from_pool(self, job, dex="univ2"):
-        key = setting.INFURA_API_KEYS[(job % len(setting.INFURA_API_KEYS))]
+        # key = setting.INFURA_API_KEYS[(job % len(setting.INFURA_API_KEYS))]
+        key = setting.INFURA_API_KEYS[key_idx]
         node_url = infura_api[dex]["node_url"]
         pool_abi = infura_api[dex]["pool_abi"]
         node_web3 = Web3(Web3.HTTPProvider(node_url + key))
@@ -353,11 +354,11 @@ def download_token_contract(job, dex="univ2"):
     contract_source_code_collector.download_source_codes(job, addresses, dex)
 
 if __name__ == '__main__':
-    # done: 0,1, 3, 4, 5, 8, 24
-    # fail: 9, 10, 11
-    # collector = PoolInfoCollector()
-    # job = 23
-    # collector.pancakeswap_token_download(job)
+    # done: 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 16, 17, 18, 19, 20, 21, 22, 23, 24
+    collector = PoolInfoCollector()
+    job = 15
+    key_idx = 5
+    collector.pancakeswap_token_download(job)
     ######################################
     # pancakeswap_pools_download(job)
     ####################################
@@ -370,5 +371,5 @@ if __name__ == '__main__':
     # collector = TokenInfoCollector()
     # collector.download_tokens_info(6)
     ###############################################
-    job = 17
-    download_token_contract(job, dex="univ2")
+    # job = 17
+    # download_token_contract(job, dex="univ2")
