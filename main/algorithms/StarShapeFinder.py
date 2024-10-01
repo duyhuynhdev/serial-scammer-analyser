@@ -208,6 +208,7 @@ def process_stars_on_all_scammers():
                 row = line.rstrip('\n').split(', ')
                 for index in range(2, len(row)):
                     if is_not_blank(row[index]) and row[index] != 'satellites':
+                        # change back to remove
                         set_to_remove.remove(row[index])
 
     in_stars_path = os.path.join(path.univ2_star_shape_path, "in_stars.csv")
@@ -240,9 +241,8 @@ def process_stars_on_all_scammers():
 
     while scammers_ran < scammers_to_run and len(in_scammers_remaining) + len(out_scammers_remaining) > 0:
         print("Scammers ran {} and scammers left {}".format(scammers_ran, len(in_scammers_remaining) + len(out_scammers_remaining)))
-        for _ in range(save_file_freq):
-            with (open(in_stars_path, "a") as in_file, open(out_stars_path, "a") as out_file,
-                  open(in_out_stars_path, "a") as in_out_file, open(no_stars_path, "a") as no_star_file):
+        with (open(in_stars_path, "a") as in_file, open(out_stars_path, "a") as out_file, open(in_out_stars_path, "a") as in_out_file, open(no_stars_path, "a") as no_star_file):
+            for _ in range(save_file_freq):
                 current_scammer_to_run = in_scammers_remaining.pop() if pop_from_in else out_scammers_remaining.pop()
                 all_stars_result = find_star_shapes(current_scammer_to_run)
 
@@ -250,21 +250,21 @@ def process_stars_on_all_scammers():
                 # print("Result for scammer {}: {}".format(current_scammer_to_run, all_stars_result))
 
                 # if no stars are found, write to the no_stars.csv
-                # and remove the popped element from the other set
                 if len(all_stars_result) == 0:
                     no_star_file.write(current_scammer_to_run + '\n')
-                    out_scammers_remaining.discard(current_scammer_to_run)
-                    in_scammers_remaining.discard(current_scammer_to_run)
                 else:
                     for star in all_stars_result:
                         star_type = star[0]
                         file_to_write_to = None
-                        # remove the remaining scammers from the list for respective IN/OUT file or both if it's an IN_OUT star
-                        if star_type == StarShape.IN:
+                        # remove the satellites from the set of in_scammers_remaining since
+                        # another run on a satellite will return the same IN star shape
+                        # but verify before removing incase this shape comes up again
+                        if star_type == StarShape.IN and bool(star[3] & in_scammers_remaining):
                             file_to_write_to = in_file
                             for satellite_scammer in star[3]:
                                 in_scammers_remaining.discard(satellite_scammer)
-                        elif star_type == StarShape.OUT:
+
+                        elif star_type == StarShape.OUT and bool(star[3] & out_scammers_remaining):
                             file_to_write_to = out_file
                             for satellite_scammer in star[3]:
                                 out_scammers_remaining.discard(satellite_scammer)
@@ -275,10 +275,16 @@ def process_stars_on_all_scammers():
                                 in_scammers_remaining.discard(satellite_scammer)
                                 out_scammers_remaining.discard(satellite_scammer)
 
-                        string_to_write = '{}, {}, {}\n'.format(star[1], star[2], ', '.join(star[3]))
-                        file_to_write_to.write(string_to_write)
+                        if file_to_write_to:
+                            string_to_write = '{}, {}, {}\n'.format(star[1], star[2], ', '.join(star[3]))
+                            print('string_to_write is {} with the current_scammer={} and pop_from_in={}\n'.format(string_to_write, current_scammer_to_run, str(pop_from_in)))
+                            file_to_write_to.write(string_to_write)
+                # since we just wrote all the results including IN/OUT, can just remove from other stack
+                in_scammers_remaining.discard(current_scammer_to_run)
+                out_scammers_remaining.discard(current_scammer_to_run)
                 pop_from_in = not pop_from_in
                 scammers_ran += 1
+
 
 # deprecated - no longer needed
 def write_scammer_funders_and_beneficiary():
