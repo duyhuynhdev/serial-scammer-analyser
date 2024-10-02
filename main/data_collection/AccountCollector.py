@@ -176,7 +176,7 @@ class TransactionCollector:
         if not os.path.isfile(output_path):
             result = api.get_normal_transactions(address, fromBlock=0, toBlock=eval('self.{}_last_block'.format(dex)), apikey=apikey)
             ut.save_overwrite_if_exist(result, output_path)
-            print(f"SAVED NORMAL TXs OF {address}")
+            print(f"\t\tSAVED NORMAL TXs OF {address}")
             return result
 
     def download_internal_transactions(self, address, api, apikey, dex='univ2'):
@@ -184,7 +184,7 @@ class TransactionCollector:
         if not os.path.isfile(output_path):
             result = api.get_internal_transactions(address, fromBlock=0, toBlock=eval('self.{}_last_block'.format(dex)), apikey=apikey)
             ut.save_overwrite_if_exist(result, output_path)
-            print(f"SAVED INTERNAL TXs OF {address}")
+            print(f"\t\tSAVED INTERNAL TXs OF {address}")
             return result
 
 
