@@ -41,6 +41,29 @@ def init(group_id, scammer_address, scammers, cluster_path, node_factory):
         cluster.add_node(node)
     return cluster, queue, traversed_nodes
 
+SMALL_VALUE = 1e-3
+def is_slave_PA(suspected_node, target_node):
+    for tx in suspected_node.normal_txs:
+        # check if there is any tx from suspected_node to target_node with small value
+        if tx.is_out_tx(suspected_node.address) and tx.to == target_node.address and float(tx.value) / 1e18 < SMALL_VALUE:
+            time_in = int(tx.timeStamp)
+            # get a list of addresses that target node sends tx to before time_in
+            out_adds = set([tx_out.to for tx_out in target_node.normal_txs if tx_out.is_out_tx(target_node.address) and int(tx_out.timeStamp) < time_in])
+            # try:
+            #     tmp = []
+            #     for tx_out in target_node.normal_txs:
+            #         if tx_out.is_out_tx(target_node.address) and int(tx_out.timeStamp) < time_in:
+            #             tmp.append(tx_out.to)
+            #
+            #     out_adds = set(tmp)
+            # except Exception as e:
+            #     print(f"tx_out.to = {tx_out.to}")
+            # check if the address of suspected node is similar to any address in the out_adds list of the target node
+            for out_add in out_adds:
+                if suspected_node.address[0:3] == out_add[0:3] and suspected_node.address[-3:] == out_add[-3:]:
+                    print(f"phishing_add = {suspected_node.address}, victim_add = {target_node.address}, 'similar_add = {out_add}")
+                    return True
+    return False
 
 def explore_scammer_network(group_id, scammers, node_factory, dex='univ2'):
     cluster_path = eval('path.{}_cluster_path'.format(dex))
@@ -76,7 +99,8 @@ def explore_scammer_network(group_id, scammers, node_factory, dex='univ2'):
                     and (neighbour_address not in queue.addresses)
                     and not cluster.is_address_exist(neighbour_address)):
                 node = node_factory.create(neighbour_address, root.path)
-                queue.put(node)
+                if not is_slave_PA(node, root):
+                    queue.put(node)
         if it % 10 == 0:
             print(">>> SAVE QUEUE & CLUSTER STATE <<<")
             cluster.save(cluster_path)
@@ -114,4 +138,4 @@ def run_clustering(group_id, dex='univ2'):
 
 
 if __name__ == '__main__':
-    run_clustering(2)
+    run_clustering(3)
