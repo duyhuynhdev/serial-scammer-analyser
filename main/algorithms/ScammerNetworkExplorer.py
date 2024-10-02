@@ -1,6 +1,8 @@
 import sys
 import os
 
+sys.path.append( os.path.join(os.path.dirname(sys.path[0])))
+
 from entity.LightCluster import LightCluster
 from entity.LightNode import LightNodeFactory, LightNode, LightNodeLabel
 from entity.OrderedQueue import OrderedQueue
@@ -112,4 +114,4 @@ def run_clustering(group_id, dex='univ2'):
 
 
 if __name__ == '__main__':
-    run_clustering(1)
+    run_clustering(2)
