@@ -100,6 +100,7 @@ def explore_scammer_network(group_id, scammers, node_factory, dex='univ2'):
                     and not cluster.is_address_exist(neighbour_address)):
                 node = node_factory.create(neighbour_address, root.path)
                 if not is_slave_PA(node, root):
+                    cluster.add_node(node)
                     queue.put(node)
         if it % 10 == 0:
             print(">>> SAVE QUEUE & CLUSTER STATE <<<")
