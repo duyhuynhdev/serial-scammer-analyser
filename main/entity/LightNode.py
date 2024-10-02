@@ -178,7 +178,7 @@ class LightNodeFactory:
         if len(eoa_neighbours) > 0 and len(scam_neighbours) / len(eoa_neighbours) > 0.5:
             labels.add(LightNodeLabel.COORDINATOR)
         if (LightNodeLabel.SCAMMER not in labels
-                and LightNodeLabel.WITHDRAWER not in labels
+                and LightNodeLabel.COORDINATOR not in labels
                 and len(swap_txs) > 0
                 and len(scam_swap_txs) / len(swap_txs) < 0.5):
             labels.add(LightNodeLabel.BOUNDARY)
@@ -206,6 +206,6 @@ class LightNodeFactory:
 if __name__ == '__main__':
     dataloader = DataLoader()
     factory = LightNodeFactory(dataloader)
-    node = factory.create("0xe336aa457f13fd5542583a9abf04410b596925cb", [])
+    node = factory.create("0xb2cd290b0f0ddfd07fe19f8f5aa1474a51caf922", [])
     print(node.labels)
     print(node.valid_neighbours)
