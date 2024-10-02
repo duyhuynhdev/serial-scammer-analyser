@@ -13,6 +13,7 @@ class LightNodeLabel:
     TRANSFER = "transfer"  # only receive and transfer money
     WASHTRADER = "washtrader"  # washtrade scam token
     BOUNDARY = "boundary"  # grey node
+    BIG_CONNECTOR = "big_connector"
 
 
 class LightNode:
@@ -198,6 +199,8 @@ class LightNodeFactory:
         # Skip verify neighbours if the node is boundary node
         if LightNodeLabel.BOUNDARY not in labels:
             valid_neighbours = self.get_valid_neighbours(address, normal_txs)
+            if len(valid_neighbours) > 50:
+                labels.add(LightNodeLabel.BIG_CONNECTOR)
         path = parent_path.copy() if parent_path is not None else []
         path.append(address)
         return LightNode(address, valid_neighbours, len(normal_txs), labels, path, normal_txs)

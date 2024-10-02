@@ -81,16 +81,16 @@ def explore_scammer_network(group_id, scammers, node_factory, dex='univ2'):
         print("TRAVERSED NODES:", len(traversed_nodes))
         print("ITERATION:", it)
         root: LightNode = queue.get()
+        print("\t ROOT ADDRESS", root.address)
+        print("\t VALID NEIGHBOURS", len(root.valid_neighbours))
+        print("\t LABELS", root.labels)
+        print("\t PATH", " -> ".join(root.path))
         if LightNodeLabel.BOUNDARY in root.labels:
             print(f"\t REACH BOUNDARY AT {root.address} >> SKIP")
             continue
         if root.address.lower() in traversed_nodes:
             print(f"\t {root.address} HAS BEEN VISITED >> SKIP")
             continue
-        print("\t ROOT ADDRESS", root.address)
-        print("\t VALID NEIGHBOURS", len(root.valid_neighbours))
-        print("\t LABELS", root.labels)
-        print("\t PATH", " -> ".join(root.path))
         traversed_nodes.add(root.address.lower())
 
         for neighbour_address in root.valid_neighbours:
