@@ -49,6 +49,9 @@ class FunctionInputDecoder:
         "0x0162e2d0": {"signature": "swapETHForExactTokens(uint256[],address[],address,uint256,uint256,uint256,uint256))",
                        "types": ["uint256", "address[]", "address", "uint256", "uint256", "uint256", "uint256"],
                        "names": ['amountOut', 'path', 'to', 'deadline', "unknown0", "unknown1", "unknown2"]},
+        "0x088890dc": {"signature": "swapExactETHForTokensSupportingFeeOnTransferTokens(uint256,address[],address,uint256,address)",
+                       "types": ["uint256", "address[]", "address","uint256","address"],
+                       "names": ['amountOutMin', 'path', 'to', 'deadline', 'referrer']},
         # V3 ROUTER
         "0x472b43f3": {"signature": "swapExactTokensForTokens(uint256,uint256,address[],address,uint256)",
                        "types": ["uint256", "uint256", "address[]", "address"],

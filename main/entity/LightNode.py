@@ -95,7 +95,7 @@ class LightNodeFactory:
             elif (tx.is_to_eoa(address)
                   and float(tx.value) > 0
                   and tx.to not in valid_neighbours
-                  and not self.is_public_address(tx.sender)
+                  and not self.is_public_address(tx.to)
                   and self.ensure_eoa_address(tx.to)):
                 valid_neighbours.append(tx.to)
             elif tx.is_out_tx(address) and tx.is_contract_call_tx():
@@ -206,5 +206,6 @@ class LightNodeFactory:
 if __name__ == '__main__':
     dataloader = DataLoader()
     factory = LightNodeFactory(dataloader)
-    node = factory.create("0x1ddf167010dd283f31325659c112dafb6f8b849b", [])
+    node = factory.create("0xe336aa457f13fd5542583a9abf04410b596925cb", [])
     print(node.labels)
+    print(node.valid_neighbours)
