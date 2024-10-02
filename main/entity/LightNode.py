@@ -190,8 +190,11 @@ class LightNodeFactory:
     def create(self, address, parent_path):
         normal_txs, internal_txs = self.transaction_collector.get_transactions(address, self.dex)
         print("\t\t CREATE NODE FOR ", address, " WITH NORMAL TX:", len(normal_txs) if normal_txs is not None else 0, "AND INTERNAL TX:", len(internal_txs) if internal_txs is not None else 0)
-        valid_neighbours = self.get_valid_neighbours(address, normal_txs)
         labels = self.get_node_labels(address, normal_txs, internal_txs)
+        valid_neighbours = []
+        # Skip verify neighbours if the node is boundary node
+        if LightNodeLabel.BOUNDARY not in labels:
+            valid_neighbours = self.get_valid_neighbours(address, normal_txs)
         path = parent_path.copy() if parent_path is not None else []
         path.append(address)
         return LightNode(address, valid_neighbours, len(normal_txs), labels, path)
