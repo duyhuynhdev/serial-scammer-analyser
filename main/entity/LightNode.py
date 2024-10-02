@@ -1,3 +1,4 @@
+from algorithms.ScammerNetworkBuilder import dataloader
 from data_collection.AccountCollector import TransactionCollector
 from data_collection.DataDecoder import FunctionInputDecoder
 from utils import Constant
@@ -134,12 +135,13 @@ class LightNodeFactory:
                         scam_neighbours.append(tx.to)
                 else:
                     contract_neighbours.append(tx.to)
-            elif tx.is_contract_call_tx():
-                contract_neighbours.append(tx.to)
-                is_swap, scammers = self.get_scammer_if_swap_tx(tx)
-                swap_txs.append(tx)
-                if len(scammers) > 0:
-                    scam_swap_txs.append(tx)
+                    if tx.is_contract_call_tx():
+                        contract_neighbours.append(tx.to)
+                        is_swap, scammers = self.get_scammer_if_swap_tx(tx)
+                        if is_swap:
+                            swap_txs.append(tx)
+                        if len(scammers) > 0:
+                            scam_swap_txs.append(tx)
         return (scam_neighbours,
                 eoa_neighbours,
                 contract_neighbours,
@@ -198,3 +200,10 @@ class LightNodeFactory:
         path = parent_path.copy() if parent_path is not None else []
         path.append(address)
         return LightNode(address, valid_neighbours, len(normal_txs), labels, path)
+
+
+if __name__ == '__main__':
+    dataloader = DataLoader()
+    factory = LightNodeFactory(dataloader)
+    node = factory.create("0x1ddf167010dd283f31325659c112dafb6f8b849b", [])
+    print(node.labels)
