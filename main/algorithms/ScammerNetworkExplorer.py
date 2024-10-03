@@ -72,6 +72,7 @@ def explore_scammer_network(group_id, scammers, node_factory, dex='univ2'):
         return None, list()
     scammer_address = scammers[0]
     cluster, queue, traversed_nodes = init(group_id, scammer_address, scammers, cluster_path, node_factory)
+    suspicious_big_nodes = []
     it = 0
     while not queue.empty():
         it += 1
@@ -100,17 +101,22 @@ def explore_scammer_network(group_id, scammers, node_factory, dex='univ2'):
                     and not cluster.is_address_exist(neighbour_address)):
                 node = node_factory.create(neighbour_address, root.path)
                 if not is_slave_PA(node, root):
+                    if LightNodeLabel.BIG_CONNECTOR in node.labels:
+                        suspicious_big_nodes.append(LightNode.to_sort_dict(node))
                     cluster.add_node(node)
                     queue.put(node)
+
         if it % 10 == 0:
             print(">>> SAVE QUEUE & CLUSTER STATE <<<")
             cluster.save(cluster_path)
             cluster.write_queue(cluster_path, queue, traversed_nodes)
+            ut.save_overwrite_if_exist(suspicious_big_nodes, os.path.join(cluster_path, f"cluster_{cluster.id}_suspicious_nodes.csv"))
         print("*" * 100)
         if config["is_max_iter"] and config["max_iter"] <= it:
             break
     cluster.save(cluster_path)
     cluster.write_queue(cluster_path, queue, traversed_nodes)
+    ut.save_overwrite_if_exist(suspicious_big_nodes, os.path.join(cluster_path, f"cluster_{cluster.id}_suspicious_nodes.csv"))
     return cluster, it
 
 

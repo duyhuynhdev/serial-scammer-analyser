@@ -1,4 +1,6 @@
-from algorithms.ScammerNetworkBuilder import dataloader
+import sys
+import os
+sys.path.append( os.path.join(os.path.dirname(sys.path[0])))
 from data_collection.AccountCollector import TransactionCollector
 from data_collection.DataDecoder import FunctionInputDecoder
 from utils import Constant
@@ -34,6 +36,14 @@ class LightNode:
         path = data['path'].split(';') if 'path' in data else []
         return LightNode(address, valid_neighbours, normal_txs_len, labels, path)
 
+    @staticmethod
+    def to_sort_dict(node):
+        return {
+            'address': node.address,
+            'valid_neighbours': len(node.valid_neighbours),
+            'normal_txs_len': node.normal_txs_len,
+            'labels': ';'.join(node.labels),
+        }
 class LightNodeFactory:
     def __init__(self, dataloader = None, dex = "univ2"):
         self.dex = dex
@@ -83,6 +93,8 @@ class LightNodeFactory:
                         if scam_pool and scam_pool in self.dataloader.pool_scammers.keys():
                             scammers = self.dataloader.pool_scammers[scam_pool]
                             scammers.extend([s for s in scammers if s not in scammers])
+                    else:
+                        is_swap = False # turn of if swap out
         return is_swap, scammers
 
     def get_valid_neighbours(self, address, normal_txs):
@@ -110,8 +122,8 @@ class LightNodeFactory:
         contract_neighbours = []
         to_cex_txs = []
         from_cex_txs = []
-        swap_txs = []
-        scam_swap_txs = []
+        swap_in_txs = []
+        scam_swap_in_txs = []
         transfer_txs = []
         true_in_value = 0
         true_out_value = 0
@@ -125,13 +137,13 @@ class LightNodeFactory:
                 if tx.is_transfer_tx():
                     transfer_txs.append(tx)
                     true_in_value += tx.get_true_transfer_amount(address)
-            elif tx.is_out_tx(address) and float(tx.value) > 0:
+            elif tx.is_out_tx(address):
                 if tx.to.lower() in self.public_exchange_addresses:
                     to_cex_txs.append(tx)
-                if tx.is_transfer_tx():
+                if tx.is_transfer_tx() and float(tx.value) > 0:
                     transfer_txs.append(tx)
                     true_out_value += tx.get_true_transfer_amount(address)
-                if tx.is_to_eoa(address):
+                if tx.is_to_eoa(address) and float(tx.value) > 0:
                     eoa_neighbours.append(tx.to)
                     if self.is_scammer_address(tx.to):
                         scam_neighbours.append(tx.to)
@@ -139,18 +151,18 @@ class LightNodeFactory:
                     contract_neighbours.append(tx.to)
                     if tx.is_contract_call_tx():
                         contract_neighbours.append(tx.to)
-                        is_swap, scammers = self.get_scammer_if_swap_tx(tx)
-                        if is_swap:
-                            swap_txs.append(tx)
+                        is_swap_in, scammers = self.get_scammer_if_swap_tx(tx)
+                        if is_swap_in:
+                            swap_in_txs.append(tx)
                         if len(scammers) > 0:
-                            scam_swap_txs.append(tx)
+                            scam_swap_in_txs.append(tx)
         return (scam_neighbours,
                 eoa_neighbours,
                 contract_neighbours,
                 to_cex_txs,
                 from_cex_txs,
-                swap_txs,
-                scam_swap_txs,
+                swap_in_txs,
+                scam_swap_in_txs,
                 transfer_txs,
                 true_in_value,
                 true_out_value)
@@ -162,26 +174,26 @@ class LightNodeFactory:
          contract_neighbours,
          to_cex_txs,
          from_cex_txs,
-         swap_txs,
-         scam_swap_txs,
+         swap_in_txs,
+         scam_swap_in_txs,
          transfer_txs,
          true_in_value,
          true_out_value) = self.categorise_normal_transaction(address, normal_txs)
-
+        # print("sb", len(scam_neighbours), "swap_txs", len(swap_in_txs), "scam_swap_txs", len(scam_swap_in_txs))
         if self.is_scammer_address(address):
             labels.add(LightNodeLabel.SCAMMER)
         if len(to_cex_txs) > 0:
             labels.add(LightNodeLabel.DEPOSITOR)
         if len(from_cex_txs) > 0:
             labels.add(LightNodeLabel.WITHDRAWER)
-        if len(scam_swap_txs) > 0:
+        if len(scam_swap_in_txs) > 0:
             labels.add(LightNodeLabel.WASHTRADER)
         if len(eoa_neighbours) > 0 and len(scam_neighbours) / len(eoa_neighbours) > 0.5:
             labels.add(LightNodeLabel.COORDINATOR)
         if (LightNodeLabel.SCAMMER not in labels
                 and LightNodeLabel.COORDINATOR not in labels
-                and len(swap_txs) > 0
-                and len(scam_swap_txs) / len(swap_txs) < 0.5):
+                and len(swap_in_txs) >= 5
+                and len(scam_swap_in_txs) / len(swap_in_txs) < 0.5):
             labels.add(LightNodeLabel.BOUNDARY)
         if (len(contract_neighbours) == 0
                 and len(internal_txs) == 0
@@ -209,6 +221,28 @@ class LightNodeFactory:
 if __name__ == '__main__':
     dataloader = DataLoader()
     factory = LightNodeFactory(dataloader)
+    # address = sys.argv[1]
+    # node = factory.create(address, [])
+    addresses = [
+        "0x17ef03d1f9b53123aba4a9d67fe579b10dbf59d4",
+        "0x68bec4525eb557f48c30eefec249b1d85706cf0c",
+        "0x4502f3bca6ec0aa547ffb0f2b166e0d82c01f856",
+        "0xb2cd290b0f0ddfd07fe19f8f5aa1474a51caf922",
+        "0x50274a83511af15b94c1777fff23ee5818d0b19d",
+        "0xb5fceb9eb50f2c95c18600dc1c02232e61068b29",
+        "0xf0e2eb33510dd3fd61ad7c449effe1e5215e0345",
+        "0x4363abdadf700814636b86ac67c4bb487ce6b63c",
+        "0x81111eeef086ed668754bb36d4eed08f5026ce48",
+        "0xd75e638fbe9c9c3a3a03c84250ccf17a9ca1e7f6",
+        "0x2da7697b6cbcc8c40bb2d267b0bb0835543877b5",
+        "0x5736bbb2247546214086993945c3d0e46a285d21",
+        "0x1ba8732c2de697854243713ec53995280c5fd369",
+        "0x6f7d7efd37d01574980542662c9ac1b4e8dd66f6",
+    ]
+    # for address in addresses:
+    #     node = factory.create(address, [])
+    #     print(address,":",node.labels)
+
+    # 0xb2cd290b0f0ddfd07fe19f8f5aa1474a51caf922
     node = factory.create("0xb2cd290b0f0ddfd07fe19f8f5aa1474a51caf922", [])
-    print(node.labels)
-    print(node.valid_neighbours)
+    print("0xb2cd290b0f0ddfd07fe19f8f5aa1474a51caf922",":",node.labels)
