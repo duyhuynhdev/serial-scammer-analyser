@@ -9,6 +9,7 @@ class LightCluster:
     def __init__(self, gid):
         self.id = gid
         self.nodes = dict()
+        self.groups = set()
 
     def __contains__(self, node):
         return node.address in self.nodes.keys()
@@ -18,6 +19,8 @@ class LightCluster:
 
     def add_node(self, node: LightNode):
         self.nodes[node.address.lower()] = node
+        if node.group is not None:
+            self.groups.add(node.group)
 
     def write_queue(self, outpath, q: OrderedQueue, traversed_nodes):
         queue_file = os.path.join(outpath, f"queue_{self.id}.csv")

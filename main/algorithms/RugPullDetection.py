@@ -257,13 +257,13 @@ def debug_detection(pool_address, dex='univ2'):
     pool_info = pool_infos[pool_infos["pool"] == pool_address]
     token0 = pool_info["token0"].values[0]
     token1 = pool_info["token1"].values[0]
-    weth_position = 0 if token0.lower() == Constant.WETH else 1
     pool_creation = pool_creations[(pool_creations["contractAddress"] == pool_address) | (pool_creations["contractAddress"] == pool_address.lower())]
     pool_creator = pool_creation["contractCreator"].values[0]
     pool_label = 0
     # only consider WETH-paired pool
-    if token0.lower() == Constant.WETH or token1.lower() == Constant.WETH:
-        low_value_token = eval(f"token{1 - weth_position}")
+    if token0.lower() in Constant.HIGH_VALUE_TOKENS or token1.lower() in Constant.HIGH_VALUE_TOKENS:
+        hv_position = 0 if token0.lower() in Constant.HIGH_VALUE_TOKENS else 1
+        low_value_token = eval(f"token{1 - hv_position}")
         num_pairs = pool_infos[(pool_infos["token0"].str.lower() == low_value_token.lower()) | (pool_infos["token1"].str.lower() == low_value_token.lower())]["pool"].count()
         # check of token live 1 day and has 1 pair only to avoid the case of migration.(https://etherscan.io/address/0xa86B8938ed9017693c5883e1b20741b8f735Bf2b#tokentxns)
         # 1 day token will miss the case of https://etherscan.io/address/0x8927E6432a75F98C664863500537afB7970936d9#events
@@ -273,7 +273,7 @@ def debug_detection(pool_address, dex='univ2'):
             pool_swaps = contract_event_collector.get_event(pool_address, "Swap", event_path, dex)
             pool_burns = contract_event_collector.get_event(pool_address, "Burn", event_path, dex)
             pool_mints = contract_event_collector.get_event(pool_address, "Mint", event_path, dex)
-            check_result, event_scammers = is_rug_pull(pool_transfers, pool_mints, pool_burns, pool_swaps, weth_position)
+            check_result, event_scammers = is_rug_pull(pool_transfers, pool_mints, pool_burns, pool_swaps, hv_position)
             if check_result != 0:
                 scam_token = low_value_token
                 # check if scam token is 1 day token
@@ -288,7 +288,7 @@ def debug_detection(pool_address, dex='univ2'):
 
 if __name__ == '__main__':
     dex = "panv2"
-    job = 18
+    job = 20
     collector = ContractSourceCodeCollector(dex)
     rug_pull_detection(job, collector, dex)
-    # debug_detection("0x03667B1ae1C80F4A5E00E2121d6333207Be8e789")
+    # debug_detection("0x45c0a88988f33123794DAb66c232c00e7C1DdCd5", dex)

@@ -76,13 +76,17 @@ def pre_clusterting(dex='univ2'):
     groups, isolates = scammer_grouping(dex)
     data = []
     id = 1
+    existing_scammers = set()
     for group in groups:
         for s in group:
-            data.append({"group_id": id, "scammer": s})
+            if s not in existing_scammers:
+             data.append({"group_id": id, "scammer": s})
+             existing_scammers.add(s)
         id += 1
     for i in isolates:
-        data.append({"group_id": id, "scammer": i})
-        id += 1
+        if i not in existing_scammers:
+            data.append({"group_id": id, "scammer": i})
+            id += 1
     print("DATA SIZE", len(data))
     ut.save_overwrite_if_exist(data, file_path)
 

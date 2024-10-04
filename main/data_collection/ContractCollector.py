@@ -354,10 +354,14 @@ class ContractSourceCodeCollector:
             try:
                 response = api.get_contract_verified_source_code(address, key)
                 source_code = response[0]["SourceCode"]
+                solidity_version = response[0]["CompilerVersion"]
+                contract_name = response[0]["ContractName"]
                 if source_code.strip() == "":
                     print("EMPTY SOURCE CODE:", address)
                     ut.append_item_to_file(empty_path, address)
                 else:
+                    data = [{"address": address, "solidity_version": solidity_version, "contract_name": contract_name}]
+                    ut.save_or_append_if_exist(data, os.path.join(source_code_path, "solidity_version.csv"))
                     with open(output_path, 'w') as f:
                         f.write(source_code)
                         f.close()
@@ -399,7 +403,7 @@ if __name__ == '__main__':
     # collector = TokenInfoCollector()
     # collector.download_tokens_info(6)
     ###############################################
-    # job = 17
-    # download_token_contract(job, dex="univ2")
-    collector = ContractSourceCodeCollector(dex="univ2")
-    print(collector.is_contract_address("0xCFA6785Cd136d2Cdc37fE5835Cc4513E0E33f6C2"))
+    job = 17
+    download_token_contract(job, dex="univ2")
+    # collector = ContractSourceCodeCollector(dex="univ2")
+    # print(collector.is_contract_address("0xCFA6785Cd136d2Cdc37fE5835Cc4513E0E33f6C2"))

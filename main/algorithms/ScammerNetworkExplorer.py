@@ -1,6 +1,7 @@
 import sys
 import os
 
+import pandas as pd
 from pycparser.c_ast import Constant
 
 sys.path.append(os.path.join(os.path.dirname(sys.path[0])))
@@ -23,7 +24,7 @@ config = {
     "is_sync_s3": False,
     "is_load_from_last_run": False,
     "is_max_iter": False,
-    "max_iter": 100
+    "max_iter": 500
 }
 
 
@@ -71,7 +72,7 @@ def explore_scammer_network(group_id, scammers, node_factory, dex='univ2'):
     cluster_path = eval('path.{}_cluster_path'.format(dex))
     scammers = [s for s in scammers if not ut.is_contract_address(s)]
     if len(scammers) == 0:
-        return None, list()
+        return None, list(), 0
     scammer_address = scammers[0]
     cluster, queue, traversed_nodes = init(group_id, scammer_address, scammers, cluster_path, node_factory)
     suspicious_big_nodes = []
@@ -119,7 +120,7 @@ def explore_scammer_network(group_id, scammers, node_factory, dex='univ2'):
     cluster.save(cluster_path)
     cluster.write_queue(cluster_path, queue, traversed_nodes)
     ut.save_overwrite_if_exist(suspicious_big_nodes, os.path.join(cluster_path, f"cluster_{cluster.id}_suspicious_nodes.csv"))
-    return cluster, it
+    return cluster, queue, it
 
 
 def run_clustering(group_id, dex='univ2'):
@@ -134,17 +135,45 @@ def run_clustering(group_id, dex='univ2'):
     scammers = dataloader.group_scammers[group_id]
     print(f"LOAD {len(scammers)} SCAMMER FROM GROUP {group_id}")
     scammers.sort()
-    cluster, it = None, 0
+    cluster, queue, it = None, [], 0
     if len(scammers) > 0:
         print("*" * 100)
         print(f"START CLUSTERING (ADDRESS {scammers[0]}) GROUP {group_id}")
-        cluster, it = explore_scammer_network(group_id, scammers, node_factory, dex)
+        cluster, queue, it = explore_scammer_network(group_id, scammers, node_factory, dex)
         print(f"END CLUSTERING (ADDRESS {scammers[0]}) GROUP {group_id}")
         print("*" * 100)
     if config["is_sync_s3"]:
         s3_file_manager.sync()
-    return cluster, it
+    return cluster,queue, it
+
+def explore_with_max_iter(job, dex='univ2'):
+    global config
+    file_path =  os.path.join(eval(f'path.{dex}_processed_path'), "max_iter_cluster_results.csv")
+    config["is_max_iter"] = True
+    config["max_iter"] = 10
+    data = []
+    processed_gids = []
+    if os.path.exists(file_path):
+        df = pd.read_csv(file_path)
+        processed_gids = df["start_gid"].values.tolist()
+    for gid in dataloader.group_scammers.keys():
+        if gid in processed_gids:
+            continue
+        cluster, queue, it = run_clustering(gid, dex)
+        record = {
+            "start_gid": gid,
+            "cluster_size": len(cluster.nodes),
+            "queue_size": len(queue),
+            "groups": "-".join([str(g) for g in cluster.groups]),
+            "num_iter": it
+        }
+        data.append(record)
+        if len(data) >= 10:
+            ut.save_or_append_if_exist(data, file_path)
+            data = []
+    if len(data) > 0:
+        ut.save_or_append_if_exist(data, file_path)
 
 
 if __name__ == '__main__':
-    run_clustering(1)
+    explore_with_max_iter()

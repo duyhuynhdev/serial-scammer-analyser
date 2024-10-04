@@ -137,21 +137,24 @@ def load_token_info(dex="univ2"):
 
 
 def load_group_scammers(dex="univ2"):
+    group_scammers, scammer_group = dict(), dict()
     file_path = os.path.join(eval('path.{}_processed_path'.format(dex)), "scammer_group.csv")
-    groups = pd.read_csv(file_path)
-    group_scammers = groups.groupby("group_id")["scammer"].apply(list).to_dict()
-    return group_scammers
+    if os.path.exists(file_path):
+        groups = pd.read_csv(file_path)
+        group_scammers = groups.groupby("group_id")["scammer"].apply(list).to_dict()
+        scammer_group = dict(zip(groups["scammer"].str.lower(), groups["group_id"]))
+    return group_scammers, scammer_group
 
 
 def link_pool_and_group(scammer_pools, group_scammers):
     pool_group = dict()
     for group_id in group_scammers.keys():
-        scammers =  group_scammers[group_id]
+        scammers = group_scammers[group_id]
         pools = set()
         for s in scammers:
             pools.update(scammer_pools[s])
         for p in pools:
-            pool_group[p] =  group_id
+            pool_group[p] = group_id
     return pool_group
 
 
@@ -278,8 +281,8 @@ class DataLoader(object):
             self.scammer_pools,
         ) = load_rug_pull_dataset(dex=dex)
         self.scammers_set = set(self.scammers)
-        self.group_scammers = load_group_scammers(dex)
-        self.pool_group = link_pool_and_group(self.scammer_pools, self.group_scammers)
+        # self.group_scammers, self.scammer_group = load_group_scammers(dex)
+        # self.pool_group = link_pool_and_group(self.scammer_pools, self.group_scammers)
 
 
 if __name__ == "__main__":
@@ -294,10 +297,10 @@ if __name__ == "__main__":
     # print(pool.get_total_mint_value(pos))
     # print(pool.get_total_burn_value(pos))
     (bridge_addresses,
-    defi_addresses,
-    cex_addresses,
-    MEV_addresses,
-    mixer_addresses,
-    wallet_addresses,
-    other_addresses,)    =    load_end_nodes()
+     defi_addresses,
+     cex_addresses,
+     MEV_addresses,
+     mixer_addresses,
+     wallet_addresses,
+     other_addresses,) = load_end_nodes()
     print(MEV_addresses)

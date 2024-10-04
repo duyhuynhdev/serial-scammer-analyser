@@ -32,12 +32,13 @@ class LightNodeLabel:
 
 
 class LightNode:
-    def __init__(self, address, valid_neighbours, normal_txs_len, labels, path, normal_txs=None):
+    def __init__(self, address, valid_neighbours, normal_txs_len, labels, path, group=None, normal_txs=None):
         self.address = address
         self.valid_neighbours = valid_neighbours
         self.normal_txs_len = normal_txs_len
         self.labels = labels
         self.path = path
+        self.group = group
         self.normal_txs = normal_txs
 
     @staticmethod
@@ -271,9 +272,12 @@ class LightNodeFactory:
             valid_neighbours = self.get_valid_neighbours(address, normal_txs, cluster_id)
             if len(valid_neighbours) > 50:
                 labels.add(LightNodeLabel.BIG_CONNECTOR)
+        group_id = None # for scammer node only
+        if LightNodeLabel.SCAMMER in labels:
+            group_id = self.dataloader.scammer_group[address.lower()]
         path = parent_path.copy() if parent_path is not None else []
         path.append(address)
-        return LightNode(address, valid_neighbours, len(normal_txs), labels, path, normal_txs)
+        return LightNode(address, valid_neighbours, len(normal_txs), labels, path, group_id, normal_txs)
 
 
 if __name__ == '__main__':
