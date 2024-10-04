@@ -221,15 +221,24 @@ class LightNodeFactory:
         if len(scam_swap_in_txs) > 0:
             if len(swap_in_txs) >= Constant.BIG_WT_SWAP and len(scam_swap_in_txs) / len(swap_in_txs) >= Constant.BIG_WT_SCAM_SWAP_RATE:
                 labels.add(LightNodeLabel.BIG_WASHTRADER)
+                # print("scam_swap_in_txs = ", len(scam_swap_in_txs), ", swap_in_txs = ", len(swap_in_txs), "\n")
+                # print("scam tokens = ", scam_tokens,"\n")
             else:
                 labels.add(LightNodeLabel.WASHTRADER)
         if len(scam_neighbours) >= Constant.COORDINATOR_SCAM_NEIGHBOUR and len(scam_neighbours) / len(eoa_neighbours) > Constant.COORDINATOR_SCAM_NEIGHBOUR_RATE:
             labels.add(LightNodeLabel.COORDINATOR)
-        if (LightNodeLabel.SCAMMER not in labels
-                and LightNodeLabel.COORDINATOR not in labels
-                and len(swap_in_txs) >= Constant.BOUNDARY_SWAP
-                and len(scam_swap_in_txs) / len(swap_in_txs) < Constant.BOUNDARY_SCAM_SWAP_RATE):
-            labels.add(LightNodeLabel.BOUNDARY)
+        #if (LightNodeLabel.SCAMMER not in labels
+        #        and LightNodeLabel.COORDINATOR not in labels
+        #        and len(swap_in_txs) >= Constant.BOUNDARY_SWAP
+        #        and len(scam_swap_in_txs) / len(swap_in_txs) < Constant.BOUNDARY_SCAM_SWAP_RATE):
+        #    labels.add(LightNodeLabel.BOUNDARY)
+        if ((len(swap_in_txs) >= Constant.BOUNDARY_SWAP) and (LightNodeLabel.SCAMMER not in labels)
+                and (LightNodeLabel.COORDINATOR not in labels)):
+            if len(scam_swap_in_txs) / len(swap_in_txs) < Constant.BOUNDARY_SCAM_SWAP_RATE:
+                labels.add(LightNodeLabel.BOUNDARY)
+                #        and
+                #        and len(scam_swap_in_txs) / len(swap_in_txs) < Constant.BOUNDARY_SCAM_SWAP_RATE):
+                #    labels.add(LightNodeLabel.BOUNDARY)
         if (len(contract_neighbours) == 0
                 and len(internal_txs) == 0
                 and len(transfer_txs) == len(normal_txs)
@@ -296,5 +305,5 @@ if __name__ == '__main__':
     #     node = factory.create(address, [])
     #     print(address,":",node.labels)
 
-    node = factory.createNode("0x075F2dfc0b39ddc9410F70e9DA6E784C479F3Ea8", [], 10)
-    print("0x075F2dfc0b39ddc9410F70e9DA6E784C479F3Ea8", ":", node.labels)
+    node = factory.createNode("0xe83d96cc5c7e2c3cb1959a676c7a34f5b535730f", [], 3)
+    print("0xe83d96cc5c7e2c3cb1959a676c7a34f5b535730f", ":", node.labels)
