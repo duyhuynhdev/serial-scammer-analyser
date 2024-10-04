@@ -206,11 +206,11 @@ class LightNodeFactory:
          transfer_txs,
          true_in_value,
          true_out_value) = self.categorise_normal_transaction(address, normal_txs)
-        print("sb", len(scam_neighbours), "sb_rate", len(scam_neighbours) / len(eoa_neighbours), "swap_txs", len(swap_in_txs), "scam_swap_txs", len(scam_swap_in_txs))
-        print("scam_pools", len(scam_pools))
-        print("unique_pools", set(scam_pools))
-        print("scam_tokens", len(scam_tokens))
-        print("unique_tokens", set(scam_tokens))
+        # print("sb", len(scam_neighbours), "sb_rate", len(scam_neighbours) / len(eoa_neighbours), "swap_txs", len(swap_in_txs), "scam_swap_txs", len(scam_swap_in_txs))
+        # print("scam_pools", len(scam_pools))
+        # print("unique_pools", set(scam_pools))
+        # print("scam_tokens", len(scam_tokens))
+        # print("unique_tokens", set(scam_tokens))
         ## MAIN LABELS
         if self.is_scammer_address(address):
             labels.add(LightNodeLabel.SCAMMER)
@@ -219,23 +219,22 @@ class LightNodeFactory:
         if len(from_cex_txs) > 0:
             labels.add(LightNodeLabel.WITHDRAWER)
         if len(scam_swap_in_txs) > 0:
-            if len(swap_in_txs) >= 5 and len(scam_swap_in_txs) / len(swap_in_txs) >= 0.5:
-                # TODO: BIG_WT
+            if len(swap_in_txs) >= Constant.BIG_WT_SWAP and len(scam_swap_in_txs) / len(swap_in_txs) >= Constant.BIG_WT_SCAM_SWAP_RATE:
                 labels.add(LightNodeLabel.BIG_WASHTRADER)
             else:
                 labels.add(LightNodeLabel.WASHTRADER)
-        if len(scam_neighbours) > 5 and len(scam_neighbours) / len(eoa_neighbours) > 0.5:
+        if len(scam_neighbours) >= Constant.COORDINATOR_SCAM_NEIGHBOUR and len(scam_neighbours) / len(eoa_neighbours) > Constant.COORDINATOR_SCAM_NEIGHBOUR_RATE:
             labels.add(LightNodeLabel.COORDINATOR)
         if (LightNodeLabel.SCAMMER not in labels
                 and LightNodeLabel.COORDINATOR not in labels
-                and len(swap_in_txs) >= 5
-                and len(scam_swap_in_txs) / len(swap_in_txs) < 0.5):
+                and len(swap_in_txs) >= Constant.BOUNDARY_SWAP
+                and len(scam_swap_in_txs) / len(swap_in_txs) < Constant.BOUNDARY_SCAM_SWAP_RATE):
             labels.add(LightNodeLabel.BOUNDARY)
         if (len(contract_neighbours) == 0
                 and len(internal_txs) == 0
                 and len(transfer_txs) == len(normal_txs)
                 and true_out_value > 0
-                and true_out_value / true_in_value >= 0.99):
+                and true_out_value / true_in_value >= Constant.TRANSFER_TRUE_VALUE_RATE):
             if len(normal_txs) > Constant.TRANSFER_LIMIT:
                 labels.add(LightNodeLabel.BIG_TRANSFER)
             else:

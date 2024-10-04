@@ -156,14 +156,14 @@ class TransactionCollector:
             for tx in normal_txs.to_dict('records'):
                 ptx = NormalTransaction()
                 ptx.from_dict(tx)
-                if from_block <= ptx.blockNumber <= to_block:
+                if from_block <= int(ptx.blockNumber) <= to_block:
                     parsed_normal_txs.append(ptx)
         if internal_txs is not None:
             internal_txs.rename(columns={'from': 'sender'}, inplace=True)
             for tx in internal_txs.to_dict('records'):
                 ptx = InternalTransaction()
                 ptx.from_dict(tx)
-                if from_block <= ptx.blockNumber <= to_block:
+                if from_block <= int(ptx.blockNumber) <= to_block:
                     parsed_internal_txs.append(ptx)
         return parsed_normal_txs, parsed_internal_txs
 
