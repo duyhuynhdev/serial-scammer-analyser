@@ -22,7 +22,7 @@ defi_files = [
     "proxy_addresses.csv",
     "router_addresses.csv",
 ]
-cex_files = ["cex_address.csv"]
+cex_files = ["cex_address.csv", "deposit_addresses.csv", "binance_addresses.csv"]
 mev_bot_files = ["mev_bot_addresses.csv", "MEV_bots.csv"]
 mixer_files = ["tonador_cash.csv"]
 wallet_files = ["wallet_addresses.csv"]

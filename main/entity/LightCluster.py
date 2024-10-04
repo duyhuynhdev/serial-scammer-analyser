@@ -41,7 +41,7 @@ class LightCluster:
                     path = row['path'].split(';') if 'path' in row else []
                     if row["address"] in path:
                         path.remove(row["address"])
-                    node = factory.create(row["address"], path)
+                    node = factory.createNode(row["address"], path, self.id)
                     queue.put(node)
             if os.path.exists(traversed_file):
                 print("LOAD EXISTING TRAVERSAL LIST")

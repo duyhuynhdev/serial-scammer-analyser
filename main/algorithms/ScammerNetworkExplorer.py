@@ -1,19 +1,20 @@
 import sys
 import os
 
-sys.path.append( os.path.join(os.path.dirname(sys.path[0])))
+from pycparser.c_ast import Constant
+
+sys.path.append(os.path.join(os.path.dirname(sys.path[0])))
 
 from entity.LightCluster import LightCluster
 from entity.LightNode import LightNodeFactory, LightNode, LightNodeLabel
 from entity.OrderedQueue import OrderedQueue
-
-sys.path.append(os.path.join(os.path.dirname(sys.path[0])))
 
 from utils.DataLoader import DataLoader
 from utils.S3Syncer import S3Syncer
 from utils.Settings import Setting
 from utils.ProjectPath import ProjectPath
 from utils import Utils as ut
+from utils import Constant
 
 path = ProjectPath()
 setting = Setting()
@@ -34,18 +35,18 @@ def init(group_id, scammer_address, scammers, cluster_path, node_factory):
         cluster.load(cluster_path)
         queue, traversed_nodes = cluster.read_queue(cluster_path, dataloader)
     if scammer_address not in traversed_nodes:
-        node = node_factory.create(scammer_address, [])
+        node = node_factory.createNode(scammer_address, [], cluster.id)
         for s in scammers:
             node.valid_neighbours.append(s)
         queue.put(node)
         cluster.add_node(node)
     return cluster, queue, traversed_nodes
 
-SMALL_VALUE = 1e-3
+
 def is_slave_PA(suspected_node, target_node):
     for tx in suspected_node.normal_txs:
         # check if there is any tx from suspected_node to target_node with small value
-        if tx.is_out_tx(suspected_node.address) and tx.to == target_node.address and float(tx.value) / 1e18 < SMALL_VALUE:
+        if tx.is_out_tx(suspected_node.address) and tx.to == target_node.address and float(tx.value) / 1e18 < Constant.SMALL_VALUE:
             time_in = int(tx.timeStamp)
             # get a list of addresses that target node sends tx to before time_in
             out_adds = set([tx_out.to for tx_out in target_node.normal_txs if tx_out.is_out_tx(target_node.address) and int(tx_out.timeStamp) < time_in])
@@ -64,6 +65,7 @@ def is_slave_PA(suspected_node, target_node):
                     print(f"phishing_add = {suspected_node.address}, victim_add = {target_node.address}, 'similar_add = {out_add}")
                     return True
     return False
+
 
 def explore_scammer_network(group_id, scammers, node_factory, dex='univ2'):
     cluster_path = eval('path.{}_cluster_path'.format(dex))
@@ -99,8 +101,8 @@ def explore_scammer_network(group_id, scammers, node_factory, dex='univ2'):
             if ((neighbour_address not in traversed_nodes)
                     and (neighbour_address not in queue.addresses)
                     and not cluster.is_address_exist(neighbour_address)):
-                node = node_factory.create(neighbour_address, root.path)
-                if not is_slave_PA(node, root):
+                node = node_factory.createNode(neighbour_address, root.path, cluster.id)
+                if not is_slave_PA(node, root) and not any(label in LightNodeLabel.SKIP_LABELS for label in node.labels):
                     if LightNodeLabel.BIG_CONNECTOR in node.labels:
                         suspicious_big_nodes.append(LightNode.to_sort_dict(node))
                     cluster.add_node(node)
@@ -145,4 +147,4 @@ def run_clustering(group_id, dex='univ2'):
 
 
 if __name__ == '__main__':
-    run_clustering(3)
+    run_clustering(1991)

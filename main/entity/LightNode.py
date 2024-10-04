@@ -1,6 +1,8 @@
 import sys
 import os
-sys.path.append( os.path.join(os.path.dirname(sys.path[0])))
+from tkinter.font import NORMAL
+
+sys.path.append(os.path.join(os.path.dirname(sys.path[0])))
 from data_collection.AccountCollector import TransactionCollector
 from data_collection.DataDecoder import FunctionInputDecoder
 from utils import Constant
@@ -13,9 +15,19 @@ class LightNodeLabel:
     WITHDRAWER = "withdrawer"  # receive money from defi node
     COORDINATOR = "coordinator"  # manage scammers
     TRANSFER = "transfer"  # only receive and transfer money
+    BIG_TRANSFER = "big_transfer"  # only receive and transfer money
     WASHTRADER = "washtrader"  # washtrade scam token
+    BIG_WASHTRADER = "big_washtrader"  # washtrade scam token
     BOUNDARY = "boundary"  # grey node
+
+    ### DEBUGGING LABELS
     BIG_CONNECTOR = "big_connector"
+    PHISHING = "PHISHING"
+    OVER_LIMIT_1 = "over_limit_1"
+    OVER_LIMIT_2 = "over_limit_2"
+    OVER_LIMIT_2_BUT_ACCEPT = "over_limit_2_but_accept"
+    SKIP_LABELS = [BOUNDARY, OVER_LIMIT_1, OVER_LIMIT_2, BIG_TRANSFER]
+    ACCEPT_LIMIT_2_LABELS = [SCAMMER, COORDINATOR, BIG_WASHTRADER]
 
 
 class LightNode:
@@ -44,8 +56,10 @@ class LightNode:
             'normal_txs_len': node.normal_txs_len,
             'labels': ';'.join(node.labels),
         }
+
+
 class LightNodeFactory:
-    def __init__(self, dataloader = None, dex = "univ2"):
+    def __init__(self, dataloader=None, dex="univ2"):
         self.dex = dex
         self.dataloader = dataloader if dataloader is not None else DataLoader(dex)
         self.decoder = FunctionInputDecoder()
@@ -60,8 +74,10 @@ class LightNodeFactory:
     def is_public_address(self, address):
         return address.lower() in self.public_exchange_addresses or address.lower() in self.bots or address.lower() in self.application_address
 
-    def ensure_eoa_address(self, address):
-        normal_txs, internal_txs = self.transaction_collector.get_transactions(address, self.dex)
+    def ensure_valid_eoa_address(self, address, cluster_id):
+        normal_txs, internal_txs = self.transaction_collector.get_transactions(address, self.dex, cluster_id)
+        if len(normal_txs) >= Constant.TX_LIMIT_1:
+            return False
         for ntx in normal_txs:
             if ntx.sender.lower() == address.lower():  # sender of normal txs must be EOA
                 return True
@@ -94,22 +110,22 @@ class LightNodeFactory:
                             scammers = self.dataloader.pool_scammers[scam_pool]
                             scammers.extend([s for s in scammers if s not in scammers])
                     else:
-                        is_swap = False # turn of if swap out
+                        is_swap = False  # turn of if swap out
         return is_swap, scammers
 
-    def get_valid_neighbours(self, address, normal_txs):
+    def get_valid_neighbours(self, address, normal_txs, cluster_id):
         valid_neighbours = []
         for tx in normal_txs:
             if (tx.is_in_tx(address)
                     and float(tx.value) > 0
                     and not self.is_public_address(tx.sender)
                     and tx.sender not in valid_neighbours):
-                    valid_neighbours.append(tx.sender)
+                valid_neighbours.append(tx.sender)
             elif (tx.is_to_eoa(address)
                   and float(tx.value) > 0
                   and tx.to not in valid_neighbours
                   and not self.is_public_address(tx.to)
-                  and self.ensure_eoa_address(tx.to)):
+                  and self.ensure_valid_eoa_address(tx.to, cluster_id)):
                 valid_neighbours.append(tx.to)
             elif tx.is_out_tx(address) and tx.is_contract_call_tx():
                 is_swap, scammers = self.get_scammer_if_swap_tx(tx)
@@ -179,7 +195,8 @@ class LightNodeFactory:
          transfer_txs,
          true_in_value,
          true_out_value) = self.categorise_normal_transaction(address, normal_txs)
-        # print("sb", len(scam_neighbours), "swap_txs", len(swap_in_txs), "scam_swap_txs", len(scam_swap_in_txs))
+        # print("sb", len(scam_neighbours), "sb_rate", len(scam_neighbours) / len(eoa_neighbours), "swap_txs", len(swap_in_txs), "scam_swap_txs", len(scam_swap_in_txs))
+        ## MAIN LABELS
         if self.is_scammer_address(address):
             labels.add(LightNodeLabel.SCAMMER)
         if len(to_cex_txs) > 0:
@@ -187,8 +204,12 @@ class LightNodeFactory:
         if len(from_cex_txs) > 0:
             labels.add(LightNodeLabel.WITHDRAWER)
         if len(scam_swap_in_txs) > 0:
-            labels.add(LightNodeLabel.WASHTRADER)
-        if len(eoa_neighbours) > 0 and len(scam_neighbours) / len(eoa_neighbours) > 0.5:
+            if len(swap_in_txs) >= 5 and len(scam_swap_in_txs) / len(swap_in_txs) >= 0.5:
+                # TODO: BIG_WT
+                labels.add(LightNodeLabel.BIG_WASHTRADER)
+            else:
+                labels.add(LightNodeLabel.WASHTRADER)
+        if len(scam_neighbours)  > 5 and len(scam_neighbours) / len(eoa_neighbours) > 0.5:
             labels.add(LightNodeLabel.COORDINATOR)
         if (LightNodeLabel.SCAMMER not in labels
                 and LightNodeLabel.COORDINATOR not in labels
@@ -200,17 +221,31 @@ class LightNodeFactory:
                 and len(transfer_txs) == len(normal_txs)
                 and true_out_value > 0
                 and true_out_value / true_in_value >= 0.99):
-            labels.add(LightNodeLabel.TRANSFER)
+            if len(normal_txs) > Constant.TRANSFER_LIMIT:
+                labels.add(LightNodeLabel.BIG_TRANSFER)
+            else:
+                labels.add(LightNodeLabel.TRANSFER)
+
+        ## LIMIT LABELS:
+        if len(normal_txs) >= Constant.TX_LIMIT_1:
+            labels.add(LightNodeLabel.OVER_LIMIT_1)
+        elif len(normal_txs) >= Constant.TX_LIMIT_2:
+            if any(label in LightNodeLabel.ACCEPT_LIMIT_2_LABELS for label in labels):
+                labels.add(LightNodeLabel.OVER_LIMIT_2_BUT_ACCEPT)
+            else:
+                labels.add(LightNodeLabel.OVER_LIMIT_2)
+
         return labels
 
-    def create(self, address, parent_path):
-        normal_txs, internal_txs = self.transaction_collector.get_transactions(address, self.dex)
+    def createNode(self, address, parent_path, cluster_id):
+        normal_txs, internal_txs = self.transaction_collector.get_transactions(address, self.dex, cluster_id)
         print("\t\t CREATE NODE FOR ", address, " WITH NORMAL TX:", len(normal_txs) if normal_txs is not None else 0, "AND INTERNAL TX:", len(internal_txs) if internal_txs is not None else 0)
         labels = self.get_node_labels(address, normal_txs, internal_txs)
+        print("\t\t LABELS", labels)
         valid_neighbours = []
         # Skip verify neighbours if the node is boundary node
-        if LightNodeLabel.BOUNDARY not in labels:
-            valid_neighbours = self.get_valid_neighbours(address, normal_txs)
+        if not any(label in LightNodeLabel.SKIP_LABELS for label in labels):
+            valid_neighbours = self.get_valid_neighbours(address, normal_txs, cluster_id)
             if len(valid_neighbours) > 50:
                 labels.add(LightNodeLabel.BIG_CONNECTOR)
         path = parent_path.copy() if parent_path is not None else []
@@ -223,26 +258,29 @@ if __name__ == '__main__':
     factory = LightNodeFactory(dataloader)
     # address = sys.argv[1]
     # node = factory.create(address, [])
-    addresses = [
-        "0x17ef03d1f9b53123aba4a9d67fe579b10dbf59d4",
-        "0x68bec4525eb557f48c30eefec249b1d85706cf0c",
-        "0x4502f3bca6ec0aa547ffb0f2b166e0d82c01f856",
-        "0xb2cd290b0f0ddfd07fe19f8f5aa1474a51caf922",
-        "0x50274a83511af15b94c1777fff23ee5818d0b19d",
-        "0xb5fceb9eb50f2c95c18600dc1c02232e61068b29",
-        "0xf0e2eb33510dd3fd61ad7c449effe1e5215e0345",
-        "0x4363abdadf700814636b86ac67c4bb487ce6b63c",
-        "0x81111eeef086ed668754bb36d4eed08f5026ce48",
-        "0xd75e638fbe9c9c3a3a03c84250ccf17a9ca1e7f6",
-        "0x2da7697b6cbcc8c40bb2d267b0bb0835543877b5",
-        "0x5736bbb2247546214086993945c3d0e46a285d21",
-        "0x1ba8732c2de697854243713ec53995280c5fd369",
-        "0x6f7d7efd37d01574980542662c9ac1b4e8dd66f6",
-    ]
+    # addresses = [
+    #     "0xcc3337f6fe821a7a654552395e128e2c4fcabe31",
+    #     "0x68bec4525eb557f48c30eefec249b1d85706cf0c",
+    #     "0xb2cd290b0f0ddfd07fe19f8f5aa1474a51caf922",
+    #     "0x4363abdadf700814636b86ac67c4bb487ce6b63c",
+    #     "0x4b2b31b7a32a3d3bb894effc31b16abd400bd258",
+    #     "0xf3451414eb22c20d4cfaf84ea913f0a958bd169b",
+    #     "0x12d23712617b425e1a009a0a5fb7502a9d5a328e",
+    #     "0x660b143181cd5667fbd4e2f498adfb7dc61b1c9c",
+    #     "0x32967f449e4a8824a02f1b35598a02586e7bb7e6",
+    #     "0xf0a5e9fa56e3b4a21bdaddeb80a0287ecfdccd99",
+    #     "0x4e756eb534caf866f911117f9c5b9927c11927cf",
+    #     "0x015a3c7587e43cd7fc99ace46f8aed1320bdd074",
+    #     "0xbdab033b757de1484ce5d566f123f91ae9055484",
+    #     "0xfa19e5e2ca003c0195859b10296867a2a10514f9",
+    #     "0x4d103648cb1ca7f0b053e388f7ff275a5b4c020b",
+    #     "0x527721e999560c8652ada7d6659a54b5a004ea47",
+    #     "0xcb6be648529545a9548ef09a0c721c83b01f800f",
+    #     "0xd16a4e051f6bed58eb87345dea8729a88e6bc758",
+    # ]
     # for address in addresses:
     #     node = factory.create(address, [])
     #     print(address,":",node.labels)
 
-    # 0xb2cd290b0f0ddfd07fe19f8f5aa1474a51caf922
-    node = factory.create("0xb2cd290b0f0ddfd07fe19f8f5aa1474a51caf922", [])
-    print("0xb2cd290b0f0ddfd07fe19f8f5aa1474a51caf922",":",node.labels)
+    node = factory.createNode("0x5853b0258f88b6227993fcdcb81c282f75d2298b", [], 10)
+    print("0x5853b0258f88b6227993fcdcb81c282f75d2298b", ":", node.labels)

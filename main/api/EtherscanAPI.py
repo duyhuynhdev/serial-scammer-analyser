@@ -24,6 +24,7 @@ def build_url(module, action, params, apikey=setting.ETHERSCAN_API_KEY):
 
 def call_api(module, action, params, apikey=setting.ETHERSCAN_API_KEY):
     api_url = build_url(module, action, params, apikey)
+    # print(api_url)
     retry = 10
     response_data = None
     while retry > 0:
@@ -96,4 +97,4 @@ def get_event_logs(address, fromBlock, toBlock, topic, page=1, offset=1000, apik
 if __name__ == '__main__':
     # print(get_event_logs("0xc3Db44ADC1fCdFd5671f555236eae49f4A8EEa18", 0, 99999999999, "0x1c411e9a96e071241c2f21f7726b17ae89e3cab4c78be50e062b03a9fffbbad1"))
     # print(len(get_normal_transactions("0x48f0fc8dfc672dd45e53b6c53cd5b09c71d9fbd6", 0, 99999999999, 2,5000, apikey=setting.ETHERSCAN_API_KEY)))
-    get_contract_creation_info(["0x2ba15ad55b85d67407142e9a92503b945f729aef"])
+    print(get_contract_creation_info(["0x2ba15ad55b85d67407142e9a92503b945f729aef"]))
