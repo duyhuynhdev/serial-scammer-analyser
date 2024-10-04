@@ -8,6 +8,7 @@ from entity.blockchain.Transaction import NormalTransaction, InternalTransaction
 from utils.Settings import Setting
 from utils.ProjectPath import ProjectPath
 from api import EtherscanAPI, BSCscanAPI
+from utils import Constant
 
 path = ProjectPath()
 setting = Setting()
@@ -120,10 +121,14 @@ class CreatorCollector:
 
 
 class TransactionCollector:
-    univ2_last_block = 20606150  # Aug-25-2024 02:17:59 PM +UTC
-    panv2_last_block = 41674250
+    univ2_first_block = Constant.UNISWAP_START_BLOCK
+    univ2_last_block = Constant.UNISWAP_END_BLOCK  # Aug-25-2024 02:17:59 PM +UTC
+    panv2_first_block = Constant.PANCAKESWAP_START_BLOCK
+    panv2_last_block = Constant.PANCAKESWAP_END_BLOCK
 
     def get_transactions(self, address, dex='univ2',key_idx = 0):
+        from_block = eval('self.{}_first_block'.format(dex))
+        to_block = eval('self.{}_last_block'.format(dex))
         api = explorer_api[dex]["explorer"]
         keys = explorer_api[dex]["keys"]
         key_idx = key_idx % len(keys)
@@ -151,13 +156,15 @@ class TransactionCollector:
             for tx in normal_txs.to_dict('records'):
                 ptx = NormalTransaction()
                 ptx.from_dict(tx)
-                parsed_normal_txs.append(ptx)
+                if from_block <= ptx.blockNumber <= to_block:
+                    parsed_normal_txs.append(ptx)
         if internal_txs is not None:
             internal_txs.rename(columns={'from': 'sender'}, inplace=True)
             for tx in internal_txs.to_dict('records'):
                 ptx = InternalTransaction()
                 ptx.from_dict(tx)
-                parsed_internal_txs.append(ptx)
+                if from_block <= ptx.blockNumber <= to_block:
+                    parsed_internal_txs.append(ptx)
         return parsed_normal_txs, parsed_internal_txs
 
     def download_transactions(self, job, addresses, dex='univ2'):
@@ -174,7 +181,7 @@ class TransactionCollector:
     def download_normal_transactions(self, address, api, apikey, dex='univ2'):
         output_path = os.path.join(eval('path.{}_normal_tx_path'.format(dex)), address + ".csv")
         if not os.path.isfile(output_path):
-            result = api.get_normal_transactions(address, fromBlock=0, toBlock=eval('self.{}_last_block'.format(dex)), apikey=apikey)
+            result = api.get_normal_transactions(address, fromBlock=eval('self.{}_first_block'.format(dex)), toBlock=eval('self.{}_last_block'.format(dex)), apikey=apikey)
             ut.save_overwrite_if_exist(result, output_path)
             print(f"\t\tSAVED NORMAL TXs OF {address}")
             return result
@@ -182,28 +189,28 @@ class TransactionCollector:
     def download_internal_transactions(self, address, api, apikey, dex='univ2'):
         output_path = os.path.join(eval('path.{}_internal_tx_path'.format(dex)), address + ".csv")
         if not os.path.isfile(output_path):
-            result = api.get_internal_transactions(address, fromBlock=0, toBlock=eval('self.{}_last_block'.format(dex)), apikey=apikey)
+            result = api.get_internal_transactions(address, fromBlock=eval('self.{}_first_block'.format(dex)), toBlock=eval('self.{}_last_block'.format(dex)), apikey=apikey)
             ut.save_overwrite_if_exist(result, output_path)
             print(f"\t\tSAVED INTERNAL TXs OF {address}")
             return result
 
 
 if __name__ == '__main__':
-    dex = 'panv2'
-    job = 24
+    dex = 'univ2'
+    # job = 24
     # pool_path = os.path.join(eval('path.{}_processed_path'.format(dex)), "pool_addresses.csv")
     # pools = pd.read_csv(pool_path)["pool"].values
     # collectors = CreatorCollector()
     # collectors.get_creators(addresses=pools, job=job, contract_type='pool', dex=dex)
     ###########################################################################################
-    pool_info_path = os.path.join(eval('path.{}_processed_path'.format(dex)), "pool_info.csv")
-    df = pd.read_csv(pool_info_path)
-    token_addresses = df["token0"].to_list()
-    token_addresses.extend(df["token1"].to_list())
-    token_addresses = list(dict.fromkeys(token_addresses))
-    print(len(token_addresses))
-    collectors = CreatorCollector()
-    collectors.get_creators(addresses=token_addresses, job=job, contract_type='token', dex=dex)
+    # pool_info_path = os.path.join(eval('path.{}_processed_path'.format(dex)), "pool_info.csv")
+    # df = pd.read_csv(pool_info_path)
+    # token_addresses = df["token0"].to_list()
+    # token_addresses.extend(df["token1"].to_list())
+    # token_addresses = list(dict.fromkeys(token_addresses))
+    # print(len(token_addresses))
+    # collectors = CreatorCollector()
+    # collectors.get_creators(addresses=token_addresses, job=job, contract_type='token', dex=dex)
     # print(collectors.get_pool_creator("0x2102A87B61Ca83a947473808677f1cF33A260c69", dex=dex))
     #############################################################################
     # scammers = pd.read_csv(os.path.join(eval('path.{}_processed_path'.format(dex)), "1_pair_scammers.csv"))
@@ -211,8 +218,8 @@ if __name__ == '__main__':
     # scammers.drop(index_issue, inplace=True)
     # scammers["pool"] = scammers["pool"].str.lower()
     # scammers["scammer"] = scammers["scammer"].str.lower()
-    # tx_collector = TransactionCollector()
+    tx_collector = TransactionCollector()
     # tx_collector.download_transactions(job, scammers["scammer"].str.lower().to_list(), dex)
     #########################################################################################
-    # transaction = tx_collector.get_transactions("0x19b98792e98c54f58c705cddf74316aec0999aa6", dex)
-    # print(transaction)
+    transactions = tx_collector.get_transactions("0x5b5d8c8eed6c85ac215661de026676823faa0a0c", dex)
+    print([tx.blockNumber for tx in transactions[0]])

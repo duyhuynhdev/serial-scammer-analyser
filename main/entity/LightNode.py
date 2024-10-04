@@ -6,6 +6,7 @@ sys.path.append(os.path.join(os.path.dirname(sys.path[0])))
 from data_collection.AccountCollector import TransactionCollector
 from data_collection.DataDecoder import FunctionInputDecoder
 from utils import Constant
+from utils import Utils as ut
 from utils.DataLoader import DataLoader
 
 
@@ -43,9 +44,9 @@ class LightNode:
     def from_dict(data):
         address = data['address']
         normal_txs_len = data['normal_txs_len'] if 'normal_txs_len' in data else None
-        valid_neighbours = data['valid_neighbours'].split(';') if 'valid_neighbours' in data else []
-        labels = data['labels'].split(';') if 'labels' in data else []
-        path = data['path'].split(';') if 'path' in data else []
+        valid_neighbours = data['valid_neighbours'].split(';') if 'valid_neighbours' in data and not ut.is_df_cell_is_empty(data['valid_neighbours']) else []
+        labels = data['labels'].split(';') if 'labels' in data and not ut.is_df_cell_is_empty(data['labels']) else []
+        path = data['path'].split(';') if 'path' in data and not ut.is_df_cell_is_empty(data['path']) else []
         return LightNode(address, valid_neighbours, normal_txs_len, labels, path)
 
     @staticmethod
@@ -95,6 +96,8 @@ class LightNodeFactory:
     def get_scammer_if_swap_tx(self, tx):
         is_swap, parsed_inputs = self.decoder.decode_function_input(tx.input)
         scammers = list()
+        scam_pool = None
+        out_token = None
         if (parsed_inputs is not None) and (len(parsed_inputs) > 0):
             # get path inputs from parsed inputs
             paths = [pi["path"] for pi in parsed_inputs if "path" in pi.keys()]
@@ -111,7 +114,7 @@ class LightNodeFactory:
                             scammers.extend([s for s in scammers if s not in scammers])
                     else:
                         is_swap = False  # turn of if swap out
-        return is_swap, scammers
+        return is_swap, scammers, scam_pool, out_token
 
     def get_valid_neighbours(self, address, normal_txs, cluster_id):
         valid_neighbours = []
@@ -128,7 +131,7 @@ class LightNodeFactory:
                   and self.ensure_valid_eoa_address(tx.to, cluster_id)):
                 valid_neighbours.append(tx.to)
             elif tx.is_out_tx(address) and tx.is_contract_call_tx():
-                is_swap, scammers = self.get_scammer_if_swap_tx(tx)
+                is_swap, scammers, _, _ = self.get_scammer_if_swap_tx(tx)
                 valid_neighbours.extend([s for s in scammers if s not in valid_neighbours])
         return valid_neighbours
 
@@ -140,6 +143,8 @@ class LightNodeFactory:
         from_cex_txs = []
         swap_in_txs = []
         scam_swap_in_txs = []
+        scam_pools = []
+        scam_tokens = []
         transfer_txs = []
         true_in_value = 0
         true_out_value = 0
@@ -167,10 +172,12 @@ class LightNodeFactory:
                     contract_neighbours.append(tx.to)
                     if tx.is_contract_call_tx():
                         contract_neighbours.append(tx.to)
-                        is_swap_in, scammers = self.get_scammer_if_swap_tx(tx)
+                        is_swap_in, scammers, scam_pool, scam_token = self.get_scammer_if_swap_tx(tx)
                         if is_swap_in:
                             swap_in_txs.append(tx)
                         if len(scammers) > 0:
+                            scam_pools.append(scam_pool)
+                            scam_tokens.append(scam_token)
                             scam_swap_in_txs.append(tx)
         return (scam_neighbours,
                 eoa_neighbours,
@@ -179,6 +186,8 @@ class LightNodeFactory:
                 from_cex_txs,
                 swap_in_txs,
                 scam_swap_in_txs,
+                scam_pools,
+                scam_tokens,
                 transfer_txs,
                 true_in_value,
                 true_out_value)
@@ -192,10 +201,16 @@ class LightNodeFactory:
          from_cex_txs,
          swap_in_txs,
          scam_swap_in_txs,
+         scam_pools,
+         scam_tokens,
          transfer_txs,
          true_in_value,
          true_out_value) = self.categorise_normal_transaction(address, normal_txs)
-        # print("sb", len(scam_neighbours), "sb_rate", len(scam_neighbours) / len(eoa_neighbours), "swap_txs", len(swap_in_txs), "scam_swap_txs", len(scam_swap_in_txs))
+        print("sb", len(scam_neighbours), "sb_rate", len(scam_neighbours) / len(eoa_neighbours), "swap_txs", len(swap_in_txs), "scam_swap_txs", len(scam_swap_in_txs))
+        print("scam_pools", len(scam_pools))
+        print("unique_pools", set(scam_pools))
+        print("scam_tokens", len(scam_tokens))
+        print("unique_tokens", set(scam_tokens))
         ## MAIN LABELS
         if self.is_scammer_address(address):
             labels.add(LightNodeLabel.SCAMMER)
@@ -209,7 +224,7 @@ class LightNodeFactory:
                 labels.add(LightNodeLabel.BIG_WASHTRADER)
             else:
                 labels.add(LightNodeLabel.WASHTRADER)
-        if len(scam_neighbours)  > 5 and len(scam_neighbours) / len(eoa_neighbours) > 0.5:
+        if len(scam_neighbours) > 5 and len(scam_neighbours) / len(eoa_neighbours) > 0.5:
             labels.add(LightNodeLabel.COORDINATOR)
         if (LightNodeLabel.SCAMMER not in labels
                 and LightNodeLabel.COORDINATOR not in labels
@@ -282,5 +297,5 @@ if __name__ == '__main__':
     #     node = factory.create(address, [])
     #     print(address,":",node.labels)
 
-    node = factory.createNode("0x5853b0258f88b6227993fcdcb81c282f75d2298b", [], 10)
-    print("0x5853b0258f88b6227993fcdcb81c282f75d2298b", ":", node.labels)
+    node = factory.createNode("0x075F2dfc0b39ddc9410F70e9DA6E784C479F3Ea8", [], 10)
+    print("0x075F2dfc0b39ddc9410F70e9DA6E784C479F3Ea8", ":", node.labels)
