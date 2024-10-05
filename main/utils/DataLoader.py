@@ -11,7 +11,6 @@ from utils.ProjectPath import ProjectPath
 
 path = ProjectPath()
 setting = Setting()
-creator_collector = CreatorCollector()
 
 bridge_files = ["bridge.csv", "bridge_addresses.csv"]
 defi_files = [
@@ -216,16 +215,17 @@ def load_pool(scammer_address, dataloader, dex="univ2"):
     pool_addresses = dataloader.scammer_pools[scammer_address.lower()]
     pool_event_path = eval("path.{}_pool_events_path".format(dex))
     contract_event_collector = ContractEventCollector()
+    creator_collector = CreatorCollector()
     pools = []
     for pool_address in pool_addresses:
-        # transfer_list = contract_event_collector.get_event(
-        #     pool_address, "Transfer", pool_event_path, dex
-        # )
-        # transfers = [TransferEvent().from_dict(e) for e in transfer_list]
-        # swaps_list = contract_event_collector.get_event(
-        #     pool_address, "Swap", pool_event_path, dex
-        # )
-        # swaps = [SwapEvent().from_dict(e) for e in swaps_list]
+        transfer_list = contract_event_collector.get_event(
+            pool_address, "Transfer", pool_event_path, dex
+        )
+        transfers = [TransferEvent().from_dict(e) for e in transfer_list]
+        swaps_list = contract_event_collector.get_event(
+            pool_address, "Swap", pool_event_path, dex
+        )
+        swaps = [SwapEvent().from_dict(e) for e in swaps_list]
         burns_list = contract_event_collector.get_event(
             pool_address, "Burn", pool_event_path, dex
         )
@@ -236,17 +236,17 @@ def load_pool(scammer_address, dataloader, dex="univ2"):
         mints = [MintEvent().from_dict(e) for e in mint_list]
         pool_info = dataloader.pool_infos[pool_address.lower()]
         scammers = dataloader.pool_scammers[pool_address.lower()]
-        # pool_creation = creator_collector.get_pool_creator(pool_address, dex)
+        pool_creation = creator_collector.get_pool_creator(pool_address, dex)
         token0 = Token(pool_info["token0"])
         token0.from_dict(dataloader.token_infos[pool_info["token0"]])
-        # token0_creation = creator_collector.get_token_creator(token0.address, dex)
-        # token0.creator = token0_creation["contractCreator"]
-        # token0.creation_tx = token0_creation["txHash"]
+        token0_creation = creator_collector.get_token_creator(token0.address, dex)
+        token0.creator = token0_creation["contractCreator"]
+        token0.creation_tx = token0_creation["txHash"]
         token1 = Token(pool_info["token1"])
         token1.from_dict(dataloader.token_infos[pool_info["token1"]])
-        # token1_creation = creator_collector.get_token_creator(token1.address, dex)
-        # token1.creator = token1_creation["contractCreator"]
-        # token1.creation_tx = token1_creation["txHash"]
+        token1_creation = creator_collector.get_token_creator(token1.address, dex)
+        token1.creator = token1_creation["contractCreator"]
+        token1.creation_tx = token1_creation["txHash"]
         pool = Pool(
             pool_address,
             token0,
@@ -254,10 +254,10 @@ def load_pool(scammer_address, dataloader, dex="univ2"):
             scammers,
             mints,
             burns,
-            # swaps,
-            # transfers,
-            # pool_creation["contractCreator"],
-            # pool_creation["txHash"],
+            swaps,
+            transfers,
+            pool_creation["contractCreator"],
+            pool_creation["txHash"],
         )
         pools.append(pool)
     return pools
