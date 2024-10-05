@@ -167,7 +167,7 @@ def explore_with_max_iter(job, max_iter = 100, size = 20000, dex='univ2'):
             continue
         cluster, queue, it = run_clustering(gid, dex)
         record = {
-            "start_gid": gid,
+            "gid": gid,
             "cluster_size": len(cluster.nodes),
             "queue_size": queue.qsize(),
             "groups": "-".join([str(g) for g in cluster.groups]),
@@ -177,6 +177,6 @@ def explore_with_max_iter(job, max_iter = 100, size = 20000, dex='univ2'):
 
 
 if __name__ == '__main__':
-    job = 10
+    job = 13
     explore_with_max_iter(job, 500, 5000)
     # run_clustering(5002)

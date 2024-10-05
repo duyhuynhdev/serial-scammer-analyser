@@ -207,7 +207,7 @@ class LightNodeFactory:
          transfer_txs,
          true_in_value,
          true_out_value) = self.categorise_normal_transaction(address, normal_txs)
-        print("sb", len(scam_neighbours), "sb_rate", len(scam_neighbours) / len(eoa_neighbours), "swap_txs", len(swap_in_txs), "scam_swap_txs", len(scam_swap_in_txs))
+        # print("sb", len(scam_neighbours), "sb_rate", len(scam_neighbours) / len(eoa_neighbours), "swap_txs", len(swap_in_txs), "scam_swap_txs", len(scam_swap_in_txs))
         # print("scam_pools", len(scam_pools))
         # print("unique_pools", set(scam_pools))
         # print("scam_tokens", len(scam_tokens))
