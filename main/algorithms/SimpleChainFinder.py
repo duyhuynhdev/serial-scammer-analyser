@@ -1,6 +1,8 @@
 import ast
 import csv
 import os
+import statistics
+import sys
 
 import numpy as np
 
@@ -15,6 +17,7 @@ transaction_collector = TransactionCollector()
 
 REMOVE_LIQUIDITY_SUBSTRING = "removeLiquidity"
 ADD_LIQUIDITY_SUBSTRING = "addLiquidity"
+MIN_CHAIN_LENGTH = 2
 
 
 def chain_pattern_detection(starter_address):
@@ -45,8 +48,7 @@ def chain_pattern_detection(starter_address):
             current_transaction_history = next_transaction_history
             fwd_chain.append([current_address])
 
-        # since the chain has ended, we may not correctly return num_remove_calls
-        # so just manually look
+    if len(fwd_chain) > 0:
         num_remove_calls = count_number_of_remove_liquidity_calls(current_address, current_transaction_history)
         fwd_chain[-1].append(num_remove_calls)
 
@@ -67,7 +69,9 @@ def chain_pattern_detection(starter_address):
             bwd_chain.append([current_address, num_remove_calls, largest_in_transaction.timeStamp, largest_in_transaction.get_transaction_amount()])
 
     bwd_chain = bwd_chain[::-1]
-    return bwd_chain + fwd_chain
+    complete_chain = bwd_chain + fwd_chain
+    return complete_chain if len(complete_chain) >= MIN_CHAIN_LENGTH else []
+
 
 def count_number_of_remove_liquidity_calls(scammer_address, normal_txs=None):
     num_remove_liquidity_calls = 0
@@ -79,6 +83,7 @@ def count_number_of_remove_liquidity_calls(scammer_address, normal_txs=None):
             num_remove_liquidity_calls += 1
 
     return num_remove_liquidity_calls
+
 
 def get_largest_out_after_remove_liquidity(scammer_address: str, normal_txs=None):
     if normal_txs is None:
@@ -124,72 +129,102 @@ def get_largest_transaction(normal_txs, scammer_address, liquidity_function_name
     return largest_transaction if not exists_duplicate_amount and passed_liquidity_function else None, normal_txs, num_remove_liquidities_found
 
 
-def read_from_csv_as_set(input_path):
-    set_csv = set()
-    file = open(input_path)
-    for line in file:
-        row = line.rstrip('\n').split(', ')
-        # don't add length in set
-        for index in range(1, len(row)):
-            set_csv.add(row[index])
-
-    file.close()
-    return set_csv
-
-
 def run_chain_on_scammers():
-    scammer_chain_path = os.path.join(path.univ2_scammer_chain_path, "simple_chain.csv")
+    simple_chain_path = os.path.join(path.univ2_scammer_chain_path, "simple_chain.csv")
+    no_chain_path = os.path.join(path.univ2_scammer_chain_path, "no_chain.csv")
 
-    existing_addresses = read_from_csv_as_set(scammer_chain_path)
+    # remove scammers that don't belong in a chain
     scammers_remaining = set(dataloader.scammers)
-    for processed_scammer in existing_addresses:
-        scammers_remaining.discard(processed_scammer)
+    with open(no_chain_path, 'r') as file:
+        reader = csv.reader(file, quotechar='"', delimiter='|', quoting=csv.QUOTE_ALL)
+        next(reader)
+        for line in reader:
+            scammers_remaining.remove(line[0])
+
+    # remove scammers already processed in the chain
+    with open(simple_chain_path, 'r') as file:
+        reader = csv.reader(file, quotechar='"', delimiter='|', quoting=csv.QUOTE_ALL)
+        next(reader)
+        for line in reader:
+            scammer_chain = ast.literal_eval(line[1])
+            for scammer in scammer_chain:
+                scammers_remaining.remove(scammer[0])
 
     # lower means will write to file more frequently, but lower performance
     # higher means less file writes, but better performance
-    save_file_freq = 1000
-    num_scammers_to_run = 100000
+    save_file_freq = 5000
+    num_scammers_to_run = 150000
     overall_scammers_written = 0
 
     # save to file
     while overall_scammers_written <= num_scammers_to_run or len(scammers_remaining) > 0:
-        with open(scammer_chain_path, "a") as f:
+        with open(simple_chain_path, "a", newline='') as chain_file, open(no_chain_path, "a", newline='') as no_chain_file:
+            chain_writer = csv.writer(chain_file, quotechar='"', delimiter='|', quoting=csv.QUOTE_ALL)
+            no_chain_writer = csv.writer(no_chain_file, quotechar='"', delimiter='|', quoting=csv.QUOTE_ALL)
+            print('Scammers processed={} scammers left={}'.format(overall_scammers_written, len(scammers_remaining)))
             for _ in range(save_file_freq):
                 current_address = scammers_remaining.pop()
                 chain = chain_pattern_detection(current_address)
-                string_to_write = '{}, {}\n'.format(len(chain), ', '.join(chain))
-                f.write(string_to_write)
+                if len(chain) == 0:
+                    no_chain_writer.writerow([current_address])
+                else:
+                    chain_writer.writerow([len(chain), chain])
+                    for scammer_data in chain:
+                        scammer_to_remove = scammer_data[0]
+                        if scammer_to_remove != current_address:
+                            scammers_remaining.remove(scammer_to_remove)
                 overall_scammers_written = overall_scammers_written + 1
-                for scammer in chain:
-                    scammers_remaining.discard(scammer)
+
+
+def write_chain_stats_on_data():
+    chain_stats_path = os.path.join(path.univ2_scammer_chain_path, "chain_stats.txt")
+    simple_chain_path = os.path.join(path.univ2_scammer_chain_path, "simple_chain.csv")
+
+    all_chains = []
+
+    # read in all the data
+    with open(simple_chain_path, 'r') as file:
+        reader = csv.reader(file, quotechar='"', delimiter='|', quoting=csv.QUOTE_ALL)
+        next(reader)
+        for line in reader:
+            all_chains.append([int(line[0]), ast.literal_eval(line[1])])
+
+    chain_stats = {"min": sys.maxsize, "max": -1, "average": 0, "median": 0, "num_chains": 0}
+    scams_performed_stats = {"min": sys.maxsize, "max": -1, "average": 0, "median": 0, }
+
+    chain_median = []
+    scams_performed_median = []
+    for chain in all_chains:
+        # chain stats
+        chain_stats['average'] += chain[0]
+        chain_median.append(chain[0])
+        if chain[0] > chain_stats['max']:
+            chain_stats['max'] = chain[0]
+        if chain[0] < chain_stats['min']:
+            chain_stats['min'] = chain[0]
+
+        for scammer in chain[1]:
+            # liquidity scam stats
+            scams_performed_stats['average'] += scammer[1]
+            scams_performed_median.append(scammer[1])
+            if scammer[1] > scams_performed_stats['max']:
+                scams_performed_stats['max'] = scammer[1]
+            if scammer[1] < scams_performed_stats['min']:
+                scams_performed_stats['min'] = scammer[1]
+
+    chain_stats['average'] = chain_stats['average'] / len(all_chains)
+    chain_stats['median'] = statistics.median(chain_median)
+    chain_stats['num_chains'] = len(all_chains)
+
+    scams_performed_stats['average'] = scams_performed_stats['average'] / len(scams_performed_median)
+    scams_performed_stats['median'] = statistics.median(scams_performed_median)
+    # TOD use stasticis.mean, much easier that way
+    print(chain_stats)
+    print(scams_performed_stats)
 
 
 if __name__ == '__main__':
+    write_chain_stats_on_data()
     # run_chain_on_scammers()
     # print(*chain_pattern_detection("0x48f0fc8dfc672dd45e53b6c53cd5b09c71d9fbd6"), sep='\n')
-    print(chain_pattern_detection("0x48f0fc8dfc672dd45e53b6c53cd5b09c71d9fbd6"))
-
-    # REFERENCE later
-    # field_names = ["length", "scammer_chain"]
-    # data = [
-    #     [15, [(3, "scammer_1", "some_amount"), (5, "scammer_2", "another_amount")]]
-    # ]
-
-    scammer_chain_path = os.path.join(path.univ2_scammer_chain_path, "simple_chain.csv")
-    # REFERENCE later for how to read write to file using appened "a"
-    # with open(scammer_chain_path, "a", newline='') as csv_file:
-    #     writer = csv.writer(csv_file, quotechar='"', delimiter='|', quoting=csv.QUOTE_ALL)
-    #     writer.writerows(data)
-
-    # REFERENCE later for how to write to file
-    # my_result = []
-    # with open(scammer_chain_path, "r") as csv_file:
-    #     reader = csv.reader(csv_file, quotechar='"', delimiter='|', quoting=csv.QUOTE_ALL)
-    #     for line in reader:
-    #         if line[0] == 'length':
-    #             continue
-    #         length = int(line[0])
-    #         scammer_chain = ast.literal_eval(line[1])
-    #         my_result.append((length, scammer_chain))
-    #
-    # print(my_result)
+    # print(chain_pattern_detection("0x7edda39fd502cb71aa577452f1cc7e83fda9c5c7"))
