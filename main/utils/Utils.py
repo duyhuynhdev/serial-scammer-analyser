@@ -100,6 +100,8 @@ def partitioning(from_idx, to_idx, chunk_size):
     partitions[-1]["to"] = to_idx
     return partitions
 
+def is_df_cell_is_empty(cell):
+    return not cell or (isinstance(cell, float) and math.isnan(cell))
 
 def last_index(arr, value):
     return len(arr) - arr[::-1].index(value) - 1

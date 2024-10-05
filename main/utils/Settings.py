@@ -25,7 +25,7 @@ class Setting(object):
 
         self.ETHERSCAN_BASE_URL = config.get("ETHERSCAN", "ETHERSCAN_BASE_URL")
         self.ETHERSCAN_API_KEYS = config.get("ETHERSCAN", "API_KEYS").split(" ")
-        self.ETHERSCAN_API_KEY = self.ETHERSCAN_API_KEYS[0]
+        self.ETHERSCAN_API_KEY = self.ETHERSCAN_API_KEYS[5]
 
         self.BSCSCAN_BASE_URL = config.get("BSCSCAN", "BSCSCAN_BASE_URL")
         self.BSCSCAN_API_KEYS = config.get("BSCSCAN", "API_KEYS").split(" ")

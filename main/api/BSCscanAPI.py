@@ -47,9 +47,20 @@ def get_internal_transactions(address, fromBlock, toBlock, page=1, offset=10000,
 
 def call_api(module, action, params, apikey=setting.BSCSCAN_API_KEY):
     api_url = build_url(module, action, params, apikey)
-    response = requests.get(api_url, headers={"Content-Type": "application/json"})
-    response_data = response.json()
-    print(response_data["message"])
+    retry = 10
+    response_data = None
+    while retry > 0:
+        try:
+            response = requests.get(api_url, headers={"Content-Type": "application/json"})
+            response_data = response.json()
+            if (response_data is not None) and (response_data["status"] == "1" or isinstance(response_data["result"], list) or response_data["message"] == 'No data found'):
+                break
+        except Exception as e:
+            print(api_url)
+            print("SLEEP 3 SECONDS AND RETRY")
+            sleep(3)
+            retry -= 1
+    # print(response_data)
     assert (response_data is not None) and (response_data["status"] == "1" or isinstance(response_data["result"], list) or response_data["message"] == 'No data found')
     return response_data["result"] if response_data["result"] is not None else []
 

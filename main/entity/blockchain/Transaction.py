@@ -32,11 +32,14 @@ class Transaction(DTO):
             return 0
         return int(self.value) / 10 ** Constant.WETH_BNB_DECIMALS
 
-    def is_creation_contract(self):
-        return (isinstance(self.to, float) and math.isnan(self.to)) or not self.to
+    def is_to_empty(self):
+        return not self.to or (isinstance(self.to, float) and math.isnan(self.to))
+
+    def is_creation_contract_tx(self):
+        return self.is_to_empty()
 
     def is_in_tx(self, owner):
-        if self.is_creation_contract():
+        if self.is_creation_contract_tx():
             return False
         try:
             to = Web3.to_checksum_address(self.to)
@@ -46,7 +49,7 @@ class Transaction(DTO):
         return to == owner
 
     def is_out_tx(self, owner):
-        if self.is_creation_contract():
+        if self.is_creation_contract_tx():
             return False
         try:
             sender = Web3.to_checksum_address(self.sender)
@@ -65,16 +68,32 @@ class NormalTransaction(Transaction):
         self.gasPrice = gasPrice
         self.cumulativeGasUsed = cumulativeGasUsed
 
+    def is_function_empty(self):
+        return (isinstance(self.functionName, float) and math.isnan(self.functionName)) or not self.functionName
+
+    def is_transfer_tx(self):
+        return self.is_function_empty() and not self.is_to_empty()
+
+    def is_contract_call_tx(self):
+        return not self.is_transfer_tx()
+
+    def is_to_eoa(self, owner):
+        return self.is_out_tx(owner) and self.is_function_empty() and not self.is_to_empty()
+
+    def is_to_contract(self, owner):
+        return self.is_out_tx(owner) and not self.is_function_empty() and not self.is_to_empty()
+
     def get_transaction_fee(self):
         if (self.isError == 1) or (self.isError == '1'):
             return 0
-        return int(self.gasPrice * self.gasUsed) / 10 ** Constant.WETH_BNB_DECIMALS
+        return float(self.gasPrice) * float(self.gasUsed) / 10 ** Constant.WETH_BNB_DECIMALS
 
-    def is_to_eoa(self, owner):
-        return self.is_out_tx(owner) and ((isinstance(self.functionName, float) and math.isnan(self.functionName)) or not self.functionName)
-
-    def is_to_contract(self, owner):
-        return not self.is_to_eoa(owner)
+    def get_true_transfer_amount(self, address):
+        if self.is_in_tx(address):
+            return self.get_transaction_amount()
+        if self.is_out_tx(address):
+            return self.get_transaction_amount() + self.get_transaction_fee()
+        return 0
 
 
 class InternalTransaction(Transaction):

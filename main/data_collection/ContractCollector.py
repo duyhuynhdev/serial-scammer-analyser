@@ -1,5 +1,7 @@
 import traceback
 
+from hexbytes import HexBytes
+
 import utils.Utils as ut
 from tqdm import tqdm
 import os
@@ -111,7 +113,8 @@ class PoolDataCollector:
 
 class PoolInfoCollector:
     def download_tokens_from_pool(self, job, dex="univ2"):
-        key = setting.INFURA_API_KEYS[(job % len(setting.INFURA_API_KEYS))]
+        # key = setting.INFURA_API_KEYS[(job % len(setting.INFURA_API_KEYS))]
+        key = setting.INFURA_API_KEYS[key_idx]
         node_url = infura_api[dex]["node_url"]
         pool_abi = infura_api[dex]["pool_abi"]
         node_web3 = Web3(Web3.HTTPProvider(node_url + key))
@@ -296,6 +299,31 @@ class PopularTokenDataCollector:
 
 
 class ContractSourceCodeCollector:
+    def __init__(self, dex=None):
+        self.dex = dex
+        if self.dex is not None:
+            bytecode_path = os.path.join(eval(f"path.{dex}_token_path"), "bytecode.csv")
+            self.bytecode = dict()
+            if os.path.exists(bytecode_path):
+                df = pd.read_csv(bytecode_path)
+                self.bytecode = dict(zip(df["address"], df["code"]))
+
+    def is_contract_address(self, address, key_idx=0):
+        if self.dex is None:
+            raise Exception("Please setup an instance first")
+        bytecode_path = os.path.join(eval(f"path.{self.dex}_token_path"), "bytecode.csv")
+        if address is None or address == "":
+            return False
+        if address.lower() in self.bytecode:
+            code = HexBytes(self.bytecode[address.lower()])
+            return len(code) > 0
+        key_idx = key_idx % len(setting.INFURA_API_KEYS)
+        web3 = Web3(Web3.HTTPProvider(setting.INFURA_ETH_NODE_URL + setting.INFURA_API_KEYS[key_idx]))
+        code = web3.eth.get_code(Web3.to_checksum_address(address))
+        data = [{"address": address.lower(), "code": code.hex()}]
+        ut.save_or_append_if_exist(data, bytecode_path)
+        return len(code) > 0
+
     def download_source_codes(self, job, addresses, dex="univ2"):
         source_code_path = eval(f"path.{dex}_token_source_code_path")
         api = explorer_api[dex]["explorer"]
@@ -326,10 +354,14 @@ class ContractSourceCodeCollector:
             try:
                 response = api.get_contract_verified_source_code(address, key)
                 source_code = response[0]["SourceCode"]
+                solidity_version = response[0]["CompilerVersion"]
+                contract_name = response[0]["ContractName"]
                 if source_code.strip() == "":
                     print("EMPTY SOURCE CODE:", address)
                     ut.append_item_to_file(empty_path, address)
                 else:
+                    data = [{"address": address, "solidity_version": solidity_version, "contract_name": contract_name}]
+                    ut.save_or_append_if_exist(data, os.path.join(source_code_path, "solidity_version.csv"))
                     with open(output_path, 'w') as f:
                         f.write(source_code)
                         f.close()
@@ -352,11 +384,12 @@ def download_token_contract(job, dex="univ2"):
     contract_source_code_collector = ContractSourceCodeCollector()
     contract_source_code_collector.download_source_codes(job, addresses, dex)
 
+
 if __name__ == '__main__':
-    # done: 0,1, 3, 4, 5, 8, 24
-    # fail: 9, 10, 11
+    # done: 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 16, 17, 18, 19, 20, 21, 22, 23, 24
     # collector = PoolInfoCollector()
-    # job = 23
+    # job = 15
+    # key_idx = 5
     # collector.pancakeswap_token_download(job)
     ######################################
     # pancakeswap_pools_download(job)
@@ -372,3 +405,5 @@ if __name__ == '__main__':
     ###############################################
     job = 17
     download_token_contract(job, dex="univ2")
+    # collector = ContractSourceCodeCollector(dex="univ2")
+    # print(collector.is_contract_address("0xCFA6785Cd136d2Cdc37fE5835Cc4513E0E33f6C2"))

@@ -23,7 +23,7 @@ defi_files = [
     "proxy_addresses.csv",
     "router_addresses.csv",
 ]
-cex_files = ["cex_address.csv"]
+cex_files = ["cex_address.csv", "deposit_addresses.csv", "binance_addresses.csv"]
 mev_bot_files = ["mev_bot_addresses.csv", "MEV_bots.csv"]
 mixer_files = ["tonador_cash.csv"]
 wallet_files = ["wallet_addresses.csv"]
@@ -138,21 +138,33 @@ def load_token_info(dex="univ2"):
 
 
 def load_group_scammers(dex="univ2"):
+    group_scammers, scammer_group = dict(), dict()
     file_path = os.path.join(eval('path.{}_processed_path'.format(dex)), "scammer_group.csv")
-    groups = pd.read_csv(file_path)
-    group_scammers = groups.groupby("group_id")["scammer"].apply(list).to_dict()
-    return group_scammers
+    scammers = set()
+    if os.path.exists(file_path):
+        groups = pd.read_csv(file_path)
+        # group_scammers = groups.groupby("group_id")["scammer"].apply(list).to_dict()
+        for idx, row in groups.iterrows():
+            group_id = row["group_id"]
+            scammer = row["scammer"]
+            if group_id not in group_scammers:
+                group_scammers[group_id] = list()
+            if scammer not in scammers:
+                group_scammers[group_id].append(scammer)
+                scammer_group[scammer] = group_id
+                scammers.add(scammer)
+    return group_scammers, scammer_group
 
 
 def link_pool_and_group(scammer_pools, group_scammers):
     pool_group = dict()
     for group_id in group_scammers.keys():
-        scammers =  group_scammers[group_id]
+        scammers = group_scammers[group_id]
         pools = set()
         for s in scammers:
             pools.update(scammer_pools[s])
         for p in pools:
-            pool_group[p] =  group_id
+            pool_group[p] = group_id
     return pool_group
 
 
@@ -278,13 +290,13 @@ class DataLoader(object):
             self.scammer_pools,
         ) = load_rug_pull_dataset(dex=dex)
         self.scammers_set = set(self.scammers)
-        self.group_scammers = load_group_scammers(dex)
+        self.group_scammers, self.scammer_group = load_group_scammers(dex)
         self.pool_group = link_pool_and_group(self.scammer_pools, self.group_scammers)
 
 
 if __name__ == "__main__":
     # dataloader = DataLoader(dex='univ2')
-    print(load_cluster("cluster_0x7f0a9d794bba0a588f4c8351d8549bb5f76a34c4", dex='univ2'))
+    # print(load_cluster("cluster_0x7f0a9d794bba0a588f4c8351d8549bb5f76a34c4", dex='univ2'))
     # print(load_token_info(dex='univ2'))
     # pool = load_pool("0x19b98792e98c54f58c705cddf74316aec0999aa6", DataLoader(dex='univ2'))
     # pos = pool.get_high_value_position()
@@ -293,3 +305,11 @@ if __name__ == "__main__":
     # print(pool.get_max_swap_value(pos))
     # print(pool.get_total_mint_value(pos))
     # print(pool.get_total_burn_value(pos))
+    (bridge_addresses,
+     defi_addresses,
+     cex_addresses,
+     MEV_addresses,
+     mixer_addresses,
+     wallet_addresses,
+     other_addresses,) = load_end_nodes()
+    print(MEV_addresses)
