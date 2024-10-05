@@ -6,14 +6,28 @@ import pandas as pd
 import numpy as np
 from web3 import Web3
 from entity.blockchain.Transaction import NormalTransaction
+from utils.ProjectPath import ProjectPath
 from utils.Settings import Setting
 from pathlib import Path
 from more_itertools import one
 from typing import List
 
 setting = Setting()
-path = Path()
+path = ProjectPath()
 
+
+class Utils:
+    def __init__(self):
+        is_contract_address_path = os.path.join(path.univ2_star_shape_path, "is_contract_address.csv")
+        self.contract_address_dict = {}
+        self.contract_address_path = is_contract_address_path
+
+        with open(is_contract_address_path, "r") as file:
+            for line in file:
+                row = line.rstrip('\n').split(', ')
+                self.contract_address_dict[row[0]] = row[1].lower() == 'true'
+
+        self.contract_address_dict.pop('address')
 
 def keccak_hash(value):
     """
@@ -26,13 +40,26 @@ def keccak_hash(value):
     return "0x" + hash_func.hexdigest()
 
 
+utils = Utils()
+
+
 def is_contract_address(address, key_idx=0):
     if address is None or address == "":
         return False
+    address_is_contract = utils.contract_address_dict.get(address)
+    if address_is_contract:
+        return address_is_contract
+
     key_idx = key_idx % len(setting.INFURA_API_KEYS)
     web3 = Web3(Web3.HTTPProvider(setting.INFURA_ETH_NODE_URL + setting.INFURA_API_KEYS[key_idx]))
     code = web3.eth.get_code(Web3.to_checksum_address(address))
-    return len(code) > 0
+
+    result = len(code) > 0
+    utils.contract_address_dict.update({address: result})
+    with open(utils.contract_address_path, "a") as file:
+        file.write("{}, {}\n".format(address, result))
+
+    return result
 
 
 def get_functions_from_ABI(abi, function_type="event"):
@@ -112,8 +139,6 @@ def append_item_to_file(file_path, item):
 
 def read_list_from_file(file_path):
     list = []
-    if not os.path.exists(file_path):
-        return []
     with open(file_path, "r") as f:
         for line in f:
             if not line.isspace():
@@ -182,6 +207,7 @@ def get_abi_function_inputs(abi, type):
 
 def hex_to_dec(hex_val):
     return int(hex_val, 16)
+
 
 def get_transaction_by_hash(transactions: List[NormalTransaction], expected_hash: str) -> NormalTransaction:
     """Retrieve the transaction with the specified hash from a list of transactions."""
