@@ -139,10 +139,19 @@ def load_token_info(dex="univ2"):
 def load_group_scammers(dex="univ2"):
     group_scammers, scammer_group = dict(), dict()
     file_path = os.path.join(eval('path.{}_processed_path'.format(dex)), "scammer_group.csv")
+    scammers = set()
     if os.path.exists(file_path):
         groups = pd.read_csv(file_path)
-        group_scammers = groups.groupby("group_id")["scammer"].apply(list).to_dict()
-        scammer_group = dict(zip(groups["scammer"].str.lower(), groups["group_id"]))
+        # group_scammers = groups.groupby("group_id")["scammer"].apply(list).to_dict()
+        for idx, row in groups.iterrows():
+            group_id = row["group_id"]
+            scammer = row["scammer"]
+            if group_id not in group_scammers:
+                group_scammers[group_id] = list()
+            if scammer not in scammers:
+                group_scammers[group_id].append(scammer)
+                scammer_group[scammer] = group_id
+                scammers.add(scammer)
     return group_scammers, scammer_group
 
 
@@ -281,8 +290,8 @@ class DataLoader(object):
             self.scammer_pools,
         ) = load_rug_pull_dataset(dex=dex)
         self.scammers_set = set(self.scammers)
-        # self.group_scammers, self.scammer_group = load_group_scammers(dex)
-        # self.pool_group = link_pool_and_group(self.scammer_pools, self.group_scammers)
+        self.group_scammers, self.scammer_group = load_group_scammers(dex)
+        self.pool_group = link_pool_and_group(self.scammer_pools, self.group_scammers)
 
 
 if __name__ == "__main__":

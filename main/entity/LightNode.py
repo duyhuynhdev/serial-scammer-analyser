@@ -207,7 +207,7 @@ class LightNodeFactory:
          transfer_txs,
          true_in_value,
          true_out_value) = self.categorise_normal_transaction(address, normal_txs)
-        # print("sb", len(scam_neighbours), "sb_rate", len(scam_neighbours) / len(eoa_neighbours), "swap_txs", len(swap_in_txs), "scam_swap_txs", len(scam_swap_in_txs))
+        print("sb", len(scam_neighbours), "sb_rate", len(scam_neighbours) / len(eoa_neighbours), "swap_txs", len(swap_in_txs), "scam_swap_txs", len(scam_swap_in_txs))
         # print("scam_pools", len(scam_pools))
         # print("unique_pools", set(scam_pools))
         # print("scam_tokens", len(scam_tokens))
@@ -244,6 +244,7 @@ class LightNodeFactory:
                 and len(internal_txs) == 0
                 and len(transfer_txs) == len(normal_txs)
                 and true_out_value > 0
+                and true_in_value > 0
                 and true_out_value / true_in_value >= Constant.TRANSFER_TRUE_VALUE_RATE):
             if len(normal_txs) > Constant.TRANSFER_LIMIT:
                 labels.add(LightNodeLabel.BIG_TRANSFER)
@@ -309,5 +310,5 @@ if __name__ == '__main__':
     #     node = factory.create(address, [])
     #     print(address,":",node.labels)
 
-    node = factory.createNode("0xe83d96cc5c7e2c3cb1959a676c7a34f5b535730f", [], 3)
-    print("0xe83d96cc5c7e2c3cb1959a676c7a34f5b535730f", ":", node.labels)
+    node = factory.createNode("0xe2351b9b195a99ee93b0154d6e5c1e4dd97551ad", [], 3)
+    print("0xe2351b9b195a99ee93b0154d6e5c1e4dd97551ad", ":", node.labels)

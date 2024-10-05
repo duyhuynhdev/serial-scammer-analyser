@@ -3,6 +3,7 @@ import os
 
 import pandas as pd
 from pycparser.c_ast import Constant
+from tqdm import tqdm
 
 sys.path.append(os.path.join(os.path.dirname(sys.path[0])))
 
@@ -146,34 +147,36 @@ def run_clustering(group_id, dex='univ2'):
         s3_file_manager.sync()
     return cluster,queue, it
 
-def explore_with_max_iter(job, dex='univ2'):
+def explore_with_max_iter(job, max_iter = 100, size = 20000, dex='univ2'):
     global config
     file_path =  os.path.join(eval(f'path.{dex}_processed_path'), "max_iter_cluster_results.csv")
     config["is_max_iter"] = True
-    config["max_iter"] = 10
-    data = []
+    config["max_iter"] = max_iter
     processed_gids = []
     if os.path.exists(file_path):
         df = pd.read_csv(file_path)
         processed_gids = df["start_gid"].values.tolist()
-    for gid in dataloader.group_scammers.keys():
+    groups =  list(dataloader.group_scammers.keys())
+    chunks = ut.partitioning(0, len(groups), size)
+    print("NUM CHUNKS", len(chunks), "JOB", job)
+    chunk = chunks[job]
+    chunk_groups = groups[chunk["from"]:(chunk["to"] + 1)]
+    print(f'START EXPLORING NETWORK (JOB {job}/ {len(chunks)}):{chunk["from"]}_{chunk["to"]} (size: {len(chunk_groups)})')
+    for gid in tqdm(chunk_groups):
         if gid in processed_gids:
             continue
         cluster, queue, it = run_clustering(gid, dex)
         record = {
             "start_gid": gid,
             "cluster_size": len(cluster.nodes),
-            "queue_size": len(queue),
+            "queue_size": queue.qsize(),
             "groups": "-".join([str(g) for g in cluster.groups]),
             "num_iter": it
         }
-        data.append(record)
-        if len(data) >= 10:
-            ut.save_or_append_if_exist(data, file_path)
-            data = []
-    if len(data) > 0:
-        ut.save_or_append_if_exist(data, file_path)
+        ut.save_or_append_if_exist([record], file_path)
 
 
 if __name__ == '__main__':
-    explore_with_max_iter()
+    job = 10
+    explore_with_max_iter(job, 500, 5000)
+    # run_clustering(5002)
