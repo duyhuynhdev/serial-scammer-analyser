@@ -56,7 +56,7 @@ def determine_assigned_star_shape_and_f_b(scammer_address, scammer_dict):
 
     return star_shapes, f_b_tuple
 
-
+# TODO This needs to be resolved
 def find_star_shapes(scammer_address):
     stars = []
 
@@ -234,7 +234,7 @@ def process_stars_on_all_scammers():
 
     # start processing the writing
     save_file_freq = 1000
-    scammers_to_run = 120000
+    scammers_to_run = 200000
     scammers_ran = 0
 
     pop_from_in = True
@@ -256,9 +256,7 @@ def process_stars_on_all_scammers():
                     for star in all_stars_result:
                         star_type = star[0]
                         file_to_write_to = None
-                        # remove the satellites from the set of in_scammers_remaining since
-                        # another run on a satellite will return the same IN star shape
-                        # but verify before removing incase this shape comes up again
+                        # remove the satellites from the respective set
                         if star_type == StarShape.IN and bool(star[3] & in_scammers_remaining):
                             file_to_write_to = in_file
                             for satellite_scammer in star[3]:
@@ -277,7 +275,8 @@ def process_stars_on_all_scammers():
 
                         if file_to_write_to:
                             string_to_write = '{}, {}, {}\n'.format(star[1], star[2], ', '.join(star[3]))
-                            print('string_to_write is {} with the current_scammer={} and pop_from_in={}\n'.format(string_to_write, current_scammer_to_run, str(pop_from_in)))
+                            # DEBUG LOGGING
+                            # print('string_to_write is {} with the current_scammer={} and pop_from_in={}\n'.format(string_to_write, current_scammer_to_run, str(pop_from_in)))
                             file_to_write_to.write(string_to_write)
                 # since we just wrote all the results including IN/OUT, can just remove from other stack
                 in_scammers_remaining.discard(current_scammer_to_run)
@@ -314,6 +313,8 @@ def write_scammer_funders_and_beneficiary():
 
 
 if __name__ == '__main__':
+    # result = find_star_shapes('0x5d65491fa3f9422e8bb75dbd57f675b562029a36')
+    # print(result)
     process_stars_on_all_scammers()
     # write_scammer_funders_and_beneficiary()
     # result = get_funder_and_beneficiary('0x94f5628f2ab2efbb60d71400ad71be27fd91fe20')
