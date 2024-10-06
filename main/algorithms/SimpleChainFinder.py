@@ -153,8 +153,8 @@ def run_chain_on_scammers():
 
     # lower means will write to file more frequently, but lower performance
     # higher means less file writes, but better performance
-    save_file_freq = 5000
-    num_scammers_to_run = 150000
+    save_file_freq = 10000
+    num_scammers_to_run = 500_000
     overall_scammers_written = 0
 
     # save to file
