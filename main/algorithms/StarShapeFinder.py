@@ -71,7 +71,7 @@ def find_star_shapes(scammer_address, star_to_ignore=None):
 
     for star_shape in possible_star_shapes:
         satellite_nodes = set()
-        # find satellite node for an IN/OUT star shape
+        # LOGIC find satellite node for an IN/OUT star shape
         center_address = scammer_dict[scammer_address][1 if star_shape == StarShape.IN else 0]
         normal_txs = transaction_collector.get_transactions(center_address)
         for transaction in normal_txs:
@@ -91,7 +91,6 @@ def find_star_shapes(scammer_address, star_to_ignore=None):
 
 
 def find_liquidity_transactions_in_pool(scammer_address):
-    `````
     def calc_liquidity_amount(event, use_value):
         return event.amount0 / 10 ** 18 if use_value == 0 else event.amount1 / 10 ** 18
 
@@ -126,18 +125,19 @@ def get_funder_and_beneficiary(scammer_address):
     out_addresses = in_addresses = set()
     num_remove_liquidities = 0
     passed_add_liquidity = passed_remove_liquidity = False
+    duplicate_in_amt = duplicate_out_amt = False
     liquidity_transactions_dict = find_liquidity_transactions_in_pool(scammer_address)
     normal_txs = transaction_collector.get_transactions(scammer_address)
 
     for transaction in normal_txs:
         if transaction.is_not_error():
-           # upon passing the first add liquidity, mark down the amount and don't check any more add liquidites
+           # LOGIC upon passing the first add liquidity, mark down the amount and don't check any more add liquidites
             if not passed_add_liquidity and ADD_LIQUIDITY_SUBSTRING in str(transaction.functionName):
                 passed_add_liquidity = True
                 candidate_liq_amt = liquidity_transactions_dict.get(transaction.hash)
                 if candidate_liq_amt:
                     add_liquidity_amt = candidate_liq_amt
-            # upon passing a remove liquidity, current largest_out becomes ineligible
+            # LOGIC upon passing a remove liquidity - current largest_out becomes ineligible
             elif REMOVE_LIQUIDITY_SUBSTRING in str(transaction.functionName):
                 passed_remove_liquidity = True
                 largest_out_transaction = None
@@ -146,14 +146,34 @@ def get_funder_and_beneficiary(scammer_address):
                     num_remove_liquidities += 1
                     remove_liquidity_amt = candidate_liq_amt
 
-            # before we encounter the first add liquidity, find the largest IN transaction
+            # LOGIC transaction before we encounter the first add liquidity, find the largest IN transaction
             if not passed_add_liquidity and is_valid_address(False, transaction, scammer_address):
-                # TODO logic here for largest IN
+                in_addresses.add(transaction.sender)
+                # LOGIC assume first IN is largest
+                if not largest_in_transaction:
+                    largest_in_transaction = transaction
+                elif transaction.get_transaction_amount() >= largest_in_transaction.get_transaction_amount():
+                    # LOGIC if amount is the same, mark as duplicate, otherwise this becomes new largest transaction
+                    if transaction.get_transaction_amount() == largest_in_transaction.get_transaction_amount():
+                        duplicate_in_amt = True
+                    else:
+                        duplicate_in_amt = False
+                        largest_in_transaction = transaction
+            # OUT transaction logic
+            elif is_valid_address(True, transaction, scammer_address):
+                out_addresses.add(transaction.to)
+                # LOGIC set largest_out when none is a candidate
+                if not largest_out_transaction:
+                    largest_out_transaction = transaction
+                elif transaction.get_transaction_amount() >= largest_out_transaction.get_transaction_amount():
+                    # LOGIC if out is the same, duplicate amount so this becomes invalid, otherwise becomes new largest out
+                    if transaction.get_transaction_amount() == largest_out_transaction.get_transaction_amount():
+                        duplicate_out_amt = True
+                    else:
+                        duplicate_out_amt = False
+                        largest_out_transaction = transaction
 
-
-
-
-    # TODO change to dictionary
+    # TODO change to dictionary and add filter logic
     return address_before, address_after
 
 
