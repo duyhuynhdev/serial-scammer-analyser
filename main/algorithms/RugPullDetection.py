@@ -9,7 +9,7 @@ import utils.Utils as ut
 from tqdm import tqdm
 import os
 import pandas as pd
-from utils import Constant
+from utils import Constant, DataLoader
 from utils.Settings import Setting
 from utils.ProjectPath import ProjectPath
 from api import EtherscanAPI, BSCscanAPI
@@ -27,7 +27,7 @@ explorer_api = {
 }
 
 contract_event_collector = ContractEventCollector()
-
+endnodes = DataLoader.load_full_end_nodes(dex='panv2')
 
 def get_balance_of_weth_before_sell_rug(mints, burns, swaps, weth_position, max_swap_idx):
     total_mint_amount, total_burn_amount, total_swap_in, total_swap_out = 0, 0, 0, 0
@@ -48,19 +48,19 @@ def get_balance_of_weth_before_sell_rug(mints, burns, swaps, weth_position, max_
     return total_mint_amount + total_swap_in - total_burn_amount - total_swap_out
 
 
-def is_mint_transfer(transfer):
-    return transfer["sender"].lower() == Constant.ZERO and transfer["to"].lower() != Constant.ZERO
+def is_mint_transfer(transfer, pool_creator):
+    return transfer["sender"].lower() == Constant.ZERO and transfer["to"].lower() == pool_creator.lower()
 
 
 def is_burn_transfer(transfer):
     return transfer["sender"].lower() != Constant.ZERO and transfer["to"].lower() in Constant.BURN_ADDRESSES
 
 
-def is_simple_rug_pull(transfers):
+def is_simple_rug_pull(transfers, pool_creator):
     mints = []
     burns = []
     for transfer in transfers:
-        if is_mint_transfer(transfer):
+        if is_mint_transfer(transfer, pool_creator):
             mints.append(transfer)
         if is_burn_transfer(transfer):
             burns.append(transfer)
@@ -77,7 +77,7 @@ def is_simple_rug_pull(transfers):
     return False, []
 
 
-def is_sell_rug_pull(transfers, mints, burns, swaps, weth_position):
+def is_sell_rug_pull(transfers, mints, burns, swaps, weth_position, pool_creator):
     # expect 1 mint no burn and multiple swaps
     if len(swaps) == 0 or len(mints) != 1 or len(burns) > 0:
         return False, []
@@ -99,20 +99,20 @@ def is_sell_rug_pull(transfers, mints, burns, swaps, weth_position):
         # extract scammers from first mint and max swap
         scammers = {swaps_df["to"].tolist()[max_swap_idx], swaps_df["sender"].tolist()[max_swap_idx]}
         for transfer in transfers:
-            if is_mint_transfer(transfer):
+            if is_mint_transfer(transfer, pool_creator):
                 mints.append(transfer)
                 scammers.add(transfer["to"])
         return True, scammers
     return False, []
 
 
-def is_rug_pull(transfers, mints, burns, swaps, weth_position):
+def is_rug_pull(transfers, mints, burns, swaps, weth_position, pool_creator):
     if len(mints) < 1:
         return False, []
-    result, scammers = is_simple_rug_pull(transfers)
+    result, scammers = is_simple_rug_pull(transfers, pool_creator)
     if result:
         return 1, scammers
-    result, scammers = is_sell_rug_pull(transfers, mints, burns, swaps, weth_position)
+    result, scammers = is_sell_rug_pull(transfers, mints, burns, swaps, weth_position, pool_creator)
     if result:
         return 2, scammers
     return 0, []
@@ -138,19 +138,22 @@ def is_1d_pool(pool_transfers, pool_swaps, pool_burns, pool_mints):
     return pool_life_time <= Constant.ONE_DAY_TIMESTAMP
 
 
-def is_valid_scammer_address(address, pool_address, scam_token_address, collector, idx=0):
+def is_valid_scammer_address(address, pool_address, scam_token_address, idx=0):
     # if (address.lower() == pool_address.lower() or
     #         address.lower() == scam_token_address.lower() or
     #         address.lower() in Constant.SPECIAL_ADDRESS or
     #         collector.is_contract_address(address, idx)):
     if (address.lower() == pool_address.lower() or
             address.lower() == scam_token_address.lower() or
+            address.lower() in endnodes or
             address.lower() in Constant.SPECIAL_ADDRESS):
         return False
     return True
 
 
-def rug_pull_detection(job, collector, dex='univ2'):
+def rug_pull_detection(job, dex='univ2'):
+    global endnodes
+    endnodes = DataLoader.load_full_end_nodes(dex=dex)
     out_pool_label_path = os.path.join(eval('path.{}_processed_path'.format(dex)), "1_pair_pool_labels.csv")
     out_scammer_path = os.path.join(eval('path.{}_processed_path'.format(dex)), "1_pair_scammers.csv")
     processed_pools = []
@@ -203,7 +206,7 @@ def rug_pull_detection(job, collector, dex='univ2'):
                 pool_swaps = contract_event_collector.get_event(pool_address, "Swap", event_path, dex)
                 pool_burns = contract_event_collector.get_event(pool_address, "Burn", event_path, dex)
                 pool_mints = contract_event_collector.get_event(pool_address, "Mint", event_path, dex)
-                check_result, event_scammers = is_rug_pull(pool_transfers, pool_mints, pool_burns, pool_swaps, hv_position)
+                check_result, event_scammers = is_rug_pull(pool_transfers, pool_mints, pool_burns, pool_swaps, hv_position, pool_creator)
                 if check_result != 0:
                     scam_token = low_value_token
                     # check if scam token is 1 day token
@@ -213,7 +216,7 @@ def rug_pull_detection(job, collector, dex='univ2'):
                     suspicious = {pool_creator.lower(), token_creator.lower()}
                     if event_scammers is not None:
                         suspicious.update(event_scammers)
-                    scammers = [s.lower() for s in suspicious if is_valid_scammer_address(s.lower(), pool_address, scam_token, collector, job)]
+                    scammers = [s.lower() for s in suspicious if is_valid_scammer_address(s.lower(), pool_address, scam_token,job)]
                     if len(scammers) > 0:
                         scammer_dict = []
                         for s in set(scammers):
@@ -273,7 +276,8 @@ def debug_detection(pool_address, dex='univ2'):
             pool_swaps = contract_event_collector.get_event(pool_address, "Swap", event_path, dex)
             pool_burns = contract_event_collector.get_event(pool_address, "Burn", event_path, dex)
             pool_mints = contract_event_collector.get_event(pool_address, "Mint", event_path, dex)
-            check_result, event_scammers = is_rug_pull(pool_transfers, pool_mints, pool_burns, pool_swaps, hv_position)
+            check_result, event_scammers = is_rug_pull(pool_transfers, pool_mints, pool_burns, pool_swaps, hv_position, pool_creator)
+            print("check_result", check_result)
             if check_result != 0:
                 scam_token = low_value_token
                 # check if scam token is 1 day token
@@ -288,7 +292,7 @@ def debug_detection(pool_address, dex='univ2'):
 
 if __name__ == '__main__':
     dex = "panv2"
-    job = 19
+    job = 11
     collector = ContractSourceCodeCollector(dex)
-    rug_pull_detection(job, collector, dex)
-    # debug_detection("0x45c0a88988f33123794DAb66c232c00e7C1DdCd5", dex)
+    rug_pull_detection(job, dex)
+    # debug_detection("0xdaa9c67E04085Bf6677e622100b33988d3fe6463", dex)

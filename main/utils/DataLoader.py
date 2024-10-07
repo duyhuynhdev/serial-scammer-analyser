@@ -149,7 +149,7 @@ def load_token_info(dex="univ2"):
 
 def load_group_scammers(dex="univ2"):
     group_scammers, scammer_group = dict(), dict()
-    file_path = os.path.join(eval('path.{}_processed_path'.format(dex)), "scammer_group.csv")
+    file_path = os.path.join(eval('path.{}_processed_path'.format(dex)), "simple_rp_scammer_group.csv")
     scammers = set()
     if os.path.exists(file_path):
         groups = pd.read_csv(file_path)
@@ -299,7 +299,7 @@ class DataLoader(object):
             self.scam_pools,
             self.scammers,
             self.scammer_pools,
-        ) = load_rug_pull_dataset(dex=dex)
+        ) = load_rug_pull_dataset(dex=dex,scammer_file_name="filtered_simple_rp_scammers.csv", pool_file_name="filtered_simple_rp_pool.csv")
         self.scammers_set = set(self.scammers)
         self.group_scammers, self.scammer_group = load_group_scammers(dex)
         self.pool_group = link_pool_and_group(self.scammer_pools, self.group_scammers)
