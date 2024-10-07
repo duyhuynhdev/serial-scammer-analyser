@@ -56,14 +56,18 @@ def determine_assigned_star_shape_and_f_b(scammer_address, scammer_dict):
 
     return star_shapes, f_b_tuple
 
-# TODO This needs to be resolved
-def find_star_shapes(scammer_address):
+
+# TODO This needs to be rework
+# additional param exclude_star_shape flag which won't look at IN/OUT
+def find_star_shapes(scammer_address, star_to_ignore=None):
     stars = []
 
     input_path = os.path.join(path.univ2_star_shape_path, "scammer_in_out_addresses.csv")
     scammer_dict = read_from_in_out_scammer_as_dict(input_path)
 
     possible_star_shapes = determine_assigned_star_shape_and_f_b(scammer_address, scammer_dict)[0]
+    if star_to_ignore:
+        possible_star_shapes.remove(star_to_ignore)
 
     for star_shape in possible_star_shapes:
         satellite_nodes = set()
@@ -87,10 +91,12 @@ def find_star_shapes(scammer_address):
 
 
 def find_liquidity_transactions_in_pool(scammer_address):
+    `````
     def calc_liquidity_amount(event, use_value):
         return event.amount0 / 10 ** 18 if use_value == 0 else event.amount1 / 10 ** 18
 
-    # key: transaction hash, value: liquidity added/removed
+    # key: transaction hash
+    # value: liquidity added/removed
     liquidity_transactions_pool = {}
     scammer_pool = load_pool(scammer_address, dataloader)
     for pool_index in range(len(scammer_pool)):
@@ -102,28 +108,53 @@ def find_liquidity_transactions_in_pool(scammer_address):
     return liquidity_transactions_pool
 
 
+# TODO this needs to be reworked
+# A funder cannot also be sent money back from the center except if it's an IN/OUT star
+# A beneficiary cannot also fund the money to the satellite except if it's an IN/OUT star
+# You can use a flag to determine if it's passed the same address but don't discard it until the end.
 def get_funder_and_beneficiary(scammer_address):
+    '''Return a dictionary object containg the following
+    { scammer: (addresss, scams_performed),
+      funder: (address, timestamp, raw eth amount) (can be `None`)
+      beneficiary: (address, timestamp, raw eth amount) (can be `None`)
+    }
+    '''
+    # used to determine if a funder/beneficiary doesn't perform opposite transaction for an IN/OUT star -
+    # if so, the funder/beneficary will become ineligible but not for an IN_OUT star
+    largest_in_transaction = largest_out_transaction = None
+    add_liquidity_amt = remove_liquidity_amt = 0
+    out_addresses = in_addresses = set()
+    num_remove_liquidities = 0
+    passed_add_liquidity = passed_remove_liquidity = False
     liquidity_transactions_dict = find_liquidity_transactions_in_pool(scammer_address)
-    address_before = get_address_before_add_liquidity(scammer_address, liquidity_transactions_dict)
-    address_after = get_address_after_remove_liquidity(scammer_address, liquidity_transactions_dict)
+    normal_txs = transaction_collector.get_transactions(scammer_address)
 
+    for transaction in normal_txs:
+        if transaction.is_not_error():
+           # upon passing the first add liquidity, mark down the amount and don't check any more add liquidites
+            if not passed_add_liquidity and ADD_LIQUIDITY_SUBSTRING in str(transaction.functionName):
+                passed_add_liquidity = True
+                candidate_liq_amt = liquidity_transactions_dict.get(transaction.hash)
+                if candidate_liq_amt:
+                    add_liquidity_amt = candidate_liq_amt
+            # upon passing a remove liquidity, current largest_out becomes ineligible
+            elif REMOVE_LIQUIDITY_SUBSTRING in str(transaction.functionName):
+                passed_remove_liquidity = True
+                largest_out_transaction = None
+                candidate_liq_amt = liquidity_transactions_dict.get(transaction.hash)
+                if candidate_liq_amt:
+                    num_remove_liquidities += 1
+                    remove_liquidity_amt = candidate_liq_amt
+
+            # before we encounter the first add liquidity, find the largest IN transaction
+            if not passed_add_liquidity and is_valid_address(False, transaction, scammer_address):
+                # TODO logic here for largest IN
+
+
+
+
+    # TODO change to dictionary
     return address_before, address_after
-
-
-def get_address_after_remove_liquidity(scammer_address: str, liquidity_transactions_dict):
-    return get_largest_address(scammer_address, liquidity_transactions_dict, REMOVE_LIQUIDITY_SUBSTRING, True)
-
-
-def get_address_before_add_liquidity(scammer_address: str, liquidity_transactions_dict):
-    return get_largest_address(scammer_address, liquidity_transactions_dict, ADD_LIQUIDITY_SUBSTRING, False)
-
-
-def is_valid_address(is_out, transaction, scammer_address):
-    if is_out:
-        return transaction.is_to_eoa(scammer_address) and transaction.to not in END_NODES
-    elif not is_out:
-        return transaction.is_in_tx(scammer_address) and transaction.sender not in END_NODES
-    return False
 
 
 def get_largest_address(scammer_address, liquidity_transactions_dict, liquidity_function_name: str, is_out):
@@ -170,6 +201,25 @@ def get_largest_address(scammer_address, liquidity_transactions_dict, liquidity_
             elif not is_out:
                 return largest_transaction.sender
     return ''
+
+
+def get_address_after_remove_liquidity(scammer_address: str, liquidity_transactions_dict):
+    return get_largest_address(scammer_address, liquidity_transactions_dict, REMOVE_LIQUIDITY_SUBSTRING, True)
+
+
+
+
+
+def get_address_before_add_liquidity(scammer_address: str, liquidity_transactions_dict):
+    return get_largest_address(scammer_address, liquidity_transactions_dict, ADD_LIQUIDITY_SUBSTRING, False)
+
+
+def is_valid_address(is_out, transaction, scammer_address):
+    if is_out:
+        return transaction.is_to_eoa(scammer_address) and transaction.to not in END_NODES
+    elif not is_out:
+        return transaction.is_in_tx(scammer_address) and transaction.sender not in END_NODES
+    return False
 
 
 def read_from_in_out_scammer_as_dict(input_path):
@@ -287,7 +337,6 @@ def process_stars_on_all_scammers():
 
 # deprecated - no longer needed
 def write_scammer_funders_and_beneficiary():
-
     processed_addresses = read_from_csv(SCAMMER_IN_OUT_PATH)
     scammers_remaining = set(dataloader.scammers)
     # remove already written scammers from remaining
@@ -316,5 +365,5 @@ if __name__ == '__main__':
     # result = find_star_shapes('0x5d65491fa3f9422e8bb75dbd57f675b562029a36')
     # print(result)
     process_stars_on_all_scammers()
-    # write_scammer_funders_and_beneficiary()
     # result = get_funder_and_beneficiary('0x94f5628f2ab2efbb60d71400ad71be27fd91fe20')
+    # write_scammer_funders_and_beneficiary()

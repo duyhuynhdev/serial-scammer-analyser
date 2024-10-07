@@ -98,6 +98,7 @@ def get_largest_in_before_add_liquidity(scammer_address: str, normal_txs=None):
     return get_largest_transaction(normal_txs, scammer_address, ADD_LIQUIDITY_SUBSTRING, False, 0, len(normal_txs), 1)
 
 
+# TODO rework this method to just return all of it, don't do two calls
 def get_largest_transaction(normal_txs, scammer_address, liquidity_function_name: str, is_out, *range_loop_args):
     num_remove_liquidities_found = 0
     passed_liquidity_function = False
