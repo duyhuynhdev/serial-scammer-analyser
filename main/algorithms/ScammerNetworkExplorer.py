@@ -177,6 +177,6 @@ def explore_with_max_iter(job, max_iter = 100, size = 20000, dex='univ2'):
 
 
 if __name__ == '__main__':
-    job = 13
+    job = 8
     explore_with_max_iter(job, 500, 5000)
     # run_clustering(5002)

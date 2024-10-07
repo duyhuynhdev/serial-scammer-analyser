@@ -403,7 +403,7 @@ if __name__ == '__main__':
     # collector = TokenInfoCollector()
     # collector.download_tokens_info(6)
     ###############################################
-    job = 17
-    download_token_contract(job, dex="univ2")
+    job = 24
+    download_token_contract(job, dex="panv2")
     # collector = ContractSourceCodeCollector(dex="univ2")
     # print(collector.is_contract_address("0xCFA6785Cd136d2Cdc37fE5835Cc4513E0E33f6C2"))

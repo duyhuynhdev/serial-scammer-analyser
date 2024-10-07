@@ -209,7 +209,7 @@ class FunctionInputDecoder:
             return True, [parsed]
         except Exception as e:
             print(e)
-            return []
+            return False, []
 
 
 class EventLogDecoder:

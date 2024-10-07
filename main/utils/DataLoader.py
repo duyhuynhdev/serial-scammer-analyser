@@ -29,6 +29,17 @@ wallet_files = ["wallet_addresses.csv"]
 other_files = ["multisender_addresses.csv", "multisig_addresses.csv"]
 
 
+def load_full_end_nodes(dex="univ2"):
+    (bridge_addresses,
+     defi_addresses,
+     cex_addresses,
+     MEV_addresses,
+     mixer_addresses,
+     wallet_addresses,
+     other_addresses,) = load_end_nodes()
+    return bridge_addresses | defi_addresses | cex_addresses | MEV_addresses | mixer_addresses | wallet_addresses | other_addresses
+
+
 def load_end_nodes(dex="univ2"):
     print("LOAD END NODES")
     bridge_addresses = set()
@@ -167,12 +178,12 @@ def link_pool_and_group(scammer_pools, group_scammers):
     return pool_group
 
 
-def load_rug_pull_dataset(dex="univ2"):
+def load_rug_pull_dataset(dex="univ2", scammer_file_name="1_pair_scammers.csv", pool_file_name = "1_pair_pool_labels.csv"):
     print("LOAD RUG PULL INFO")
     scam_pools = list()
     # scammers = list()
     scammers = pd.read_csv(
-        os.path.join(eval("path.{}_processed_path".format(dex)), "1_pair_scammers.csv")
+        os.path.join(eval("path.{}_processed_path".format(dex)), scammer_file_name)
     )
     index_issue = scammers[(scammers["pool"] == scammers["scammer"])].index
     scammers.drop(index_issue, inplace=True)
@@ -183,7 +194,7 @@ def load_rug_pull_dataset(dex="univ2"):
     scammer_pools = scammers.groupby("scammer")["pool"].apply(list).to_dict()
     rp_pools = pd.read_csv(
         os.path.join(
-            eval("path.{}_processed_path".format(dex)), "1_pair_pool_labels.csv"
+            eval("path.{}_processed_path".format(dex)), pool_file_name
         )
     )
     rp_pools.fillna("", inplace=True)

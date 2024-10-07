@@ -73,8 +73,10 @@ def partitioning(from_idx, to_idx, chunk_size):
     partitions[-1]["to"] = to_idx
     return partitions
 
+
 def is_df_cell_is_empty(cell):
     return not cell or (isinstance(cell, float) and math.isnan(cell))
+
 
 def last_index(arr, value):
     return len(arr) - arr[::-1].index(value) - 1
@@ -144,6 +146,19 @@ def read_json(file_path):
     return json_object
 
 
+def read_file_to_string(file_path):
+    with open(file_path, 'r') as file:
+        content = file.read()
+        file.close()
+    return content
+
+
+def write_file_from_string(file_path, content):
+    with open(file_path, 'w') as file:
+        file.write(content)
+        file.close()
+
+
 def save_or_append_if_exist(data, output_path):
     save_df = pd.DataFrame.from_records(data)
     if os.path.isfile(output_path):
@@ -182,6 +197,7 @@ def get_abi_function_inputs(abi, type):
 
 def hex_to_dec(hex_val):
     return int(hex_val, 16)
+
 
 def get_transaction_by_hash(transactions: List[NormalTransaction], expected_hash: str) -> NormalTransaction:
     """Retrieve the transaction with the specified hash from a list of transactions."""

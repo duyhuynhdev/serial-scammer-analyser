@@ -2,6 +2,7 @@ from time import sleep
 
 import requests
 
+from utils import Constant
 from utils.Settings import Setting
 
 setting = Setting()
@@ -96,5 +97,5 @@ def get_event_logs(address, fromBlock, toBlock, topic, page=1, offset=1000, apik
 
 if __name__ == '__main__':
     # print(get_event_logs("0xc3Db44ADC1fCdFd5671f555236eae49f4A8EEa18", 0, 99999999999, "0x1c411e9a96e071241c2f21f7726b17ae89e3cab4c78be50e062b03a9fffbbad1"))
-    # print(len(get_normal_transactions("0x48f0fc8dfc672dd45e53b6c53cd5b09c71d9fbd6", 0, 99999999999, 2,5000, apikey=setting.ETHERSCAN_API_KEY)))
-    print(get_contract_creation_info(["0x2ba15ad55b85d67407142e9a92503b945f729aef"]))
+    print(len(get_normal_transactions("0x863157a21bc7534fb57311b133dd96979a5aa880", Constant.UNISWAP_START_BLOCK, Constant.UNISWAP_END_BLOCK, 1,10000, apikey=setting.ETHERSCAN_API_KEY)))
+    # print(get_normal_transactions(["0x863157a21bc7534fb57311b133dd96979a5aa880"]))
