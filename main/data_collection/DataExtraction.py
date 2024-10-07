@@ -6,6 +6,8 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 import random
+
+from data_collection.ContractCollector import ContractSourceCodeCollector
 from utils import Utils as ut
 from similarity import ContractTokenization
 from utils import DataLoader
@@ -17,7 +19,7 @@ from utils.ProjectPath import ProjectPath
 path = ProjectPath()
 setting = Setting()
 
-endnodes = DataLoader.load_full_end_nodes(dex='univ2')
+endnodes = DataLoader.load_full_end_nodes(dex='panv2')
 
 zero_txs_addresses = ["0x00c8357eebba2021ee4d8cbd2946145bcc7aa2fb",
 "0x55cc3a3a89f480e6515e26ebab9a672a6ca43bd8",
@@ -94,5 +96,21 @@ def filter_scammer(dex='univ2'):
     wrong_scammer_df.to_csv(os.path.join(eval("path.{}_processed_path".format(dex)), "wrong_full_rp_scammers.csv"), index=False)
     rp_df.to_csv(os.path.join(eval("path.{}_processed_path".format(dex)), "filtered_full_rp_pool.csv"), index=False)
 
+def filter_non_scammer_addresses(dex='univ2'):
+    collector = ContractSourceCodeCollector(dex)
+    rp_scammer_df = pd.read_csv(os.path.join(eval("path.{}_processed_path".format(dex)), "filtered_simple_rp_scammers.csv"))
+    scammers = rp_scammer_df["scammer"].unique()
+    print("BEFORE", len(rp_scammer_df))
+    eoa = []
+    for scammer_address in tqdm(scammers):
+        if not collector.is_contract_address(scammer_address):
+            eoa.append(scammer_address)
+        else:
+            print("FOUND CONTRACT ADDRESS:", scammer_address)
+    rp_scammer_df = rp_scammer_df[rp_scammer_df["scammer"].isin(eoa)]
+    print("AFTER", len(rp_scammer_df))
+    rp_scammer_df.to_csv(os.path.join(eval("path.{}_processed_path".format(dex)), "filtered_simple_rp_scammers.csv"), index=False)
+
 if __name__ == '__main__':
-    extract_simple_rp()
+    # extract_simple_rp(dex="panv2")
+    filter_non_scammer_addresses(dex="panv2")

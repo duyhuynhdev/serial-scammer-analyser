@@ -19,15 +19,16 @@ path = ProjectPath()
 class Utils:
     def __init__(self):
         is_contract_address_path = os.path.join(path.univ2_star_shape_path, "is_contract_address.csv")
-        self.contract_address_dict = {}
-        self.contract_address_path = is_contract_address_path
+        if os.path.exists(is_contract_address_path):
+            self.contract_address_dict = {}
+            self.contract_address_path = is_contract_address_path
 
-        with open(is_contract_address_path, "r") as file:
-            for line in file:
-                row = line.rstrip('\n').split(', ')
-                self.contract_address_dict[row[0]] = row[1].lower() == 'true'
+            with open(is_contract_address_path, "r") as file:
+                for line in file:
+                    row = line.rstrip('\n').split(', ')
+                    self.contract_address_dict[row[0]] = row[1].lower() == 'true'
 
-        self.contract_address_dict.pop('address')
+            self.contract_address_dict.pop('address')
 
 def keccak_hash(value):
     """

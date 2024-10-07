@@ -309,6 +309,7 @@ class ContractSourceCodeCollector:
                 self.bytecode = dict(zip(df["address"], df["code"]))
 
     def is_contract_address(self, address, key_idx=0):
+        node_url = infura_api[self.dex]["node_url"]
         if self.dex is None:
             raise Exception("Please setup an instance first")
         bytecode_path = os.path.join(eval(f"path.{self.dex}_token_path"), "bytecode.csv")
@@ -318,7 +319,7 @@ class ContractSourceCodeCollector:
             code = HexBytes(self.bytecode[address.lower()])
             return len(code) > 0
         key_idx = key_idx % len(setting.INFURA_API_KEYS)
-        web3 = Web3(Web3.HTTPProvider(setting.INFURA_ETH_NODE_URL + setting.INFURA_API_KEYS[key_idx]))
+        web3 = Web3(Web3.HTTPProvider(node_url + setting.INFURA_API_KEYS[key_idx]))
         code = web3.eth.get_code(Web3.to_checksum_address(address))
         data = [{"address": address.lower(), "code": code.hex()}]
         ut.save_or_append_if_exist(data, bytecode_path)
