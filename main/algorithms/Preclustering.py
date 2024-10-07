@@ -57,26 +57,25 @@ def scammer_grouping(dex='univ2'):
         pool_scammers,
         _,
         _,
-        _,
+        total_scammers,
         _,
     ) = DataLoader.load_rug_pull_dataset(dex=dex, scammer_file_name="filtered_simple_rp_scammers.csv", pool_file_name="filtered_simple_rp_pool.csv")
     for pool in tqdm(pool_scammers):
         scammers = set(pool_scammers[pool])
-        scammers.update(get_related_scammer_from_pool_events(pool, event_path, scammers, dex))
+        scammers.update(get_related_scammer_from_pool_events(pool, event_path, total_scammers, dex))
         scam_neighbours = set()
         for s in scammers:
-            sn = get_scam_neighbours(s, scammers, dex)
+            sn = get_scam_neighbours(s, total_scammers, dex)
             scam_neighbours.update(sn)
         scammers.update(scam_neighbours)
-        pool_scammers[pool] = scammers
-
-    for scammers in pool_scammers.values():
         if len(scammers) == 1:
-            if not graph.has_node(scammers[0]):
-                graph.add_node(scammers[0])
-        adj_list = list(itertools.combinations(scammers, 2))
-        for u, v in adj_list:
-            graph.add_edge(u, v)
+            scammer = scammers.pop()
+            if not graph.has_node(scammer):
+                graph.add_node(scammer)
+        else:
+            adj_list = list(itertools.combinations(scammers, 2))
+            for u, v in adj_list:
+                graph.add_edge(u, v)
 
     print("GRAPH HAVE", len(nx.nodes(graph)), "NODES")
     groups = list(nx.connected_components(graph))
