@@ -30,7 +30,7 @@ wallet_files = ["wallet_addresses.csv"]
 other_files = ["multisender_addresses.csv", "multisig_addresses.csv"]
 
 
-def load_end_nodes(dex="univ2"):
+def load_end_nodes(dex="panv2"):
     print("LOAD END NODES")
     bridge_addresses = set()
     defi_addresses = set()
@@ -85,7 +85,7 @@ def load_end_nodes(dex="univ2"):
     )
 
 
-def load_creation_info(dex="univ2"):
+def load_creation_info(dex="panv2"):
     print("LOAD CREATION INFO")
     creation_info = dict()
     pool_creation_path = os.path.join(
@@ -115,7 +115,7 @@ def load_creation_info(dex="univ2"):
     return creation_info
 
 
-def load_pool_info(dex="univ2"):
+def load_pool_info(dex="panv2"):
     pool_infos = pd.read_csv(
         os.path.join(eval("path.{}_processed_path".format(dex)), "pool_info.csv"),
         low_memory=False,
@@ -127,7 +127,7 @@ def load_pool_info(dex="univ2"):
     return dict(zip(pool_infos["pool"].str.lower(), tokens.to_dict("records")))
 
 
-def load_token_info(dex="univ2"):
+def load_token_info(dex="panv2"):
     token_infos = pd.read_csv(
         os.path.join(eval("path.{}_processed_path".format(dex)), "token_info.csv"),
         low_memory=False,
@@ -137,7 +137,7 @@ def load_token_info(dex="univ2"):
     return dict(zip(token_infos["token"].str.lower(), infos.to_dict("records")))
 
 
-def load_group_scammers(dex="univ2"):
+def load_group_scammers(dex="panv2"):
     file_path = os.path.join(eval('path.{}_processed_path'.format(dex)), "scammer_group.csv")
     groups = pd.read_csv(file_path)
     group_scammers = groups.groupby("group_id")["scammer"].apply(list).to_dict()
@@ -156,7 +156,7 @@ def link_pool_and_group(scammer_pools, group_scammers):
     return pool_group
 
 
-def load_rug_pull_dataset(dex="univ2"):
+def load_rug_pull_dataset(dex="panv2"):
     print("LOAD RUG PULL INFO")
     scam_pools = list()
     # scammers = list()
@@ -184,7 +184,7 @@ def load_rug_pull_dataset(dex="univ2"):
     return pool_scammers, scam_token_pool, scam_pools, set(scammers["scammer"].str.lower().to_list()), scammer_pools
 
 
-def load_cluster(name, dex="univ2"):
+def load_cluster(name, dex="panv2"):
     c_path = os.path.join(eval(f"path.{dex}_cluster_path"), f"{name}.csv")
     cluster_df = pd.read_csv(c_path)
     clusters = []
@@ -194,13 +194,13 @@ def load_cluster(name, dex="univ2"):
     return clusters
 
 
-def load_transaction_by_address(address, dex="univ2"):
+def load_transaction_by_address(address, dex="panv2"):
     transaction_collector = TransactionCollector()
     normal_txs, internal_txs = transaction_collector.get_transactions(address, dex)
     return normal_txs, internal_txs
 
 
-def load_pool(scammer_address, dataloader, dex="univ2"):
+def load_pool(scammer_address, dataloader, dex="panv2"):
     pool_addresses = dataloader.scammer_pools[scammer_address.lower()]
     pool_event_path = eval("path.{}_pool_events_path".format(dex))
     contract_event_collector = ContractEventCollector()
@@ -252,7 +252,7 @@ def load_pool(scammer_address, dataloader, dex="univ2"):
 
 
 class DataLoader(object):
-    def __init__(self, dex="univ2"):
+    def __init__(self, dex="panv2"):
         ### ALL ADDRESSES MUST BE IN LOWER CASES ###
         # sets of address
         (
@@ -283,10 +283,10 @@ class DataLoader(object):
 
 
 if __name__ == "__main__":
-    # dataloader = DataLoader(dex='univ2')
-    print(load_cluster("cluster_0x7f0a9d794bba0a588f4c8351d8549bb5f76a34c4", dex='univ2'))
-    # print(load_token_info(dex='univ2'))
-    # pool = load_pool("0x19b98792e98c54f58c705cddf74316aec0999aa6", DataLoader(dex='univ2'))
+    # dataloader = DataLoader(dex='panv2')
+    print(load_cluster("cluster_0x7f0a9d794bba0a588f4c8351d8549bb5f76a34c4", dex='panv2'))
+    # print(load_token_info(dex='panv2'))
+    # pool = load_pool("0x19b98792e98c54f58c705cddf74316aec0999aa6", DataLoader(dex='panv2'))
     # pos = pool.get_high_value_position()
     # print(pool.address)
     # print(pos)
