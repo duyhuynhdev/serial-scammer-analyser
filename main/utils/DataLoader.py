@@ -30,6 +30,17 @@ wallet_files = ["wallet_addresses.csv"]
 other_files = ["multisender_addresses.csv", "multisig_addresses.csv"]
 
 
+def load_full_end_nodes(dex="panv2"):
+    (bridge_addresses,
+     defi_addresses,
+     cex_addresses,
+     MEV_addresses,
+     mixer_addresses,
+     wallet_addresses,
+     other_addresses,) = load_end_nodes()
+    return bridge_addresses | defi_addresses | cex_addresses | MEV_addresses | mixer_addresses | wallet_addresses | other_addresses
+
+
 def load_end_nodes(dex="panv2"):
     print("LOAD END NODES")
     bridge_addresses = set()
@@ -138,10 +149,22 @@ def load_token_info(dex="panv2"):
 
 
 def load_group_scammers(dex="panv2"):
-    file_path = os.path.join(eval('path.{}_processed_path'.format(dex)), "scammer_group.csv")
-    groups = pd.read_csv(file_path)
-    group_scammers = groups.groupby("group_id")["scammer"].apply(list).to_dict()
-    return group_scammers
+    group_scammers, scammer_group = dict(), dict()
+    file_path = os.path.join(eval('path.{}_processed_path'.format(dex)), "simple_rp_scammer_group.csv")
+    scammers = set()
+    if os.path.exists(file_path):
+        groups = pd.read_csv(file_path)
+        # group_scammers = groups.groupby("group_id")["scammer"].apply(list).to_dict()
+        for idx, row in groups.iterrows():
+            group_id = row["group_id"]
+            scammer = row["scammer"]
+            if group_id not in group_scammers:
+                group_scammers[group_id] = list()
+            if scammer not in scammers:
+                group_scammers[group_id].append(scammer)
+                scammer_group[scammer] = group_id
+                scammers.add(scammer)
+    return group_scammers, scammer_group
 
 
 def link_pool_and_group(scammer_pools, group_scammers):
@@ -156,12 +179,12 @@ def link_pool_and_group(scammer_pools, group_scammers):
     return pool_group
 
 
-def load_rug_pull_dataset(dex="panv2"):
+def load_rug_pull_dataset(dex="panv2", scammer_file_name="1_pair_scammers.csv", pool_file_name = "1_pair_pool_labels.csv"):
     print("LOAD RUG PULL INFO")
     scam_pools = list()
     # scammers = list()
     scammers = pd.read_csv(
-        os.path.join(eval("path.{}_processed_path".format(dex)), "1_pair_scammers.csv")
+        os.path.join(eval("path.{}_processed_path".format(dex)), scammer_file_name)
     )
     index_issue = scammers[(scammers["pool"] == scammers["scammer"])].index
     scammers.drop(index_issue, inplace=True)
@@ -172,7 +195,7 @@ def load_rug_pull_dataset(dex="panv2"):
     scammer_pools = scammers.groupby("scammer")["pool"].apply(list).to_dict()
     rp_pools = pd.read_csv(
         os.path.join(
-            eval("path.{}_processed_path".format(dex)), "1_pair_pool_labels.csv"
+            eval("path.{}_processed_path".format(dex)), pool_file_name
         )
     )
     rp_pools.fillna("", inplace=True)
@@ -276,7 +299,7 @@ class DataLoader(object):
             self.scam_pools,
             self.scammers,
             self.scammer_pools,
-        ) = load_rug_pull_dataset(dex=dex)
+        ) = load_rug_pull_dataset(dex=dex,scammer_file_name="filtered_simple_rp_scammers.csv", pool_file_name="filtered_simple_rp_pool.csv")
         self.scammers_set = set(self.scammers)
         self.group_scammers = load_group_scammers(dex)
         self.pool_group = link_pool_and_group(self.scammer_pools, self.group_scammers)

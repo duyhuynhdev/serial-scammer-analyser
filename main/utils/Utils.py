@@ -18,16 +18,18 @@ path = ProjectPath()
 
 class Utils:
     def __init__(self):
+        return
         is_contract_address_path = os.path.join(path.univ2_star_shape_path, "is_contract_address.csv")
-        self.contract_address_dict = {}
-        self.contract_address_path = is_contract_address_path
+        if os.path.exists(is_contract_address_path):
+            self.contract_address_dict = {}
+            self.contract_address_path = is_contract_address_path
 
-        with open(is_contract_address_path, "r") as file:
-            for line in file:
-                row = line.rstrip('\n').split(', ')
-                self.contract_address_dict[row[0]] = row[1].lower() == 'true'
+            with open(is_contract_address_path, "r") as file:
+                for line in file:
+                    row = line.rstrip('\n').split(', ')
+                    self.contract_address_dict[row[0]] = row[1].lower() == 'true'
 
-        self.contract_address_dict.pop('address')
+            self.contract_address_dict.pop('address')
 
 def keccak_hash(value):
     """
@@ -100,8 +102,10 @@ def partitioning(from_idx, to_idx, chunk_size):
     partitions[-1]["to"] = to_idx
     return partitions
 
+
 def is_df_cell_is_empty(cell):
     return not cell or (isinstance(cell, float) and math.isnan(cell))
+
 
 def last_index(arr, value):
     return len(arr) - arr[::-1].index(value) - 1
@@ -167,6 +171,19 @@ def read_json(file_path):
     json_object = json.load(f)
     f.close()
     return json_object
+
+
+def read_file_to_string(file_path):
+    with open(file_path, 'r') as file:
+        content = file.read()
+        file.close()
+    return content
+
+
+def write_file_from_string(file_path, content):
+    with open(file_path, 'w') as file:
+        file.write(content)
+        file.close()
 
 
 def save_or_append_if_exist(data, output_path):

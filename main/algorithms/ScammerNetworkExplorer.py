@@ -5,6 +5,8 @@ import pandas as pd
 from pycparser.c_ast import Constant
 from tqdm import tqdm
 
+from data_collection.ContractCollector import ContractSourceCodeCollector
+
 sys.path.append(os.path.join(os.path.dirname(sys.path[0])))
 
 from entity.LightCluster import LightCluster
@@ -21,6 +23,8 @@ from utils import Constant
 path = ProjectPath()
 setting = Setting()
 dataloader = DataLoader()
+collector = ContractSourceCodeCollector("univ2")
+
 config = {
     "is_sync_s3": False,
     "is_load_from_last_run": False,
@@ -71,7 +75,7 @@ def is_slave_PA(suspected_node, target_node):
 
 def explore_scammer_network(group_id, scammers, node_factory, dex='univ2'):
     cluster_path = eval('path.{}_cluster_path'.format(dex))
-    scammers = [s for s in scammers if not ut.is_contract_address(s)]
+    scammers = [s for s in scammers if not collector.is_contract_address(s)]
     if len(scammers) == 0:
         return None, list(), 0
     scammer_address = scammers[0]
@@ -177,6 +181,6 @@ def explore_with_max_iter(job, max_iter = 100, size = 20000, dex='univ2'):
 
 
 if __name__ == '__main__':
-    job = 13
-    explore_with_max_iter(job, 500, 5000)
-    # run_clustering(5002)
+    # job = 1
+    # explore_with_max_iter(job, 500, 5000)
+    run_clustering(1)
