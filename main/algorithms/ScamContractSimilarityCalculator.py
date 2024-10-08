@@ -58,23 +58,19 @@ def compare_similarities_between_sets(tokenized_contracts, tokenized_contracts2,
     print("Calculating similarities")
     contract_list = list(tokenized_contracts.keys())
     contract_list2 = list(tokenized_contracts2.keys())
-    progress = tqdm(total=len(contract_list))
     while len(contract_list) > 0:
         address = contract_list.pop()
         for comparison_address in contract_list2:
             similarity_score = jaccard_similarity(tokenized_contracts[address], tokenized_contracts2[comparison_address])
             if similarity_score >= min_required_similarity:
                 similarities[address][comparison_address] = similarity_score
-                similarities[comparison_address][address] = similarity_score
-        progress.update(1)
-    progress.close()
     return similarities
 
 
 def load_scammer_tokens(dex='univ2'):
-    scammer_df = pd.read_csv(os.path.join(eval("path.{}_processed_path".format(dex)), "1_pair_scammers.csv"))
+    scammer_df = pd.read_csv(os.path.join(eval("path.{}_processed_path".format(dex)), "filtered_simple_rp_scammers.csv"))
     scammer_pools = scammer_df.groupby("scammer")["pool"].apply(list).to_dict()
-    rp_pools = pd.read_csv(os.path.join(eval("path.{}_processed_path".format(dex)), "1_pair_pool_labels.csv"))
+    rp_pools = pd.read_csv(os.path.join(eval("path.{}_processed_path".format(dex)), "filtered_simple_rp_pool.csv"))
     rp_pools.fillna("", inplace=True)
     rp_pools = rp_pools[rp_pools["is_rp"] != 0]
     pool_token = dict(zip(rp_pools["pool"], rp_pools["scam_token"]))
@@ -88,9 +84,11 @@ def load_scammer_tokens(dex='univ2'):
 def load_data(dex='univ2'):
     scammer_tokens = load_scammer_tokens(dex)
     group_tokens = dict()
-    file_path = os.path.join(eval('path.{}_processed_path'.format(dex)), "scammer_group.csv")
+    group_scammers = dict()
+    file_path = os.path.join(eval('path.{}_processed_path'.format(dex)), "non_swap_simple_rp_scammer_group.csv")
     if os.path.exists(file_path):
         groups = pd.read_csv(file_path)
+        group_scammers = groups.groupby("group_id")["scammer"].apply(list).to_dict()
         for idx, row in groups.iterrows():
             group_id = row["group_id"]
             scammer = row["scammer"]
@@ -98,7 +96,7 @@ def load_data(dex='univ2'):
             if group_id not in group_tokens:
                 group_tokens[group_id] = list()
             group_tokens[group_id].extend(sts)
-    return group_tokens
+    return group_tokens, group_scammers
 
 
 def get_available_hash_data(addresses, dex='univ2'):
@@ -119,6 +117,8 @@ def pruning_data(available_tokens, limit=100):
     if len(available_tokens) > limit:
         for i in range(limit):
             rand = random.randint(0, len(available_tokens) - 1)
+            while rand in rand_items:
+                rand = random.randint(0, len(available_tokens) - 1)
             key = list(available_tokens.keys())[rand]
             value = available_tokens[key]
             max_items[key] = value
@@ -128,47 +128,59 @@ def pruning_data(available_tokens, limit=100):
     return max_items
 
 
-def intra_cluster_similarity(group_id, group_tokens, dex='univ2'):
+def intra_cluster_similarity(group_id, group_tokens, dex='univ2', prefix="", limit=10000):
     similarity_path = eval(f"path.{dex}_intra_similarity_path")
-    similarity_file = os.path.join(similarity_path, f"intra_{group_id}_similarity.json")
-    print("GROUP SIZE:", len(group_tokens))
+    similarity_file = os.path.join(similarity_path, f"{prefix}intra_{group_id}_similarity.json")
     if len(group_tokens) <= 1:
         return {}
     available_tokens = get_available_hash_data(group_tokens, dex=dex)
     print("\t AVAILABLE AST SIZE:", len(available_tokens))
     if len(available_tokens) <= 1:
         return {}
-    if len(available_tokens) > 2:
-        available_tokens = pruning_data(available_tokens, 2)
+    if len(available_tokens) > limit:
+        available_tokens = pruning_data(available_tokens, limit)
+        print("\t PRUNNING AST SIZE:", len(available_tokens))
     similarites = compare_similarities(available_tokens, min_required_similarity=0)
     ut.write_json(similarity_file, similarites)
+    print("\t SAVED SIM TO ", similarity_file)
     return similarites
 
 
-def inter_cluster_similarity(group_1_id, group_1_tokens, group_2_id, group_2_tokens, dex='univ2'):
+def inter_cluster_similarity(group_1_id, group_1_tokens, group_tokens, dex='univ2', limit=1000):
     similarity_path = eval(f"path.{dex}_inter_similarity_path")
-    similarity_file = os.path.join(similarity_path, f"inter_{group_1_id}_{group_2_id}_similarity.json")
-    print("GROUP 1 SIZE:", len(group_1_tokens))
-    print("GROUP 2 SIZE:", len(group_2_tokens))
-    if len(group_1_tokens) == 0 or len(group_2_tokens) == 0:
+    similarity_file = os.path.join(similarity_path, f"inter_{group_1_id}_similarity.json")
+    similarites = dict()
+    print("*" * 100)
+    if len(group_1_tokens) == 0 :
         return {}
-    g_1_available_tokens = get_available_hash_data(group_1_tokens, dex=dex)
-    g_2_available_tokens = get_available_hash_data(group_2_tokens, dex=dex)
-    print("\t GROUP 1 AVAILABLE AST SIZE:", len(g_1_available_tokens))
-    print("\t GROUP 2 AVAILABLE AST SIZE:", len(g_2_available_tokens))
-    if len(g_1_available_tokens) == 0 or len(g_2_available_tokens) == 0:
-        return {}
-    if len(g_1_available_tokens) > 100:
-        g_1_available_tokens = pruning_data(g_1_available_tokens)
-    if len(g_2_available_tokens) > 100:
-        g_2_available_tokens = pruning_data(g_2_available_tokens)
-    similarites = compare_similarities_between_sets(g_1_available_tokens, g_2_available_tokens, min_required_similarity=0)
+    for group_2_id, group_2_tokens in group_tokens.items():
+        print("-" * 50)
+        if len(group_2_tokens) == 0 or group_1_id == group_2_id:
+            print("EMPTY TOKENS >>> SKIP")
+            continue
+        g_1_available_tokens = get_available_hash_data(group_1_tokens, dex=dex)
+        g_2_available_tokens = get_available_hash_data(group_2_tokens, dex=dex)
+        print(f"\t GROUP {group_1_id} AVAILABLE AST SIZE:", len(g_1_available_tokens))
+        print(f"\t GROUP {group_2_id} AVAILABLE AST SIZE:", len(g_2_available_tokens))
+        if len(g_1_available_tokens) == 0 or len(g_2_available_tokens) == 0:
+            print("EMPTY AST >>> SKIP")
+            continue
+        if len(g_1_available_tokens) > limit:
+            g_1_available_tokens = pruning_data(g_1_available_tokens, limit)
+            print(f"\t GROUP {group_1_id} PRUNNING AST SIZE:", len(g_1_available_tokens))
+        if len(g_2_available_tokens) > limit:
+            g_2_available_tokens = pruning_data(g_2_available_tokens, limit)
+            print(f"\t GROUP {group_2_id} PRUNNING AST SIZE:", len(g_2_available_tokens))
+        similarites[group_2_id] = compare_similarities_between_sets(g_1_available_tokens, g_2_available_tokens, min_required_similarity=0)
     ut.write_json(similarity_file, similarites)
+    print("\t SAVED SIM TO ", similarity_file)
+    print("*"*100)
     return similarites
 
-def calculate_sim(gid, dex):
+
+def calculate_sim(gid, dex, prefix=""):
     similarity_path = eval(f"path.{dex}_intra_similarity_path")
-    similarity_file = os.path.join(similarity_path, f"intra_{gid}_similarity.json")
+    similarity_file = os.path.join(similarity_path, f"{prefix}_intra_{gid}_similarity.json")
     values = []
     if os.path.exists(similarity_file):
         sims = ut.read_json(similarity_file)
@@ -177,29 +189,62 @@ def calculate_sim(gid, dex):
                 values.append(v)
         print("GID:", gid, "SIZE", len(sims), "AVG SIM", np.mean(values))
 
-def calculate_intra_avg_sim(dex='univ2'):
-    data = load_data(dex)
+
+def calculate_intra_avg_sim(group_tokens, group_scammers, dex='univ2', prefix=""):
     global_sim = []
-    for gid in tqdm(data.keys()):
+    sim_data = []
+    for gid, tokens in tqdm(group_tokens.items()):
+        scammers = group_scammers[gid]
         similarity_path = eval(f"path.{dex}_intra_similarity_path")
-        similarity_file = os.path.join(similarity_path, f"intra_{gid}_similarity.json")
+        similarity_file = os.path.join(similarity_path, f"{prefix}_intra_{gid}_similarity.json")
         values = []
+        sims = []
         if os.path.exists(similarity_file):
             sims = ut.read_json(similarity_file)
             for k, pairs in sims.items():
                 for v in pairs.values():
                     values.append(v)
-            global_sim.append(np.mean(values))
-            print("GID:", gid, "SIZE",len(sims), "AVG SIM", np.mean(values))
+            avg = np.mean(values)
+            global_sim.append(avg)
+            record = {"group_id:": gid, "scammers": len(scammers), "tokens": len(tokens), "available_tokens": len(sims), "intra_similarity": avg}
+            sim_data.append(record)
+            print(record)
+    df = pd.DataFrame(sim_data)
+    df.to_csv(f"{prefix}_intra_similarities.csv", index=False)
     print("TOTAL", len(global_sim), "WITH AVG SIM", np.mean(global_sim))
 
+def generate_intra_sim(group_tokens, group_scammers, dex='univ2'):
+    print("GENERATE PAIRS SIM")
+    for gid, tokens in tqdm(group_tokens.items()):
+        scammers = group_scammers[gid]
+        print("GID:", gid, "SCAMMERS:", len(scammers), "TOKENS:", len(tokens))
+        if len(scammers) > 1:
+            similarites = intra_cluster_similarity(gid, tokens, dex)
+        else:
+            similarites = intra_cluster_similarity(gid, tokens, dex, prefix="one_scammer_group_")
+        if len(similarites) > 0:
+            print(gid, ":", similarites)
+
+def generate_inter_sim(group_tokens, dex='univ2'):
+    print("GENERATE PAIRS SIM")
+    for gid1, tokens1 in tqdm(group_tokens.items()):
+        if len(tokens1) > 0:
+            inter_cluster_similarity(gid1, tokens1, group_tokens, dex)
+
 if __name__ == '__main__':
-    data = load_data(dex='univ2')
-    # for key, value in tqdm(data.items()):
-    #     similarites = intra_cluster_similarity(key, value, dex='univ2')
+    group_tokens, group_scammers = load_data(dex='univ2')
+    # print("GENERATE PAIRS SIM")
+    # for gid, tokens in tqdm(group_tokens.items()):
+    #     scammers = group_scammers[gid]
+    #     print("GID:", gid, "SCAMMERS:", len(scammers), "TOKENS:", len(tokens))
+    #     if len(scammers) > 1:
+    #         similarites = intra_cluster_similarity(gid, tokens, dex='univ2')
+    #     else:
+    #         similarites = intra_cluster_similarity(gid, tokens, dex='univ2', prefix="one_scammer_group")
     #     if len(similarites) > 0:
-    #         print(key, ":", similarites)
-    # calculate_intra_avg_sim()
-    for i in range(10):
-        similarites = intra_cluster_similarity(5, data[5], dex='univ2')
-        calculate_sim(5, dex='univ2')
+    #         print(gid, ":", similarites)
+    # print("CALCULATE INTRA SIM")
+    # calculate_intra_avg_sim(group_tokens, group_scammers)
+    # print("CALCULATE ONE SCAMMER GROUP INTRA SIM")
+    # calculate_intra_avg_sim(group_tokens, group_scammers, prefix="one_scammer_group")
+    generate_inter_sim(group_tokens, dex='univ2')
