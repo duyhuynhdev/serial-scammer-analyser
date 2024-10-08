@@ -131,7 +131,7 @@ def get_funder_and_beneficiary(scammer_address):
 
     for transaction in normal_txs:
         if transaction.is_not_error():
-           # LOGIC upon passing the first add liquidity, mark down the amount and don't check any more add liquidites
+            # LOGIC upon passing the first add liquidity, mark down the amount and don't check any more add liquidites
             if not passed_add_liquidity and ADD_LIQUIDITY_SUBSTRING in str(transaction.functionName):
                 passed_add_liquidity = True
                 candidate_liq_amt = liquidity_transactions_dict.get(transaction.hash)
@@ -173,10 +173,42 @@ def get_funder_and_beneficiary(scammer_address):
                         duplicate_out_amt = False
                         largest_out_transaction = transaction
 
-    # TODO change to dictionary and add filter logic
-    return address_before, address_after
+    results_dict = {
+        'scammer_details': {'address': scammer_address, 'num_scams': num_remove_liquidities}
+    }
+    funder_dict = beneficiary_dict = None
 
+    def get_dict_info(normal_tx, address):
+        return {'address': address, 'timestamp': normal_tx.timeStamp, 'amount': normal_tx.get_transaction_amount()}
 
+    if passed_add_liquidity and passed_remove_liquidity:
+        # LOGIC case where the in sender and out receiver are the same for IN_OUT star
+        if largest_in_transaction and largest_out_transaction and not duplicate_out_amt and not duplicate_in_amt and largest_in_transaction.sender == largest_out_transaction.to:
+            funder_dict = get_dict_info(largest_in_transaction, largest_in_transaction.sender)
+            beneficiary_dict = get_dict_info(largest_out_transaction, largest_out_transaction.to)
+        else:
+            # LOGIC for funder, if it didn't perform any out transcations, no duplicate, passed the threshold then add
+            if largest_in_transaction:
+                passed_threshold = largest_in_transaction.get_transaction_amount_and_fee() / add_liquidity_amt >= IN_PERCENTAGE_THRESHOLD
+                if passed_threshold and not duplicate_in_amt and largest_in_transaction.sender not in out_addresses:
+                    funder_dict = get_dict_info(largest_in_transaction, largest_in_transaction.sender)
+
+            # LOGIC for beneficiary, if it didn't perform any in transactions,
+            # LOGIC no duplicate, and passed the threshold and is not an
+            if largest_out_transaction:
+                passed_threshold = largest_out_transaction.get_transaction_amount_and_fee() / remove_liquidity_amt >= OUT_PERCENTAGE_THRESHOLD
+                if passed_threshold and not duplicate_out_amt and largest_out_transaction.to not in in_addresses and not is_contract_address(largest_transaction.to):
+                    beneficiary_dict = get_dict_info(largest_out_transaction, largest_out_transaction.to)
+
+    if funder_dict:
+        results_dict.update({'funder': funder_dict})
+    if beneficiary_dict:
+        results_dict.update({'beneficiary': beneficiary_dict})
+
+    return results_dict
+
+# REFERENCE unusued
+@deprecated("old function to get the largest address - this is no longer used")
 def get_largest_address(scammer_address, liquidity_transactions_dict, liquidity_function_name: str, is_out):
     normal_txs = transaction_collector.get_transactions(scammer_address)
     if is_out:
@@ -225,9 +257,6 @@ def get_largest_address(scammer_address, liquidity_transactions_dict, liquidity_
 
 def get_address_after_remove_liquidity(scammer_address: str, liquidity_transactions_dict):
     return get_largest_address(scammer_address, liquidity_transactions_dict, REMOVE_LIQUIDITY_SUBSTRING, True)
-
-
-
 
 
 def get_address_before_add_liquidity(scammer_address: str, liquidity_transactions_dict):
@@ -311,6 +340,7 @@ def process_stars_on_all_scammers():
 
     while scammers_ran < scammers_to_run and len(in_scammers_remaining) + len(out_scammers_remaining) > 0:
         print("Scammers ran {} and scammers left {}".format(scammers_ran, len(in_scammers_remaining) + len(out_scammers_remaining)))
+        # TODO this needs to be changed to use the other way of opening/writing to csv
         with (open(in_stars_path, "a") as in_file, open(out_stars_path, "a") as out_file, open(in_out_stars_path, "a") as in_out_file, open(no_stars_path, "a") as no_star_file):
             for _ in range(save_file_freq):
                 current_scammer_to_run = in_scammers_remaining.pop() if pop_from_in else out_scammers_remaining.pop()
@@ -355,7 +385,7 @@ def process_stars_on_all_scammers():
                 scammers_ran += 1
 
 
-# deprecated - no longer needed
+@deprecated("No point writing beforehand but can still use")
 def write_scammer_funders_and_beneficiary():
     processed_addresses = read_from_csv(SCAMMER_IN_OUT_PATH)
     scammers_remaining = set(dataloader.scammers)

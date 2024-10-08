@@ -132,8 +132,8 @@ def get_largest_transaction(normal_txs, scammer_address, liquidity_function_name
 
 
 def run_chain_on_scammers():
-    simple_chain_path = os.path.join(path.univ2_scammer_chain_path, "simple_chain.csv")
-    no_chain_path = os.path.join(path.univ2_scammer_chain_path, "no_chain.csv")
+    simple_chain_path = os.path.join(path.panv2_scammer_chain_path, "simple_chain.csv")
+    no_chain_path = os.path.join(path.panv2_scammer_chain_path, "no_chain.csv")
 
     # remove scammers that don't belong in a chain
     scammers_remaining = set(dataloader.scammers)
@@ -181,7 +181,7 @@ def run_chain_on_scammers():
 
 
 def write_chain_stats_on_data():
-    simple_chain_path = os.path.join(path.univ2_scammer_chain_path, "simple_chain.csv")
+    simple_chain_path = os.path.join(path.panv2_scammer_chain_path, "simple_chain.csv")
 
     all_chains = []
 
@@ -253,7 +253,7 @@ def write_chain_stats_on_data():
     transfer_time_stats['min'] = {'unix_time': transfer_time_stats['min'], 'str_time': convert_seconds_to_hms_string(transfer_time_stats['min'])}
     transfer_time_stats['max'] = {'unix_time': transfer_time_stats['max'], 'str_time': convert_seconds_to_hms_string(transfer_time_stats['max'])}
 
-    chain_stats_path = os.path.join(path.univ2_scammer_chain_path, "chain_stats.json")
+    chain_stats_path = os.path.join(path.panv2_scammer_chain_path, "chain_stats.json")
 
     all_stats = {
         'chain_stats': chain_stats,
@@ -286,7 +286,7 @@ def convert_seconds_to_hms_string(time_difference: int) -> str:
 
 
 if __name__ == '__main__':
-    write_chain_stats_on_data()
-    # run_chain_on_scammers()
+    # write_chain_stats_on_data()
+    run_chain_on_scammers()
     # print(*chain_pattern_detection("0x79daa9236e6825f023ab3ebd2cecfe94b48789d1"), sep='\n')
     # print(chain_pattern_detection("0x7edda39fd502cb71aa577452f1cc7e83fda9c5c7"))
