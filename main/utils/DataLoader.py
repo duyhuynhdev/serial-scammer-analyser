@@ -12,8 +12,11 @@ from utils.ProjectPath import ProjectPath
 path = ProjectPath()
 setting = Setting()
 
-bridge_files = ["bridge.csv", "bridge_addresses.csv"]
-defi_files = [
+bridge_files = {
+    "univ2": ["bridge.csv", "bridge_addresses.csv"],
+    "panv2": ["bridge.csv"],
+}
+defi_files = {"univ2": [
     "dex.csv",
     "cex_address.csv",
     "exchange_addresses.csv",
@@ -21,12 +24,14 @@ defi_files = [
     "deployer_addresses.csv",
     "proxy_addresses.csv",
     "router_addresses.csv",
-]
-cex_files = ["cex_address.csv", "deposit_addresses.csv", "binance_addresses.csv"]
-mev_bot_files = ["mev_bot_addresses.csv", "MEV_bots.csv"]
-mixer_files = ["tonador_cash.csv"]
-wallet_files = ["wallet_addresses.csv"]
-other_files = ["multisender_addresses.csv", "multisig_addresses.csv"]
+],
+    "panv2": ["router.csv", "proxy.csv", "deployer.csv", "exchange.csv", "factory.csv"]}
+cex_files = {"univ2": ["cex_address.csv", "deposit_addresses.csv", "binance_addresses.csv"],
+             "panv2": ["exchange.csv"]}
+mev_bot_files = {"univ2": ["mev_bot_addresses.csv", "MEV_bots.csv"], "panv2": ["maestro.csv", "mev_bot.csv"]}
+mixer_files = {"univ2": ["tonador_cash.csv"], "panv2": []}
+wallet_files = {"univ2": ["wallet_addresses.csv"], "panv2": ["wallet.csv"]}
+other_files = {"univ2": ["multisender_addresses.csv", "multisig_addresses.csv"], "panv2": ["multisender.csv", "multisig.csv"]}
 
 
 def load_full_end_nodes(dex="univ2"):
@@ -49,41 +54,41 @@ def load_end_nodes(dex="univ2"):
     mixer_addresses = set()
     wallet_addresses = set()
     other_addresses = set()
-    for bf in bridge_files:
-        df = pd.read_csv(
-            os.path.join(eval("path.{}_public_addresses_path".format(dex)), bf)
-        )
-        bridge_addresses.update(df["address"].str.lower().values)
-    for defi in defi_files:
-        df = pd.read_csv(
-            os.path.join(eval("path.{}_public_addresses_path".format(dex)), defi)
-        )
-        defi_addresses.update(df["address"].str.lower().values)
-    for cex in cex_files:
-        df = pd.read_csv(
-            os.path.join(eval("path.{}_public_addresses_path".format(dex)), cex)
-        )
-        cex_addresses.update(df["address"].str.lower().values)
-    for mev in mev_bot_files:
-        df = pd.read_csv(
-            os.path.join(eval("path.{}_public_addresses_path".format(dex)), mev)
-        )
-        MEV_addresses.update(df["address"].str.lower().values)
-    for mixer in mixer_files:
-        df = pd.read_csv(
-            os.path.join(eval("path.{}_public_addresses_path".format(dex)), mixer)
-        )
-        mixer_addresses.update(df["address"].str.lower().values)
-    for wallet in wallet_files:
-        df = pd.read_csv(
-            os.path.join(eval("path.{}_public_addresses_path".format(dex)), wallet)
-        )
-        wallet_addresses.update(df["address"].str.lower().values)
-    for other in other_files:
-        df = pd.read_csv(
-            os.path.join(eval("path.{}_public_addresses_path".format(dex)), other)
-        )
-        other_addresses.update(df["address"].str.lower().values)
+    for bf in bridge_files[dex]:
+        file = os.path.join(eval("path.{}_public_addresses_path".format(dex)), bf)
+        if os.path.exists(file):
+            df = pd.read_csv(file)
+            bridge_addresses.update(df["address"].str.lower().values)
+    for defi in defi_files[dex]:
+        file = os.path.join(eval("path.{}_public_addresses_path".format(dex)), defi)
+        if os.path.exists(file):
+            df = pd.read_csv(file)
+            defi_addresses.update(df["address"].str.lower().values)
+    for cex in cex_files[dex]:
+        file = os.path.join(eval("path.{}_public_addresses_path".format(dex)), cex)
+        if os.path.exists(file):
+            df = pd.read_csv(file)
+            cex_addresses.update(df["address"].str.lower().values)
+    for mev in mev_bot_files[dex]:
+        file = os.path.join(eval("path.{}_public_addresses_path".format(dex)), mev)
+        if os.path.exists(file):
+            df = pd.read_csv(file)
+            MEV_addresses.update(df["address"].str.lower().values)
+    for mixer in mixer_files[dex]:
+        file = os.path.join(eval("path.{}_public_addresses_path".format(dex)), mixer)
+        if os.path.exists(file):
+            df = pd.read_csv(file)
+            mixer_addresses.update(df["address"].str.lower().values)
+    for wallet in wallet_files[dex]:
+        file = os.path.join(eval("path.{}_public_addresses_path".format(dex)), wallet)
+        if os.path.exists(file):
+            df = pd.read_csv(file)
+            wallet_addresses.update(df["address"].str.lower().values)
+    for other in other_files[dex]:
+        file = os.path.join(eval("path.{}_public_addresses_path".format(dex)), other)
+        if os.path.exists(file):
+            df = pd.read_csv(file)
+            other_addresses.update(df["address"].str.lower().values)
     return (
         bridge_addresses,
         defi_addresses,
@@ -178,7 +183,7 @@ def link_pool_and_group(scammer_pools, group_scammers):
     return pool_group
 
 
-def load_rug_pull_dataset(dex="univ2", scammer_file_name="1_pair_scammers.csv", pool_file_name = "1_pair_pool_labels.csv"):
+def load_rug_pull_dataset(dex="univ2", scammer_file_name="1_pair_scammers.csv", pool_file_name="1_pair_pool_labels.csv"):
     print("LOAD RUG PULL INFO")
     scam_pools = list()
     # scammers = list()
@@ -299,7 +304,7 @@ class DataLoader(object):
             self.scam_pools,
             self.scammers,
             self.scammer_pools,
-        ) = load_rug_pull_dataset(dex=dex,scammer_file_name="filtered_simple_rp_scammers.csv", pool_file_name="filtered_simple_rp_pool.csv")
+        ) = load_rug_pull_dataset(dex=dex, scammer_file_name="filtered_simple_rp_scammers.csv", pool_file_name="filtered_simple_rp_pool.csv")
         self.scammers_set = set(self.scammers)
         self.group_scammers, self.scammer_group = load_group_scammers(dex)
         self.pool_group = link_pool_and_group(self.scammer_pools, self.group_scammers)
@@ -322,5 +327,5 @@ if __name__ == "__main__":
      MEV_addresses,
      mixer_addresses,
      wallet_addresses,
-     other_addresses,) = load_end_nodes()
+     other_addresses,) = load_end_nodes(dex="panv2")
     print(MEV_addresses)
