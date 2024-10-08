@@ -1,6 +1,10 @@
+import ast
+import csv
 import itertools
 import os
 from enum import Enum
+
+from deprecated import deprecated
 
 from data_collection.AccountCollector import TransactionCollector
 from utils.DataLoader import DataLoader, load_pool
@@ -11,7 +15,7 @@ dataloader = DataLoader()
 path = ProjectPath()
 transaction_collector = TransactionCollector()
 
-SCAMMER_IN_OUT_PATH = os.path.join(path.univ2_star_shape_path, "scammer_in_out_addresses.csv")
+SCAMMER_F_AND_B_PATH = os.path.join(path.univ2_star_shape_path, "scammer_funder_and_beneficiary.csv")
 
 REMOVE_LIQUIDITY_SUBSTRING = "removeLiquidity"
 ADD_LIQUIDITY_SUBSTRING = "addLiquidity"
@@ -34,11 +38,13 @@ def is_not_blank(s):
     return bool(s and not s.isspace())
 
 
+# TODO needs to be uplifted
 def determine_assigned_star_shape_and_f_b(scammer_address, scammer_dict):
     f_b_tuple = scammer_dict.get(scammer_address)
     if f_b_tuple is None:
         f_b_tuple = get_funder_and_beneficiary(scammer_address)
-        with open(SCAMMER_IN_OUT_PATH, "a") as file:
+        # TODO needs to be fixed and write a common method to write to the file
+        with open(SCAMMER_F_AND_B_PATH, "a") as file:
             string_to_write = '{}, {}, {}\n'.format(scammer_address, f_b_tuple[0], f_b_tuple[1])
             file.write(string_to_write)
             scammer_dict[scammer_address] = f_b_tuple
@@ -57,13 +63,10 @@ def determine_assigned_star_shape_and_f_b(scammer_address, scammer_dict):
     return star_shapes, f_b_tuple
 
 
-# TODO This needs to be rework
-# additional param exclude_star_shape flag which won't look at IN/OUT
 def find_star_shapes(scammer_address, star_to_ignore=None):
     stars = []
 
-    input_path = os.path.join(path.univ2_star_shape_path, "scammer_in_out_addresses.csv")
-    scammer_dict = read_from_in_out_scammer_as_dict(input_path)
+    scammer_dict = read_from_in_out_scammer_as_dict(SCAMMER_F_AND_B_PATH)
 
     possible_star_shapes = determine_assigned_star_shape_and_f_b(scammer_address, scammer_dict)[0]
     if star_to_ignore:
@@ -118,8 +121,6 @@ def get_funder_and_beneficiary(scammer_address):
       beneficiary: (address, timestamp, raw eth amount) (can be `None`)
     }
     '''
-    # used to determine if a funder/beneficiary doesn't perform opposite transaction for an IN/OUT star -
-    # if so, the funder/beneficary will become ineligible but not for an IN_OUT star
     largest_in_transaction = largest_out_transaction = None
     add_liquidity_amt = remove_liquidity_amt = 0
     out_addresses = in_addresses = set()
@@ -159,7 +160,7 @@ def get_funder_and_beneficiary(scammer_address):
                     else:
                         duplicate_in_amt = False
                         largest_in_transaction = transaction
-            # OUT transaction logic
+            # LOGIC OUT transaction
             elif is_valid_address(True, transaction, scammer_address):
                 out_addresses.add(transaction.to)
                 # LOGIC set largest_out when none is a candidate
@@ -193,8 +194,7 @@ def get_funder_and_beneficiary(scammer_address):
                 if passed_threshold and not duplicate_in_amt and largest_in_transaction.sender not in out_addresses:
                     funder_dict = get_dict_info(largest_in_transaction, largest_in_transaction.sender)
 
-            # LOGIC for beneficiary, if it didn't perform any in transactions,
-            # LOGIC no duplicate, and passed the threshold and is not an
+            # LOGIC for beneficiary, if it didn't perform any in transactions, no duplicate, and passed the threshold and is not a contract address
             if largest_out_transaction:
                 passed_threshold = largest_out_transaction.get_transaction_amount_and_fee() / remove_liquidity_amt >= OUT_PERCENTAGE_THRESHOLD
                 if passed_threshold and not duplicate_out_amt and largest_out_transaction.to not in in_addresses and not is_contract_address(largest_transaction.to):
@@ -207,7 +207,7 @@ def get_funder_and_beneficiary(scammer_address):
 
     return results_dict
 
-# REFERENCE unusued
+
 @deprecated("old function to get the largest address - this is no longer used")
 def get_largest_address(scammer_address, liquidity_transactions_dict, liquidity_function_name: str, is_out):
     normal_txs = transaction_collector.get_transactions(scammer_address)
@@ -255,10 +255,12 @@ def get_largest_address(scammer_address, liquidity_transactions_dict, liquidity_
     return ''
 
 
+@deprecated("unused")
 def get_address_after_remove_liquidity(scammer_address: str, liquidity_transactions_dict):
     return get_largest_address(scammer_address, liquidity_transactions_dict, REMOVE_LIQUIDITY_SUBSTRING, True)
 
 
+@deprecated("unused")
 def get_address_before_add_liquidity(scammer_address: str, liquidity_transactions_dict):
     return get_largest_address(scammer_address, liquidity_transactions_dict, ADD_LIQUIDITY_SUBSTRING, False)
 
@@ -272,32 +274,31 @@ def is_valid_address(is_out, transaction, scammer_address):
 
 
 def read_from_in_out_scammer_as_dict(input_path):
-    file = open(input_path)
     funder_beneficiary_dict = {}
+    with open(SCAMMER_F_AND_B_PATH, "r") as file:
+        reader = csv.reader(file, quotechar='"', delimiter='|', quoting=csv.QUOTE_ALL)
+        next(reader)
+        for line in reader:
+            scammer_details = ast.literal_eval(line[0])
+            funder_details = ast.literal_eval(line[1])
+            beneficiary_details = ast.literal_eval(line[2])
+            dict_to_add = {'num_scams': scammer_details[1]}
+            if funder_details:
+                dict_to_add.update({'funder': {
+                    'address': funder_details[0],
+                    'timestamp': funder_details[1],
+                    'amount': funder_details[2],
+                }})
+            if beneficiary_details:
+                dict_to_add.update({'beneficiary': {
+                    'address': funder_details[0],
+                    'timestamp': funder_details[1],
+                    'amount': funder_details[2],
+                }})
 
-    for line in file:
-        row = line.rstrip('\n').split(', ')
-        funder_beneficiary_dict.update({row[0]: (row[1], row[2])})
-
-    # remove the first line in the csv
-    funder_beneficiary_dict.pop('address')
-    file.close()
+            funder_beneficiary_dict[scammer_details[0]] = dict_to_add
 
     return funder_beneficiary_dict
-
-
-def read_from_csv(input_path):
-    file = open(input_path)
-    read_addresses = set()
-    for line in file:
-        row = line.rstrip('\n').split(', ')
-        read_addresses.add(row[0])
-
-    # remove from first line of reading csv
-    read_addresses.remove('address')
-    file.close()
-
-    return read_addresses
 
 
 def process_stars_on_all_scammers():
@@ -387,7 +388,7 @@ def process_stars_on_all_scammers():
 
 @deprecated("No point writing beforehand but can still use")
 def write_scammer_funders_and_beneficiary():
-    processed_addresses = read_from_csv(SCAMMER_IN_OUT_PATH)
+    processed_addresses = read_from_csv(SCAMMER_F_AND_B_PATH)
     scammers_remaining = set(dataloader.scammers)
     # remove already written scammers from remaining
     for processed_address in processed_addresses:
@@ -401,7 +402,7 @@ def write_scammer_funders_and_beneficiary():
 
     while overall_scammers_written < num_scammers_to_run and len(scammers_remaining) > 0:
         print("Scammers ran {} and scammers left {}".format(overall_scammers_written, len(scammers_remaining)))
-        with open(SCAMMER_IN_OUT_PATH, "a") as f:
+        with open(SCAMMER_F_AND_B_PATH, "a") as f:
             for _ in range(save_file_freq):
                 current_address = scammers_remaining.pop()
                 # print('Checking address {} now'.format(current_address))
