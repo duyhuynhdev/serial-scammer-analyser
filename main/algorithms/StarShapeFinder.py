@@ -38,35 +38,51 @@ def is_not_blank(s):
     return bool(s and not s.isspace())
 
 
-# TODO needs to be uplifted
+def get_and_save_f_and_b(scammer_address, scammer_dict):
+    f_b_result = get_funder_and_beneficiary(scammer_address)
+    scammer_dict[scammer_address] = f_b_result
+
+    with open(SCAMMER_F_AND_B_PATH, "a") as file:
+        csv_writer = csv.writer(file, quotechar='"', delimiter='|', quoting=csv.QUOTE_ALL)
+        scammer_details = f_b_result.get('scammer')
+        col_1 = (scammer_details['address'], scammer_details['num_scams'])
+
+        funder_details = f_b_result.get('funder')
+        col_2 = col_3 = ''
+        if funder_details:
+            col_2 = (funder_details['address'], funder_details['timestamp'], funder_details['amount'])
+
+        beneficiary_details = f_b_result.get('beneficiary')
+        if beneficiary_details:
+            col_3 = (funder_details['address'], funder_details['timestamp'], funder_details['amount'])
+        csv_writer.writerow([col_1, col_2, col_3])
+
+
 def determine_assigned_star_shape_and_f_b(scammer_address, scammer_dict):
-    f_b_tuple = scammer_dict.get(scammer_address)
-    if f_b_tuple is None:
-        f_b_tuple = get_funder_and_beneficiary(scammer_address)
-        # TODO needs to be fixed and write a common method to write to the file
-        with open(SCAMMER_F_AND_B_PATH, "a") as file:
-            string_to_write = '{}, {}, {}\n'.format(scammer_address, f_b_tuple[0], f_b_tuple[1])
-            file.write(string_to_write)
-            scammer_dict[scammer_address] = f_b_tuple
+    f_b_dict = scammer_dict.get(scammer_address)
+    if f_b_dict is None:
+        get_and_save_f_and_b(scammer_address, scammer_dict)
+        f_b_dict = scammer_dict[scammer_address]
     star_shapes = set()
-    # if the funder and beneficiary are the same given they're not blank, then it can only be an IN_OUT star
-    if f_b_tuple[0] == f_b_tuple[1] and is_not_blank(f_b_tuple[0]):
-        star_shapes.add(StarShape.IN_OUT)
+    funder_details = f_b_dict.get('funder')
+    beneficiary_details = f_b_dict.get('beneficiary')
+    if funder_details and beneficiary_details:
+        if funder_details['address'] == beneficiary_details['address']:
+            star_shapes.add(StarShape.IN_OUT)
     else:
-        # if there is a funder, then it's an OUT satellite
-        if is_not_blank(f_b_tuple[0]):
+        if funder_details['address']:
             star_shapes.add(StarShape.OUT)
-        # if there is a beneficiary, then it's an IN satellite
-        if is_not_blank(f_b_tuple[1]):
+        if beneficiary_details['address']:
             star_shapes.add(StarShape.IN)
 
-    return star_shapes, f_b_tuple
+    return star_shapes, f_b_dict
 
 
-def find_star_shapes(scammer_address, star_to_ignore=None):
+def find_star_shape_for_scammer(scammer_address, scammer_dict=None, star_to_ignore=None):
     stars = []
 
-    scammer_dict = read_from_in_out_scammer_as_dict(SCAMMER_F_AND_B_PATH)
+    if not scammer_dict:
+        scammer_dict = read_from_in_out_scammer_as_dict(SCAMMER_F_AND_B_PATH)
 
     possible_star_shapes = determine_assigned_star_shape_and_f_b(scammer_address, scammer_dict)[0]
     if star_to_ignore:
@@ -74,20 +90,41 @@ def find_star_shapes(scammer_address, star_to_ignore=None):
 
     for star_shape in possible_star_shapes:
         satellite_nodes = set()
-        # LOGIC find satellite node for an IN/OUT star shape
-        center_address = scammer_dict[scammer_address][1 if star_shape == StarShape.IN else 0]
+        # LOGIC if it's an IN or IN_OUT star, get the beneficiary. For IN_OUT, we only need to look at half of the transactions
+        if star_shape == StarShape.IN or star_shape == StarShape.IN_OUT:
+            center_address = scammer_address[scammer_address]['beneficiary']['address']
+            is_out = False
+        # LOGIC for an out star, get the funder address
+        elif star_shape == StarShape.OUT:
+            center_address = scammer_address[scammer_address]['funder']['address']
+            is_out = True
+        else:
+            raise Exception("There was no star detected in the possible_star_shapes")
+
         normal_txs = transaction_collector.get_transactions(center_address)
         for transaction in normal_txs:
-            if is_valid_address(star_shape == StarShape.OUT, transaction, center_address):
-                scammer_address_dest = transaction.to if star_shape == StarShape.OUT else transaction.sender
+            if is_valid_address(is_out, transaction, center_address):
+                scammer_address_dest = transaction.to if is_out else transaction.sender
                 if scammer_address_dest in ALL_SCAMMERS:
-                    satellite_star_shapes, fb_tuple = determine_assigned_star_shape_and_f_b(scammer_address_dest, scammer_dict)
-                    same_funder_or_beneficiary = center_address == (fb_tuple[0] if star_shape == StarShape.OUT else fb_tuple[1])
-                    if star_shape in satellite_star_shapes and same_funder_or_beneficiary:
-                        satellite_nodes.add(scammer_address_dest)
+                    satellite_star_shapes, f_b_dict = determine_assigned_star_shape_and_f_b(scammer_address_dest, scammer_dict)
+                    if star_shape in satellite_star_shapes:
+                        # LOGIC for an OUT star, center sends to satellites so check the best funder of the satellite is same as center
+                        use_funder_or_beneficiary = None
+                        if is_out:
+                            use_funder_or_beneficiary = 'funder'
+                        # LOGIC, otherwise for an IN or IN_OUT star, we need to see who the satellites send money to which will match if same center address
+                        else:
+                            use_funder_or_beneficiary = 'beneficiary'
+                        if center_address == f_b_dict[use_funder_or_beneficiary]['address']:
+                            num_scams = f_b_dict['scammer_details']['num_scams']
+                            timestamp = f_b_dict[use_funder_or_beneficiary]['timestamp']
+                            eth_amount = f_b_dict[use_funder_or_beneficiary]['amount']
+                            # LOGIC add to satellite if match
+                            satellite_nodes.add((scammer_address_dest, num_scams, timestamp, eth_amount))
 
         if len(satellite_nodes) >= MIN_NUMBER_OF_SATELLITES:
-            list_to_add = [star_shape, center_address, len(satellite_nodes), satellite_nodes]
+            sorted_satellites = sorted(satellite_nodes, key=lambda x: x[2])
+            list_to_add = [star_shape, center_address, sorted_satellites]
             stars.append(list_to_add)
 
     return stars
@@ -110,7 +147,6 @@ def find_liquidity_transactions_in_pool(scammer_address):
     return liquidity_transactions_pool
 
 
-# TODO this needs to be reworked
 # A funder cannot also be sent money back from the center except if it's an IN/OUT star
 # A beneficiary cannot also fund the money to the satellite except if it's an IN/OUT star
 # You can use a flag to determine if it's passed the same address but don't discard it until the end.
@@ -188,7 +224,7 @@ def get_funder_and_beneficiary(scammer_address):
             funder_dict = get_dict_info(largest_in_transaction, largest_in_transaction.sender)
             beneficiary_dict = get_dict_info(largest_out_transaction, largest_out_transaction.to)
         else:
-            # LOGIC for funder, if it didn't perform any out transcations, no duplicate, passed the threshold then add
+            # LOGIC for funder, if it didn't perform any out transactions, no duplicate, passed the threshold then add
             if largest_in_transaction:
                 passed_threshold = largest_in_transaction.get_transaction_amount_and_fee() / add_liquidity_amt >= IN_PERCENTAGE_THRESHOLD
                 if passed_threshold and not duplicate_in_amt and largest_in_transaction.sender not in out_addresses:
@@ -197,7 +233,7 @@ def get_funder_and_beneficiary(scammer_address):
             # LOGIC for beneficiary, if it didn't perform any in transactions, no duplicate, and passed the threshold and is not a contract address
             if largest_out_transaction:
                 passed_threshold = largest_out_transaction.get_transaction_amount_and_fee() / remove_liquidity_amt >= OUT_PERCENTAGE_THRESHOLD
-                if passed_threshold and not duplicate_out_amt and largest_out_transaction.to not in in_addresses and not is_contract_address(largest_transaction.to):
+                if passed_threshold and not duplicate_out_amt and largest_out_transaction.to not in in_addresses and not is_contract_address(largest_out_transaction.to):
                     beneficiary_dict = get_dict_info(largest_out_transaction, largest_out_transaction.to)
 
     if funder_dict:
@@ -282,7 +318,11 @@ def read_from_in_out_scammer_as_dict(input_path):
             scammer_details = ast.literal_eval(line[0])
             funder_details = ast.literal_eval(line[1])
             beneficiary_details = ast.literal_eval(line[2])
-            dict_to_add = {'num_scams': scammer_details[1]}
+            dict_to_add = {
+                'scammer_details': {
+                    'address': scammer_details[0],
+                    'num_scams': scammer_details[1]
+                }}
             if funder_details:
                 dict_to_add.update({'funder': {
                     'address': funder_details[0],
@@ -291,9 +331,9 @@ def read_from_in_out_scammer_as_dict(input_path):
                 }})
             if beneficiary_details:
                 dict_to_add.update({'beneficiary': {
-                    'address': funder_details[0],
-                    'timestamp': funder_details[1],
-                    'amount': funder_details[2],
+                    'address': beneficiary_details[0],
+                    'timestamp': beneficiary_details[1],
+                    'amount': beneficiary_details[2],
                 }})
 
             funder_beneficiary_dict[scammer_details[0]] = dict_to_add
@@ -345,7 +385,7 @@ def process_stars_on_all_scammers():
         with (open(in_stars_path, "a") as in_file, open(out_stars_path, "a") as out_file, open(in_out_stars_path, "a") as in_out_file, open(no_stars_path, "a") as no_star_file):
             for _ in range(save_file_freq):
                 current_scammer_to_run = in_scammers_remaining.pop() if pop_from_in else out_scammers_remaining.pop()
-                all_stars_result = find_star_shapes(current_scammer_to_run)
+                all_stars_result = find_star_shape_for_scammer(current_scammer_to_run)
 
                 # DEBUG LOGGING
                 # print("Result for scammer {}: {}".format(current_scammer_to_run, all_stars_result))
@@ -385,36 +425,34 @@ def process_stars_on_all_scammers():
                 pop_from_in = not pop_from_in
                 scammers_ran += 1
 
-
-@deprecated("No point writing beforehand but can still use")
-def write_scammer_funders_and_beneficiary():
-    processed_addresses = read_from_csv(SCAMMER_F_AND_B_PATH)
-    scammers_remaining = set(dataloader.scammers)
-    # remove already written scammers from remaining
-    for processed_address in processed_addresses:
-        scammers_remaining.remove(processed_address)
-
-    # lower means will write to file more frequently, but lower performance
-    # higher means less file writes, but better performance
-    save_file_freq = 1000
-    num_scammers_to_run = 200000
-    overall_scammers_written = 0
-
-    while overall_scammers_written < num_scammers_to_run and len(scammers_remaining) > 0:
-        print("Scammers ran {} and scammers left {}".format(overall_scammers_written, len(scammers_remaining)))
-        with open(SCAMMER_F_AND_B_PATH, "a") as f:
-            for _ in range(save_file_freq):
-                current_address = scammers_remaining.pop()
-                # print('Checking address {} now'.format(current_address))
-                funder, beneficiary = get_funder_and_beneficiary(current_address)
-                string_to_write = '{}, {}, {}\n'.format(current_address, funder, beneficiary)
-                f.write(string_to_write)
-                overall_scammers_written += 1
+    # processed_addresses = read_from_csv(SCAMMER_F_AND_B_PATH)
+    # scammers_remaining = set(dataloader.scammers)
+    # # remove already written scammers from remaining
+    # for processed_address in processed_addresses:
+    #     scammers_remaining.remove(processed_address)
+    #
+    # # lower means will write to file more frequently, but lower performance
+    # # higher means less file writes, but better performance
+    # save_file_freq = 1000
+    # num_scammers_to_run = 200000
+    # overall_scammers_written = 0
+    #
+    # while overall_scammers_written < num_scammers_to_run and len(scammers_remaining) > 0:
+    #     print("Scammers ran {} and scammers left {}".format(overall_scammers_written, len(scammers_remaining)))
+    #     with open(SCAMMER_F_AND_B_PATH, "a") as f:
+    #         for _ in range(save_file_freq):
+    #             current_address = scammers_remaining.pop()
+    #             # print('Checking address {} now'.format(current_address))
+    #             funder, beneficiary = get_funder_and_beneficiary(current_address)
+    #             string_to_write = '{}, {}, {}\n'.format(current_address, funder, beneficiary)
+    #             f.write(string_to_write)
+    #             overall_scammers_written += 1
 
 
 if __name__ == '__main__':
-    # result = find_star_shapes('0x5d65491fa3f9422e8bb75dbd57f675b562029a36')
-    # print(result)
-    process_stars_on_all_scammers()
-    # result = get_funder_and_beneficiary('0x94f5628f2ab2efbb60d71400ad71be27fd91fe20')
-    # write_scammer_funders_and_beneficiary()
+# result = find_star_shapes('0x5d65491fa3f9422e8bb75dbd57f675b562029a36')
+# print(result)
+
+# process_stars_on_all_scammers()
+# result = get_funder_and_beneficiary('0x94f5628f2ab2efbb60d71400ad71be27fd91fe20')
+# write_scammer_funders_and_beneficiary()

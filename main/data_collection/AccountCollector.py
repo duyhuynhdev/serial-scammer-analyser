@@ -197,7 +197,7 @@ class TransactionCollector:
 
 
 if __name__ == '__main__':
-    dex = 'panv2'
+    dex = 'univ2'
     # job = 24
     # pool_path = os.path.join(eval('path.{}_processed_path'.format(dex)), "pool_addresses.csv")
     # pools = pd.read_csv(pool_path)["pool"].values
