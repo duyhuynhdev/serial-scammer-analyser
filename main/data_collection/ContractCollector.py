@@ -302,27 +302,26 @@ class ContractSourceCodeCollector:
     def __init__(self, dex=None):
         self.dex = dex
         if self.dex is not None:
-            bytecode_path = os.path.join(eval(f"path.{dex}_token_path"), "bytecode.csv")
-            self.bytecode = dict()
-            if os.path.exists(bytecode_path):
-                df = pd.read_csv(bytecode_path)
-                self.bytecode = dict(zip(df["address"], df["code"]))
+            is_contract_file = os.path.join(eval(f"path.{dex}_token_path"), "is_contract.csv")
+            self.is_contracts = dict()
+            if os.path.exists(is_contract_file):
+                df = pd.read_csv(is_contract_file)
+                self.is_contracts = dict(zip(df["address"], df["is_contract"]))
 
     def is_contract_address(self, address, key_idx=0):
         node_url = infura_api[self.dex]["node_url"]
         if self.dex is None:
             raise Exception("Please setup an instance first")
-        bytecode_path = os.path.join(eval(f"path.{self.dex}_token_path"), "bytecode.csv")
+        is_contract_path = os.path.join(eval(f"path.{self.dex}_token_path"), "is_contract.csv")
         if address is None or address == "":
             return False
-        if address.lower() in self.bytecode:
-            code = HexBytes(self.bytecode[address.lower()])
-            return len(code) > 0
+        if address.lower() in self.is_contracts:
+            return self.is_contracts[address.lower()]
         key_idx = key_idx % len(setting.INFURA_API_KEYS)
         web3 = Web3(Web3.HTTPProvider(node_url + setting.INFURA_API_KEYS[key_idx]))
         code = web3.eth.get_code(Web3.to_checksum_address(address))
-        data = [{"address": address.lower(), "code": code.hex()}]
-        ut.save_or_append_if_exist(data, bytecode_path)
+        data = [{"address": address.lower(), "is_contract": len(code) > 0}]
+        ut.save_or_append_if_exist(data, is_contract_path)
         return len(code) > 0
 
     def download_source_codes(self, job, addresses, dex="univ2"):
