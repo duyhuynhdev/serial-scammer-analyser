@@ -154,7 +154,7 @@ def load_token_info(dex="univ2"):
 
 def load_group_scammers(dex="univ2"):
     group_scammers, scammer_group = dict(), dict()
-    file_path = os.path.join(eval('path.{}_processed_path'.format(dex)), "simple_rp_scammer_group.csv")
+    file_path = os.path.join(eval('path.{}_processed_path'.format(dex)), "scammer_group.csv")
     scammers = set()
     if os.path.exists(file_path):
         groups = pd.read_csv(file_path)
