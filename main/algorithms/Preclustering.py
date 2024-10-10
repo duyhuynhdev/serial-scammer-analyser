@@ -62,12 +62,12 @@ def scammer_grouping(dex='univ2'):
     ) = DataLoader.load_rug_pull_dataset(dex=dex, scammer_file_name="filtered_simple_rp_scammers.csv", pool_file_name="filtered_simple_rp_pool.csv")
     for pool in tqdm(pool_scammers):
         scammers = set(pool_scammers[pool])
-        scammers.update(get_related_scammer_from_pool_events(pool, event_path, total_scammers, dex))
-        # scam_neighbours = set()
-        # for s in scammers:
-        #     sn = get_scam_neighbours(s, total_scammers, dex)
-        #     scam_neighbours.update(sn)
-        # scammers.update(scam_neighbours)
+        # scammers.update(get_related_scammer_from_pool_events(pool, event_path, total_scammers, dex))
+        scam_neighbours = set()
+        for s in scammers:
+            sn = get_scam_neighbours(s, total_scammers, dex)
+            scam_neighbours.update(sn)
+        scammers.update(scam_neighbours)
         if len(scammers) == 1:
             scammer = scammers.pop()
             if not graph.has_node(scammer):
@@ -84,7 +84,7 @@ def scammer_grouping(dex='univ2'):
 
 
 def pre_clusterting(dex='univ2'):
-    file_path = os.path.join(eval('path.{}_processed_path'.format(dex)), "non_txs_simple_rp_scammer_group.csv")
+    file_path = os.path.join(eval('path.{}_processed_path'.format(dex)), "non_swap_simple_rp_scammer_group.csv")
     groups, isolates = scammer_grouping(dex)
     data = []
     id = 1
@@ -104,4 +104,4 @@ def pre_clusterting(dex='univ2'):
 
 
 if __name__ == '__main__':
-    pre_clusterting(dex='univ2')
+    pre_clusterting(dex='panv2')

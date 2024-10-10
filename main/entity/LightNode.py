@@ -95,7 +95,7 @@ class LightNodeFactory:
         return True
 
     def get_scammer_if_swap_tx(self, tx):
-        is_swap, parsed_inputs = self.decoder.decode_function_input(tx.input)
+        is_swap, parsed_inputs = self.decoder.decode_swap_function_input(tx.input)
         scammers = list()
         scam_pool = None
         out_token = None

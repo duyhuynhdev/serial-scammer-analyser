@@ -15,8 +15,35 @@ setting = Setting()
 
 class FunctionInputDecoder:
     codec = ABICodec(build_strict_registry())
-
-    router_functions = {
+    router_remove_liq_functions = {
+        "0xbaa2abde": {"signature": "removeLiquidity(address,address,uint256,uint256,uint256,address,uint256)",
+                       "types": ["address", "address", "uint256", "uint256", "uint256", "address", "uint256"],
+                       "names": ["tokenA", "tokenB", "liquidity", "amountAMin", "amountBMin", "to", "deadline"]},
+        "0x02751cec": {"signature": "removeLiquidityETH(address,uint256,uint256,uint256,address,uint256)",
+                       "types": ["address", "uint256", "uint256", "uint256", "address", "uint256"],
+                       "names": ["token", "liquidity", "amountTokenMin", "amountETHMin", "to", "deadline"]},
+        "0xaf2979eb": {"signature": "removeLiquidityETHSupportingFeeOnTransferTokens(address,uint256,uint256,uint256,address,uint256)",
+                       "types": ["address", "uint256", "uint256", "uint256", "address", "uint256"],
+                       "names": ["token", "liquidity", "amountTokenMin", "amountETHMin", "to", "deadline"]},
+        "0xded9382a": {"signature": "removeLiquidityETHWithPermit(address,uint256,uint256,uint256,address,uint256,bool,uint8,bytes32,bytes32)",
+                       "types": ["address", "uint256", "uint256", "uint256", "address", "uint256", "bool", "uint8", "bytes32", "bytes32"],
+                       "names": ['token', 'liquidity', 'amountTokenMin', 'amountETHMin', 'to', 'deadline', 'approveMax', 'v', 'r', 's']},
+        "0x5b0d5984": {"signature": "removeLiquidityETHWithPermitSupportingFeeOnTransferTokens(address,uint256,uint256,uint256,address,uint256,bool,uint8,bytes32,bytes32)",
+                       "types": ["address", "uint256", "uint256", "uint256", "address", "uint256", "bool", "uint8", "bytes32", "bytes32"],
+                       "names": ['token', 'liquidity', 'amountTokenMin', 'amountETHMin', 'to', 'deadline', 'approveMax', 'v', 'r', 's']},
+        "0x2195995c": {"signature": "removeLiquidityWithPermit(address,address,uint256,uint256,uint256,address,uint256,bool,uint8,bytes32,bytes32)",
+                       "types": ["address", "address", "uint256", "uint256", "uint256", "address", "uint256", "bool", "uint8", "bytes32", "bytes32"],
+                       "names": ['tokenA', 'tokenB', 'liquidity', 'amountAMin', 'amountBMin', 'to', 'deadline', 'approveMax', 'v', 'r', 's']},
+    }
+    router_add_liq_functions = {
+        "0xbaa2abde": {"signature": "addLiquidity(address,address,uint256,uint256,uint256,uint256,address,uint256)",
+                       "types": ["address", "address", "uint256", "uint256", "uint256", "uint256", "address", "uint256"],
+                       "names": ["tokenA", "tokenB", "amountADesired", "amountBDesired", "amountAMin", "amountBMin", "to", "deadline"]},
+        "0xf305d719": {"signature": "addLiquidityETH(address,uint256,uint256,uint256,address,uint256)",
+                       "types": ["address", "uint256", "uint256", "uint256", "address", "uint256"],
+                       "names": ["token", "amountTokenDesired", "amountTokenMin", "amountETHMin", "to", "deadline"]},
+    }
+    router_swap_functions = {
         # V2 ROUTER
         "0x38ed1739": {"signature": "swapExactTokensForTokens(uint256,uint256,address[],address,uint256)",
                        "types": ["uint256", "uint256", "address[]", "address", "uint256"],
@@ -50,7 +77,7 @@ class FunctionInputDecoder:
                        "types": ["uint256", "address[]", "address", "uint256", "uint256", "uint256", "uint256"],
                        "names": ['amountOut', 'path', 'to', 'deadline', "unknown0", "unknown1", "unknown2"]},
         "0x088890dc": {"signature": "swapExactETHForTokensSupportingFeeOnTransferTokens(uint256,address[],address,uint256,address)",
-                       "types": ["uint256", "address[]", "address","uint256","address"],
+                       "types": ["uint256", "address[]", "address", "uint256", "address"],
                        "names": ['amountOutMin', 'path', 'to', 'deadline', 'referrer']},
         # V3 ROUTER
         "0x472b43f3": {"signature": "swapExactTokensForTokens(uint256,uint256,address[],address,uint256)",
@@ -160,14 +187,14 @@ class FunctionInputDecoder:
                  "names": []},
     }
 
-    def decode_command_input(self, commands, inputs):
+    def decode_swap_command_input(self, commands, inputs):
         command_bytes = HexBytes(commands)
         parsed_results = []
         idx = 0
         is_swap = False
         for dec in command_bytes:
             command_dex = '0x{0:0{1}x}'.format(dec, 2)
-            if command_dex in ["0x00", "0x08"]: # swap in
+            if command_dex in ["0x00", "0x08"]:  # swap in
                 is_swap = True
             if command_dex in ["0x08", "0x09"]:
                 command_info = self.v3_router_commands[command_dex]
@@ -180,14 +207,41 @@ class FunctionInputDecoder:
             idx += 1
         return is_swap, parsed_results
 
-    def decode_function_input(self, input):
+    def decode_function_input(self, input, signature_dict):
+        data = HexBytes(input)
+        methodId, params = data[:4], data[4:]
+        if methodId.hex() not in signature_dict.keys():
+            return False, []
+        function_info = signature_dict[methodId.hex()]
+        types = function_info["types"]
+        names = function_info["names"]
+        decoded_data = self.codec.decode(types, HexBytes(params))
+        normalized = map_abi_data(BASE_RETURN_NORMALIZERS, types, decoded_data)
+        parsed = dict(zip(names, normalized))
+        return parsed
+
+    def decode_remove_liq_function_input(self, input):
+        try:
+            return self.decode_function_input(input, self.router_remove_liq_functions)
+        except Exception as e:
+            print(e)
+            return None
+
+    def decode_add_liq_function_input(self, input):
+        try:
+            return self.decode_function_input(input, self.router_add_liq_functions)
+        except Exception as e:
+            print(e)
+            return None
+
+    def decode_swap_function_input(self, input):
         try:
             data = HexBytes(input)
             methodId, params = data[:4], data[4:]
-            if methodId.hex() not in self.router_functions.keys():
+            if methodId.hex() not in self.router_swap_functions.keys():
                 # print("Cannot find method ", methodId.hex())
                 return False, []
-            function_info = self.router_functions[methodId.hex()]
+            function_info = self.router_swap_functions[methodId.hex()]
             signature = function_info["signature"]
             types = function_info["types"]
             names = function_info["names"]
@@ -199,13 +253,13 @@ class FunctionInputDecoder:
                 is_swap_call = False
                 for b in parsed["data"]:
                     call = HexBytes(b).hex()
-                    is_swap, parsed_call = self.decode_function_input(call)
+                    is_swap, parsed_call = self.decode_swap_function_input(call)
                     if is_swap:
                         is_swap_call = True
                     parsed_results.extend(parsed_call)
                 return is_swap_call, parsed_results
             if "execute" in signature:
-                return self.decode_command_input(parsed["commands"], parsed["inputs"])
+                return self.decode_swap_command_input(parsed["commands"], parsed["inputs"])
             return True, [parsed]
         except Exception as e:
             print(e)
@@ -264,9 +318,13 @@ if __name__ == '__main__':
     # decoder = EventLogDecoder("Mint")
     # out = decoder.decode_event(result)
     # print(out)
-    input = "0x3593564c000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000065dc466700000000000000000000000000000000000000000000000000000000000000040a08060c00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000032000000000000000000000000000000000000000000000000000000000000003a00000000000000000000000000000000000000000000000000000000000000160000000000000000000000000a0b86991c6218b36c1d19d4a2e9eb0ce3606eb48000000000000000000000000ffffffffffffffffffffffffffffffffffffffff000000000000000000000000000000000000000000000000000000006603d10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003fc91a3afd70395cd496c647d5a6cc9d4b2b7fad0000000000000000000000000000000000000000000000000000000065dc4b0800000000000000000000000000000000000000000000000000000000000000e000000000000000000000000000000000000000000000000000000000000000414e80e38cfd10836d1132ef09c990f10e2d76ce8eb237f61fc04f8f81d3d345fc203d1a75b5d89ba88f12309bd48dafe29cc2a4f7aef3b5044e973484bedee5201b0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000299f971000000000000000000000000000000000000000000000000003176d2724fa6d500000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000002000000000000000000000000a0b86991c6218b36c1d19d4a2e9eb0ce3606eb48000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc20000000000000000000000000000000000000000000000000000000000000060000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc200000000000000000000000037a8f295612602f2774d331e562be9e61b83a327000000000000000000000000000000000000000000000000000000000000000f00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000003163d3ec406d9f"
+    # input = "0x3593564c000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000065dc466700000000000000000000000000000000000000000000000000000000000000040a08060c00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000032000000000000000000000000000000000000000000000000000000000000003a00000000000000000000000000000000000000000000000000000000000000160000000000000000000000000a0b86991c6218b36c1d19d4a2e9eb0ce3606eb48000000000000000000000000ffffffffffffffffffffffffffffffffffffffff000000000000000000000000000000000000000000000000000000006603d10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003fc91a3afd70395cd496c647d5a6cc9d4b2b7fad0000000000000000000000000000000000000000000000000000000065dc4b0800000000000000000000000000000000000000000000000000000000000000e000000000000000000000000000000000000000000000000000000000000000414e80e38cfd10836d1132ef09c990f10e2d76ce8eb237f61fc04f8f81d3d345fc203d1a75b5d89ba88f12309bd48dafe29cc2a4f7aef3b5044e973484bedee5201b0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000299f971000000000000000000000000000000000000000000000000003176d2724fa6d500000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000002000000000000000000000000a0b86991c6218b36c1d19d4a2e9eb0ce3606eb48000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc20000000000000000000000000000000000000000000000000000000000000060000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc200000000000000000000000037a8f295612602f2774d331e562be9e61b83a327000000000000000000000000000000000000000000000000000000000000000f00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000003163d3ec406d9f"
+    # decoder = FunctionInputDecoder()
+    # print(decoder.decode_swap_function_input(input))
+
+    input = "0xf305d719000000000000000000000000b0d4ecb8ded30bc9a8af7076a389385dce72cc1d00000000000000000000000000000000000000000000000000038d7ea4c6800000000000000000000000000000000000000000000000000000038d7ea4c680000000000000000000000000000000000000000000000000015af1d78b58c4000000000000000000000000000098d3047fb31b6ed04bb1dfa3558f3aad1c147b120000000000000000000000000000000000000000000000000000000061795899"
     decoder = FunctionInputDecoder()
-    print(decoder.decode_function_input(input))
+    print(decoder.decode_add_liq_function_input(input))
 
     # snt = [
     #     "swapExactTokensForTokens(uint256,uint256,address[],address,uint256)",
@@ -283,4 +341,4 @@ if __name__ == '__main__':
     # ]
     # for st in snt:
     #     strg = ut.keccak_hash(st)
-    #     print(HexBytes(strg)[:4].hex())
+    # print(HexBytes(ut.keccak_hash("addLiquidityETH(address,uint256,uint256,uint256,address,uint256)"))[:4].hex())

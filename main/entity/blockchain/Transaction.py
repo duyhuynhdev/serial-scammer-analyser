@@ -2,8 +2,8 @@ import math
 
 from web3 import Web3
 
+from data_collection.DataDecoder import FunctionInputDecoder
 from entity.blockchain.DTO import DTO
-import numpy as np
 
 from utils import Constant
 
@@ -30,7 +30,7 @@ class Transaction(DTO):
     def get_transaction_amount(self):
         if (self.isError == 1) or (self.isError == '1'):
             return 0
-        return int(self.value) / 10 ** Constant.WETH_BNB_DECIMALS
+        return float(self.value) / 10 ** Constant.WETH_BNB_DECIMALS
 
     def is_to_empty(self):
         return not self.to or (isinstance(self.to, float) and math.isnan(self.to))

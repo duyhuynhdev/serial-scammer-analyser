@@ -216,8 +216,8 @@ class TransactionCollector:
             # self.download_internal_transactions(address, api, keys[job % len(keys)], dex)
 
 if __name__ == '__main__':
-    dex = 'univ2'
-    job = 17
+    dex = 'panv2'
+    job = 24
     # pool_path = os.path.join(eval('path.{}_processed_path'.format(dex)), "pool_addresses.csv")
     # pools = pd.read_csv(pool_path)["pool"].values
     # collectors = CreatorCollector()
@@ -233,13 +233,16 @@ if __name__ == '__main__':
     # collectors.get_creators(addresses=token_addresses, job=job, contract_type='token', dex=dex)
     # print(collectors.get_pool_creator("0x2102A87B61Ca83a947473808677f1cF33A260c69", dex=dex))
     #############################################################################
-    scammers = pd.read_csv(os.path.join(eval('path.{}_processed_path'.format(dex)), "1_pair_scammers.csv"))
-    index_issue = scammers[(scammers["pool"] == scammers["scammer"])].index
-    scammers.drop(index_issue, inplace=True)
-    scammers["pool"] = scammers["pool"].str.lower()
-    scammers["scammer"] = scammers["scammer"].str.lower()
+    scammers_df = pd.read_csv(os.path.join(eval('path.{}_processed_path'.format(dex)), "1_pair_scammers.csv"))
+    # index_issue = scammers[(scammers["pool"] == scammers["scammer"])].index
+    # scammers.drop(index_issue, inplace=True)
+    # scammers["pool"] = scammers["pool"].str.lower()
+    scammers_df["scammer"] = scammers_df["scammer"].str.lower()
+    scammers = list(scammers_df["scammer"].unique())
     tx_collector = TransactionCollector()
-    tx_collector.prepare_normal_transactions(job, scammers["scammer"].str.lower().to_list(), dex)
+    tx_collector.download_transactions(job, scammers, dex)
+    # tx_collector.prepare_normal_transactions(job, scammers["scammer"].str.lower().to_list(), dex)
     # #########################################################################################
     # transactions = tx_collector.get_transactions("0x5b5d8c8eed6c85ac215661de026676823faa0a0c", dex)
     # print([tx.blockNumber for tx in transactions[0]])
+

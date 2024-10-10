@@ -66,6 +66,8 @@ def is_simple_rug_pull(transfers, mints, burns,pool_address):
             tf_mints.append(transfer)
         if is_burn_transfer(transfer):
             tf_burn.append(transfer)
+    if len(tf_mints) == 0 or len(tf_burn) == 0:
+        return False, []
     trading_period = burns[0]["timeStamp"] - mints[0]["timeStamp"]
     if trading_period > Constant.ONE_DAY_TIMESTAMP or trading_period < 0:
         return False, []
@@ -292,7 +294,7 @@ def debug_detection(pool_address, dex='univ2'):
 
 if __name__ == '__main__':
     dex = "panv2"
-    job = 19
+    job = 11
     # collector = ContractSourceCodeCollector(dex)
-    rug_pull_detection(job, dex)
-    # debug_detection("0xdaa9c67E04085Bf6677e622100b33988d3fe6463", dex)
+    # rug_pull_detection(job, dex)
+    debug_detection("0xd0fB1579a2F32C3C439901b2fb893900F5AeF3c6", dex)
