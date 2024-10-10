@@ -5,11 +5,9 @@ import os
 import statistics
 import sys
 
-import numpy as np
-
 from algorithms.ScammerNetworkBuilder import dataloader
 from data_collection.AccountCollector import TransactionCollector
-from utils.DataLoader import DataLoader
+from utils.DataLoader import DataLoader, load_pool
 from utils.ProjectPath import ProjectPath
 
 dataloader = DataLoader()
@@ -75,13 +73,15 @@ def chain_pattern_detection(starter_address):
 
 
 def count_number_of_remove_liquidity_calls(scammer_address, normal_txs=None):
+    valid_rmv_liquidity_calls = return_valid_remove_liquidity_transactions(scammer_address)
     num_remove_liquidity_calls = 0
     if normal_txs is None:
         normal_txs = transaction_collector.get_transactions(scammer_address)
 
     for transaction in normal_txs:
         if REMOVE_LIQUIDITY_SUBSTRING in str(transaction.functionName) and not transaction.isError:
-            num_remove_liquidity_calls += 1
+            if transaction.hash in valid_rmv_liquidity_calls:
+                num_remove_liquidity_calls += 1
 
     return num_remove_liquidity_calls
 
@@ -98,18 +98,32 @@ def get_largest_in_before_add_liquidity(scammer_address: str, normal_txs=None):
     return get_largest_transaction(normal_txs, scammer_address, ADD_LIQUIDITY_SUBSTRING, False, 0, len(normal_txs), 1)
 
 
-# TODO rework this method to just return all of it, don't do two calls
+def return_valid_remove_liquidity_transactions(scammer_address):
+    valid_remove_liquidities = set()
+    scammer_pool = load_pool(scammer_address, dataloader)
+    for pool in scammer_pool:
+        for rmv_liq_trans in pool.burns:
+            valid_remove_liquidities.add(rmv_liq_trans.transactionHash)
+
+    return valid_remove_liquidities
+
+
 def get_largest_transaction(normal_txs, scammer_address, liquidity_function_name: str, is_out, *range_loop_args):
     num_remove_liquidities_found = 0
     passed_liquidity_function = False
     exists_duplicate_amount = False
     largest_transaction = None
+    valid_remove_liquidities = None
+    if liquidity_function_name == REMOVE_LIQUIDITY_SUBSTRING:
+        valid_remove_liquidities = return_valid_remove_liquidity_transactions(scammer_address)
+
     for index in range(range_loop_args[0], range_loop_args[1], range_loop_args[2]):
         if liquidity_function_name in str(normal_txs[index].functionName) and not normal_txs[index].isError:
             passed_liquidity_function = True
             # count the number of remove liquidity functions
             if liquidity_function_name == REMOVE_LIQUIDITY_SUBSTRING:
-                num_remove_liquidities_found += 1
+                if normal_txs[index].hash in valid_remove_liquidities:
+                    num_remove_liquidities_found += 1
             if largest_transaction is None:
                 return None, normal_txs, num_remove_liquidities_found
         elif (is_out and normal_txs[index].is_to_eoa(scammer_address)) or (not is_out and normal_txs[index].is_in_tx(scammer_address)):
@@ -166,6 +180,7 @@ def run_chain_on_scammers():
             print('Scammers processed={} scammers left={}'.format(overall_scammers_written, len(scammers_remaining)))
             for _ in range(save_file_freq):
                 current_address = scammers_remaining.pop()
+                print("Processing scammer {}...".format(current_address))
                 chain = chain_pattern_detection(current_address)
                 if len(chain) == 0:
                     no_chain_writer.writerow([current_address])
@@ -285,8 +300,10 @@ def convert_seconds_to_hms_string(time_difference: int) -> str:
     return ", ".join(output)
 
 
+
+
 if __name__ == '__main__':
     # write_chain_stats_on_data()
     run_chain_on_scammers()
-    # print(*chain_pattern_detection("0x1b3c156fddc90f5b8efd3e09aef08364c40e5e6e"), sep='\n')
+    # print(*chain_pattern_detection("0x0ff9c199389de33a8494a93bc99d64ee11bf2efd"), sep='\n')
     # print(chain_pattern_detection("0x7edda39fd502cb71aa577452f1cc7e83fda9c5c7"))

@@ -34,7 +34,7 @@ wallet_files = {"univ2": ["wallet_addresses.csv"], "panv2": ["wallet.csv"]}
 other_files = {"univ2": ["multisender_addresses.csv", "multisig_addresses.csv"], "panv2": ["multisender.csv", "multisig.csv"]}
 
 
-def load_full_end_nodes(dex="panv2"):
+def load_full_end_nodes(dex='univ2'):
     (bridge_addresses,
      defi_addresses,
      cex_addresses,
@@ -45,7 +45,7 @@ def load_full_end_nodes(dex="panv2"):
     return bridge_addresses | defi_addresses | cex_addresses | MEV_addresses | mixer_addresses | wallet_addresses | other_addresses
 
 
-def load_end_nodes(dex="panv2"):
+def load_end_nodes(dex='univ2'):
     print("LOAD END NODES")
     bridge_addresses = set()
     defi_addresses = set()
@@ -100,7 +100,7 @@ def load_end_nodes(dex="panv2"):
     )
 
 
-def load_creation_info(dex="panv2"):
+def load_creation_info(dex='univ2'):
     print("LOAD CREATION INFO")
     creation_info = dict()
     pool_creation_path = os.path.join(
@@ -130,7 +130,7 @@ def load_creation_info(dex="panv2"):
     return creation_info
 
 
-def load_pool_info(dex="panv2"):
+def load_pool_info(dex='univ2'):
     pool_infos = pd.read_csv(
         os.path.join(eval("path.{}_processed_path".format(dex)), "pool_info.csv"),
         low_memory=False,
@@ -142,7 +142,7 @@ def load_pool_info(dex="panv2"):
     return dict(zip(pool_infos["pool"].str.lower(), tokens.to_dict("records")))
 
 
-def load_token_info(dex="panv2"):
+def load_token_info(dex='univ2'):
     token_infos = pd.read_csv(
         os.path.join(eval("path.{}_processed_path".format(dex)), "token_info.csv"),
         low_memory=False,
@@ -152,7 +152,7 @@ def load_token_info(dex="panv2"):
     return dict(zip(token_infos["token"].str.lower(), infos.to_dict("records")))
 
 
-def load_group_scammers(dex="panv2"):
+def load_group_scammers(dex='univ2'):
     group_scammers, scammer_group = dict(), dict()
     file_path = os.path.join(eval('path.{}_processed_path'.format(dex)), "simple_rp_scammer_group.csv")
     scammers = set()
@@ -183,7 +183,7 @@ def link_pool_and_group(scammer_pools, group_scammers):
     return pool_group
 
 
-def load_rug_pull_dataset(dex="panv2", scammer_file_name="1_pair_scammers.csv", pool_file_name="1_pair_pool_labels.csv"):
+def load_rug_pull_dataset(dex='univ2', scammer_file_name="1_pair_scammers.csv", pool_file_name="1_pair_pool_labels.csv"):
     print("LOAD RUG PULL INFO")
     scam_pools = list()
     # scammers = list()
@@ -211,7 +211,7 @@ def load_rug_pull_dataset(dex="panv2", scammer_file_name="1_pair_scammers.csv", 
     return pool_scammers, scam_token_pool, scam_pools, set(scammers["scammer"].str.lower().to_list()), scammer_pools
 
 
-def load_cluster(name, dex="panv2"):
+def load_cluster(name, dex='univ2'):
     c_path = os.path.join(eval(f"path.{dex}_cluster_path"), f"{name}.csv")
     cluster_df = pd.read_csv(c_path)
     clusters = []
@@ -221,31 +221,35 @@ def load_cluster(name, dex="panv2"):
     return clusters
 
 
-def load_transaction_by_address(address, dex="panv2"):
+def load_transaction_by_address(address, dex='univ2'):
     transaction_collector = TransactionCollector()
     normal_txs, internal_txs = transaction_collector.get_transactions(address, dex)
     return normal_txs, internal_txs
 
+# LOGIC create this object and read data once
+creator_collector = CreatorCollector()
 
-def load_pool(scammer_address, dataloader, dex="panv2"):
+def load_pool(scammer_address, dataloader, dex='univ2'):
     pool_addresses = dataloader.scammer_pools[scammer_address.lower()]
     pool_event_path = eval("path.{}_pool_events_path".format(dex))
     contract_event_collector = ContractEventCollector()
-    creator_collector = CreatorCollector()
     pools = []
     for pool_address in pool_addresses:
-        transfer_list = contract_event_collector.get_event(
-            pool_address, "Transfer", pool_event_path, dex
-        )
-        transfers = [TransferEvent().from_dict(e) for e in transfer_list]
-        swaps_list = contract_event_collector.get_event(
-            pool_address, "Swap", pool_event_path, dex
-        )
-        swaps = [SwapEvent().from_dict(e) for e in swaps_list]
+        # transfer_list = contract_event_collector.get_event(
+        #     pool_address, "Transfer", pool_event_path, dex
+        # )
+        # transfers = [TransferEvent().from_dict(e) for e in transfer_list]
+
+        # swaps_list = contract_event_collector.get_event(
+        #     pool_address, "Swap", pool_event_path, dex
+        # )
+        # swaps = [SwapEvent().from_dict(e) for e in swaps_list]
+
         burns_list = contract_event_collector.get_event(
             pool_address, "Burn", pool_event_path, dex
         )
         burns = [BurnEvent().from_dict(e) for e in burns_list]
+        # TODO MAKE SURE TO UNCOMMENT THIS
         mint_list = contract_event_collector.get_event(
             pool_address, "Mint", pool_event_path, dex
         )
@@ -270,8 +274,8 @@ def load_pool(scammer_address, dataloader, dex="panv2"):
             scammers,
             mints,
             burns,
-            swaps,
-            transfers,
+            None,
+            None,
             pool_creation["contractCreator"],
             pool_creation["txHash"],
         )
@@ -280,7 +284,7 @@ def load_pool(scammer_address, dataloader, dex="panv2"):
 
 
 class DataLoader(object):
-    def __init__(self, dex="panv2"):
+    def __init__(self, dex='univ2'):
         ### ALL ADDRESSES MUST BE IN LOWER CASES ###
         # sets of address
         (
@@ -327,5 +331,5 @@ if __name__ == "__main__":
      MEV_addresses,
      mixer_addresses,
      wallet_addresses,
-     other_addresses,) = load_end_nodes(dex="panv2")
+     other_addresses,) = load_end_nodes(dex='univ2')
     print(MEV_addresses)
