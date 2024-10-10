@@ -244,63 +244,6 @@ def get_funder_and_beneficiary(scammer_address):
     return results_dict
 
 
-@deprecated("old function to get the largest address - this is no longer used")
-def get_largest_address(scammer_address, liquidity_transactions_dict, liquidity_function_name: str, is_out):
-    normal_txs = transaction_collector.get_transactions(scammer_address)
-    if is_out:
-        range_loop_args = [len(normal_txs) - 1, -1, -1]
-    else:
-        range_loop_args = [0, len(normal_txs), 1]
-    liquidity_transaction_found = False
-    liquidity_amount = 0
-    exists_duplicate_amount = False
-    largest_transaction = None
-    for index in range(range_loop_args[0], range_loop_args[1], range_loop_args[2]):
-        # if liquidity is added but no respective IN/OUT transaction is found, just exit
-        if not liquidity_transaction_found and liquidity_function_name in str(normal_txs[index].functionName) and not normal_txs[index].isError:
-            candidate_liquidity_amount = liquidity_transactions_dict.get(normal_txs[index].hash)
-            # only consider an add/remove liquidity if it's in the pool
-            if candidate_liquidity_amount is not None:
-                if largest_transaction is None:
-                    return ''
-                liquidity_amount = liquidity_transactions_dict[normal_txs[index].hash]
-                liquidity_transaction_found = True
-                break
-        # if it's an IN or an OUT transaction
-        elif is_valid_address(is_out, normal_txs[index], scammer_address):
-            # for first find and not empty, nothing to compare to so set largest as first one
-            if largest_transaction is None:
-                largest_transaction = normal_txs[index]
-            # candidate transaction is larger
-            elif normal_txs[index].get_transaction_amount() >= largest_transaction.get_transaction_amount():
-                # there exists an equivalent transaction, so mark as duplicate
-                if normal_txs[index].get_transaction_amount() == largest_transaction.get_transaction_amount():
-                    exists_duplicate_amount = True
-                else:
-                    exists_duplicate_amount = False
-                    largest_transaction = normal_txs[index]
-
-    if liquidity_transaction_found and largest_transaction:
-        passed_threshold = largest_transaction.get_transaction_amount() / liquidity_amount >= (
-            OUT_PERCENTAGE_THRESHOLD if is_out else IN_PERCENTAGE_THRESHOLD)
-        if passed_threshold and not exists_duplicate_amount:
-            if is_out and not is_contract_address(largest_transaction.to):
-                return largest_transaction.to
-            elif not is_out:
-                return largest_transaction.sender
-    return ''
-
-
-@deprecated("unused")
-def get_address_after_remove_liquidity(scammer_address: str, liquidity_transactions_dict):
-    return get_largest_address(scammer_address, liquidity_transactions_dict, REMOVE_LIQUIDITY_SUBSTRING, True)
-
-
-@deprecated("unused")
-def get_address_before_add_liquidity(scammer_address: str, liquidity_transactions_dict):
-    return get_largest_address(scammer_address, liquidity_transactions_dict, ADD_LIQUIDITY_SUBSTRING, False)
-
-
 def is_valid_address(is_out, transaction, scammer_address):
     if is_out:
         return transaction.is_to_eoa(scammer_address) and transaction.to not in END_NODES
@@ -344,12 +287,12 @@ def read_from_in_out_scammer_as_dict(input_path):
 def process_stars_on_all_scammers():
     def remove_from_set(file_path, set_to_remove):
         with open(file_path, 'r') as f:
-            for line in f:
-                row = line.rstrip('\n').split(', ')
-                for index in range(2, len(row)):
-                    if is_not_blank(row[index]) and row[index] != 'satellites':
-                        # change back to remove
-                        set_to_remove.remove(row[index])
+            reader_f = csv.reader(f, quotechar='"', delimiter='|', quoting=csv.QUOTE_ALL)
+            next(reader_f)
+            for line_r in reader_f:
+                scammer_chain = ast.literal_eval(line_r[2])
+                for scammer in scammer_chain:
+                    set_to_remove.remove(scammer[0])
 
     in_stars_path = os.path.join(path.univ2_star_shape_path, "in_stars.csv")
     out_stars_path = os.path.join(path.univ2_star_shape_path, "out_stars.csv")
@@ -360,15 +303,15 @@ def process_stars_on_all_scammers():
 
     # remove the scammers with no stars
     with open(no_stars_path, "r") as file:
-        for c_line in file:
-            c_row = c_line.rstrip('\n')
-            if is_not_blank(c_row) and c_row != 'scammer_address':
-                # we will copy this to the out list later
-                in_scammers_remaining.remove(c_row)
+        reader = csv.reader(file, quotechar='"', delimiter='|', quoting=csv.QUOTE_ALL)
+        next(reader)
+        for line in reader:
+            in_scammers_remaining.remove(line[0])
 
-    # remove the scammers that have an in_out star since the satellites cannot belong to another star
+    # LOGIC remove the scammers that have an in_out star since the satellites cannot belong to another star
     remove_from_set(in_out_stars_path, in_scammers_remaining)
     out_scammers_remaining = in_scammers_remaining.copy()
+    # LOGIC remove IN scammers from IN set and OUT scammers from OUT set
     remove_from_set(in_stars_path, in_scammers_remaining)
     remove_from_set(out_stars_path, out_scammers_remaining)
 
@@ -377,48 +320,51 @@ def process_stars_on_all_scammers():
     scammers_to_run = 200000
     scammers_ran = 0
 
+    scammer_dict = read_from_in_out_scammer_as_dict(SCAMMER_F_AND_B_PATH)
     pop_from_in = True
 
     while scammers_ran < scammers_to_run and len(in_scammers_remaining) + len(out_scammers_remaining) > 0:
         print("Scammers ran {} and scammers left {}".format(scammers_ran, len(in_scammers_remaining) + len(out_scammers_remaining)))
-        # TODO this needs to be changed to use the other way of opening/writing to csv
         with (open(in_stars_path, "a") as in_file, open(out_stars_path, "a") as out_file, open(in_out_stars_path, "a") as in_out_file, open(no_stars_path, "a") as no_star_file):
+            in_star_writer = csv.writer(in_file, quotechar='"', delimiter='|', quoting=csv.QUOTE_ALL)
+            out_star_writer = csv.writer(out_file, quotechar='"', delimiter='|', quoting=csv.QUOTE_ALL)
+            in_out_star_writer = csv.writer(in_out_file, quotechar='"', delimiter='|', quoting=csv.QUOTE_ALL)
+            no_star_writer = csv.writer(no_star_file, quotechar='"', delimiter='|', quoting=csv.QUOTE_ALL)
             for _ in range(save_file_freq):
                 current_scammer_to_run = in_scammers_remaining.pop() if pop_from_in else out_scammers_remaining.pop()
-                all_stars_result = find_star_shape_for_scammer(current_scammer_to_run)
+                # LOGIC if the removed scammer address doesn't exist in the other set, don't look for that star again
+                star_to_ignore = None
+                if pop_from_in and current_scammer_to_run not in out_scammers_remaining:
+                    star_to_ignore = StarShape.OUT
+                elif not pop_from_in and current_scammer_to_run not in in_scammers_remaining:
+                    star_to_ignore = StarShape.IN
+                all_stars_result = find_star_shape_for_scammer(current_scammer_to_run, scammer_dict, star_to_ignore)
 
-                # DEBUG LOGGING
-                # print("Result for scammer {}: {}".format(current_scammer_to_run, all_stars_result))
-
-                # if no stars are found, write to the no_stars.csv
-                if len(all_stars_result) == 0:
-                    no_star_file.write(current_scammer_to_run + '\n')
+                # LOGIC if no stars are found and we didn't ignore a star, write to the no_stars.csv
+                if len(all_stars_result) == 0 and star_to_ignore is None:
+                    no_star_writer.writerow([current_scammer_to_run])
                 else:
                     for star in all_stars_result:
                         star_type = star[0]
-                        file_to_write_to = None
+                        csv_to_write_to = None
                         # remove the satellites from the respective set
                         if star_type == StarShape.IN and bool(star[3] & in_scammers_remaining):
-                            file_to_write_to = in_file
+                            csv_to_write_to = in_star_writer
                             for satellite_scammer in star[3]:
                                 in_scammers_remaining.discard(satellite_scammer)
-
                         elif star_type == StarShape.OUT and bool(star[3] & out_scammers_remaining):
-                            file_to_write_to = out_file
+                            csv_to_write_to = out_star_writer
                             for satellite_scammer in star[3]:
                                 out_scammers_remaining.discard(satellite_scammer)
                         elif star_type == StarShape.IN_OUT:
-                            file_to_write_to = in_out_file
+                            csv_to_write_to = in_out_star_writer
                             # an IN_OUT satellites cannot be part of another star so remove from both
                             for satellite_scammer in star[3]:
                                 in_scammers_remaining.discard(satellite_scammer)
                                 out_scammers_remaining.discard(satellite_scammer)
 
-                        if file_to_write_to:
-                            string_to_write = '{}, {}, {}\n'.format(star[1], star[2], ', '.join(star[3]))
-                            # DEBUG LOGGING
-                            # print('string_to_write is {} with the current_scammer={} and pop_from_in={}\n'.format(string_to_write, current_scammer_to_run, str(pop_from_in)))
-                            file_to_write_to.write(string_to_write)
+                        if csv_to_write_to:
+                            csv_to_write_to.writerow([star[1], len(star[2]), star[2]])
                 # since we just wrote all the results including IN/OUT, can just remove from other stack
                 in_scammers_remaining.discard(current_scammer_to_run)
                 out_scammers_remaining.discard(current_scammer_to_run)
@@ -450,9 +396,4 @@ def process_stars_on_all_scammers():
 
 
 if __name__ == '__main__':
-# result = find_star_shapes('0x5d65491fa3f9422e8bb75dbd57f675b562029a36')
-# print(result)
-
-# process_stars_on_all_scammers()
-# result = get_funder_and_beneficiary('0x94f5628f2ab2efbb60d71400ad71be27fd91fe20')
-# write_scammer_funders_and_beneficiary()
+    print("hello")
