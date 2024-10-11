@@ -297,4 +297,4 @@ if __name__ == '__main__':
     job = 11
     # collector = ContractSourceCodeCollector(dex)
     # rug_pull_detection(job, dex)
-    debug_detection("0xd0fB1579a2F32C3C439901b2fb893900F5AeF3c6", dex)
+    debug_detection("0xEa4dEB3Ddfea61051269e4C636832A8183ddE0c8", dex)

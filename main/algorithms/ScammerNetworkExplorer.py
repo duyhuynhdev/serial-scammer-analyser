@@ -181,6 +181,8 @@ def explore_with_max_iter(job, max_iter = 100, size = 20000, dex='univ2'):
 
 
 if __name__ == '__main__':
+    # finish groups: 2, 150
+    # Note: 1402 - 0xcc7cf327b3965dbce9a450a358c357e36c0a99bb -> big connector who transfer money to many WT
     # job = 0
     # explore_with_max_iter(job, 100, 5000)
-    run_clustering(150)
+    run_clustering(2038)
