@@ -249,7 +249,6 @@ def load_pool(scammer_address, dataloader, dex='univ2'):
             pool_address, "Burn", pool_event_path, dex
         )
         burns = [BurnEvent().from_dict(e) for e in burns_list]
-        # TODO MAKE SURE TO UNCOMMENT THIS
         mint_list = contract_event_collector.get_event(
             pool_address, "Mint", pool_event_path, dex
         )

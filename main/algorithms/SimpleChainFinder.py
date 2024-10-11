@@ -1,5 +1,6 @@
 import ast
 import csv
+import itertools
 import json
 import os
 import statistics
@@ -102,7 +103,7 @@ def return_valid_remove_liquidity_transactions(scammer_address):
     valid_remove_liquidities = set()
     scammer_pool = load_pool(scammer_address, dataloader)
     for pool in scammer_pool:
-        for rmv_liq_trans in pool.burns:
+        for rmv_liq_trans in itertools.chain(pool.burns, pool.mints):
             valid_remove_liquidities.add(rmv_liq_trans.transactionHash)
 
     return valid_remove_liquidities
@@ -113,19 +114,16 @@ def get_largest_transaction(normal_txs, scammer_address, liquidity_function_name
     passed_liquidity_function = False
     exists_duplicate_amount = False
     largest_transaction = None
-    valid_remove_liquidities = None
-    if liquidity_function_name == REMOVE_LIQUIDITY_SUBSTRING:
-        valid_remove_liquidities = return_valid_remove_liquidity_transactions(scammer_address)
+    valid_liquidities = return_valid_remove_liquidity_transactions(scammer_address)
 
     for index in range(range_loop_args[0], range_loop_args[1], range_loop_args[2]):
         if liquidity_function_name in str(normal_txs[index].functionName) and not normal_txs[index].isError:
-            passed_liquidity_function = True
-            # count the number of remove liquidity functions
-            if liquidity_function_name == REMOVE_LIQUIDITY_SUBSTRING:
-                if normal_txs[index].hash in valid_remove_liquidities:
+            if normal_txs[index].hash in valid_liquidities:
+                passed_liquidity_function = True
+                if liquidity_function_name == REMOVE_LIQUIDITY_SUBSTRING:
                     num_remove_liquidities_found += 1
-            if largest_transaction is None:
-                return None, normal_txs, num_remove_liquidities_found
+                if largest_transaction is None:
+                    return None, normal_txs, num_remove_liquidities_found
         elif (is_out and normal_txs[index].is_to_eoa(scammer_address)) or (not is_out and normal_txs[index].is_in_tx(scammer_address)):
             # just set the largest_transaction for the first find
             if largest_transaction is None:
@@ -168,8 +166,8 @@ def run_chain_on_scammers():
 
     # lower means will write to file more frequently, but lower performance
     # higher means less file writes, but better performance
-    save_file_freq = 10000
-    num_scammers_to_run = 500_000
+    save_file_freq = 2_500
+    num_scammers_to_run = 200_000
     overall_scammers_written = 0
 
     # save to file
@@ -208,7 +206,7 @@ def write_chain_stats_on_data():
             all_chains.append([int(line[0]), ast.literal_eval(line[1])])
 
     chain_stats_path = os.path.join(path.univ2_scammer_chain_path, "chain_stats.csv")
-    chain_stats_headers = ["start_address", "end_address", "chain_length", "num_scams_avg", "trans_amt_avg", "trans_diff_avg"]
+    chain_stats_headers = ["start_address", "end_address", "chain_length", "num_scams_avg", "trans_amt_avg", "trans_time_diff_avg"]
     with open(chain_stats_path, "w", newline='') as chain_stats_file:
         csv_writer = csv.writer(chain_stats_file, quotechar='"', delimiter='|', quoting=csv.QUOTE_ALL)
         csv_writer.writerow(chain_stats_headers)
