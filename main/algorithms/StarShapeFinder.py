@@ -7,6 +7,7 @@ from enum import Enum
 from deprecated import deprecated
 
 from data_collection.AccountCollector import TransactionCollector
+from entity.LightNode import LightNodeFactory
 from utils.DataLoader import DataLoader, load_pool
 from utils.ProjectPath import ProjectPath
 from utils.Utils import is_contract_address
@@ -42,7 +43,7 @@ def get_and_save_f_and_b(scammer_address, scammer_dict):
     f_b_result = get_funder_and_beneficiary(scammer_address)
     scammer_dict[scammer_address] = f_b_result
 
-    with open(SCAMMER_F_AND_B_PATH, "a") as file:
+    with open(SCAMMER_F_AND_B_PATH, "a", newline='') as file:
         csv_writer = csv.writer(file, quotechar='"', delimiter='|', quoting=csv.QUOTE_ALL)
         scammer_details = f_b_result.get('scammer_details')
         col_1 = (scammer_details['address'], scammer_details['num_scams'])
@@ -54,7 +55,7 @@ def get_and_save_f_and_b(scammer_address, scammer_dict):
 
         beneficiary_details = f_b_result.get('beneficiary')
         if beneficiary_details:
-            col_3 = (funder_details['address'], funder_details['timestamp'], funder_details['amount'])
+            col_3 = (beneficiary_details['address'], beneficiary_details['timestamp'], beneficiary_details['amount'])
         csv_writer.writerow([col_1, col_2, col_3])
 
 
@@ -92,11 +93,11 @@ def find_star_shape_for_scammer(scammer_address, scammer_dict=None, star_to_igno
         satellite_nodes = set()
         # LOGIC if it's an IN or IN_OUT star, get the beneficiary. For IN_OUT, we only need to look at half of the transactions
         if star_shape == StarShape.IN or star_shape == StarShape.IN_OUT:
-            center_address = scammer_address[scammer_address]['beneficiary']['address']
+            center_address = scammer_dict[scammer_address]['beneficiary']['address']
             is_out = False
         # LOGIC for an out star, get the funder address
         elif star_shape == StarShape.OUT:
-            center_address = scammer_address[scammer_address]['funder']['address']
+            center_address = scammer_dict[scammer_address]['funder']['address']
             is_out = True
         else:
             raise Exception("There was no star detected in the possible_star_shapes")
@@ -159,7 +160,8 @@ def get_funder_and_beneficiary(scammer_address):
     '''
     largest_in_transaction = largest_out_transaction = None
     add_liquidity_amt = remove_liquidity_amt = 0
-    out_addresses = in_addresses = set()
+    out_addresses = set()
+    in_addresses = set()
     num_remove_liquidities = 0
     passed_add_liquidity = passed_remove_liquidity = False
     duplicate_in_amt = duplicate_out_amt = False
@@ -180,6 +182,7 @@ def get_funder_and_beneficiary(scammer_address):
                 if candidate_liq_amt:
                     passed_remove_liquidity = True
                     largest_out_transaction = None
+                    duplicate_out_amt = False
                     num_remove_liquidities += 1
                     remove_liquidity_amt = candidate_liq_amt
 
@@ -233,7 +236,7 @@ def get_funder_and_beneficiary(scammer_address):
             # LOGIC for beneficiary, if it didn't perform any in transactions, no duplicate, and passed the threshold and is not a contract address
             if largest_out_transaction:
                 passed_threshold = largest_out_transaction.get_transaction_amount_and_fee() / remove_liquidity_amt >= OUT_PERCENTAGE_THRESHOLD
-                if passed_threshold and not duplicate_out_amt and largest_out_transaction.to not in in_addresses and not is_contract_address(largest_out_transaction.to):
+                if passed_threshold and not duplicate_out_amt and largest_out_transaction.to not in in_addresses and transaction_collector.ensure_valid_eoa_address(largest_out_transaction.to):
                     beneficiary_dict = get_dict_info(largest_out_transaction, largest_out_transaction.to)
 
     if funder_dict:
@@ -254,7 +257,7 @@ def is_valid_address(is_out, transaction, scammer_address):
 
 def read_from_in_out_scammer_as_dict():
     funder_beneficiary_dict = {}
-    with open(SCAMMER_F_AND_B_PATH, "r") as file:
+    with open(SCAMMER_F_AND_B_PATH, "r", newline='') as file:
         reader = csv.reader(file, quotechar='"', delimiter='|', quoting=csv.QUOTE_ALL)
         next(reader)
         for line in reader:
@@ -286,7 +289,7 @@ def read_from_in_out_scammer_as_dict():
 
 def process_stars_on_all_scammers():
     def remove_from_set(file_path, set_to_remove):
-        with open(file_path, 'r') as f:
+        with open(file_path, 'r', newline='') as f:
             reader_f = csv.reader(f, quotechar='"', delimiter='|', quoting=csv.QUOTE_ALL)
             next(reader_f)
             for line_r in reader_f:
@@ -302,7 +305,7 @@ def process_stars_on_all_scammers():
     in_scammers_remaining = set(dataloader.scammers)
 
     # remove the scammers with no stars
-    with open(no_stars_path, "r") as file:
+    with open(no_stars_path, "r", newline='') as file:
         reader = csv.reader(file, quotechar='"', delimiter='|', quoting=csv.QUOTE_ALL)
         next(reader)
         for line in reader:
@@ -316,8 +319,8 @@ def process_stars_on_all_scammers():
     remove_from_set(out_stars_path, out_scammers_remaining)
 
     # start processing the writing
-    save_file_freq = 10
-    scammers_to_run = 50
+    save_file_freq = 500
+    scammers_to_run = 500_000
     scammers_ran = 0
 
     scammer_dict = read_from_in_out_scammer_as_dict()
@@ -325,7 +328,7 @@ def process_stars_on_all_scammers():
 
     while scammers_ran < scammers_to_run and len(in_scammers_remaining) + len(out_scammers_remaining) > 0:
         print("Scammers ran {} and scammers left {}".format(scammers_ran, len(in_scammers_remaining) + len(out_scammers_remaining)))
-        with (open(in_stars_path, "a") as in_file, open(out_stars_path, "a") as out_file, open(in_out_stars_path, "a") as in_out_file, open(no_stars_path, "a") as no_star_file):
+        with (open(in_stars_path, "a", newline='') as in_file, open(out_stars_path, "a", newline='') as out_file, open(in_out_stars_path, "a", newline='') as in_out_file, open(no_stars_path, "a", newline='') as no_star_file):
             in_star_writer = csv.writer(in_file, quotechar='"', delimiter='|', quoting=csv.QUOTE_ALL)
             out_star_writer = csv.writer(out_file, quotechar='"', delimiter='|', quoting=csv.QUOTE_ALL)
             in_out_star_writer = csv.writer(in_out_file, quotechar='"', delimiter='|', quoting=csv.QUOTE_ALL)
@@ -348,11 +351,11 @@ def process_stars_on_all_scammers():
                         star_type = star[0]
                         csv_to_write_to = None
                         # remove the satellites from the respective set
-                        if star_type == StarShape.IN and bool(star[2] & in_scammers_remaining):
+                        if star_type == StarShape.IN:
                             csv_to_write_to = in_star_writer
                             for satellite_scammer in star[2]:
                                 in_scammers_remaining.discard(satellite_scammer[0])
-                        elif star_type == StarShape.OUT and bool(star[3] & out_scammers_remaining):
+                        elif star_type == StarShape.OUT:
                             csv_to_write_to = out_star_writer
                             for satellite_scammer in star[2]:
                                 out_scammers_remaining.discard(satellite_scammer[0])
@@ -373,5 +376,7 @@ def process_stars_on_all_scammers():
 
 
 if __name__ == '__main__':
-    # process_stars_on_all_scammers()
-    result = get_funder_and_beneficiary('0x32ebc54a88b6fd1ce0608819faa2db56eec828bf')
+    process_stars_on_all_scammers()
+    # print(find_star_shape_for_scammer('0xba3526c80135e162ec65b0db7eb527d4b7e37a0a'))
+    # result = get_funder_and_beneficiary('0x32ebc54a88b6fd1ce0608819faa2db56eec828bf')
+    # print(result)

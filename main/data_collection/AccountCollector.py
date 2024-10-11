@@ -181,6 +181,64 @@ class TransactionCollector:
         #         parsed_internal_txs.append(ptx)
         return parsed_normal_txs
 
+    def get_transactions_including_internal(self, address, dex='univ2', key_idx=0):
+        from_block = eval('self.{}_first_block'.format(dex))
+        to_block = eval('self.{}_last_block'.format(dex))
+        api = explorer_api[dex]["explorer"]
+        keys = explorer_api[dex]["keys"]
+        key_idx = key_idx % len(keys)
+        normal_txs_path = os.path.join(eval('path.{}_normal_tx_path'.format(dex)), f"{address}.csv")
+        parsed_normal_txs = []
+        parsed_internal_txs = []
+        if os.path.isfile(normal_txs_path):
+            try:
+                normal_txs = pd.read_csv(normal_txs_path)
+            except Exception as e:
+                print(address, e)
+                normal_txs = None
+        else:
+            normal_txs = pd.DataFrame(self.download_normal_transactions(address, api, keys[key_idx], dex))
+        internal_txs_path = os.path.join(eval('path.{}_internal_tx_path'.format(dex)), f"{address}.csv")
+        if os.path.isfile(internal_txs_path):
+            try:
+                internal_txs = pd.read_csv(internal_txs_path)
+            except Exception as e:
+                print(address, e)
+                internal_txs = None
+        else:
+            internal_txs = pd.DataFrame(self.download_internal_transactions(address, api, keys[key_idx], dex))
+        if normal_txs is not None:
+            normal_txs.rename(columns={'from': 'sender'}, inplace=True)
+            for tx in normal_txs.to_dict('records'):
+                ptx = NormalTransaction()
+                ptx.from_dict(tx)
+                parsed_normal_txs.append(ptx)
+        if internal_txs is not None:
+            internal_txs.rename(columns={'from': 'sender'}, inplace=True)
+            for tx in internal_txs.to_dict('records'):
+                ptx = InternalTransaction()
+                ptx.from_dict(tx)
+                parsed_internal_txs.append(ptx)
+        return parsed_normal_txs
+
+    def ensure_valid_eoa_address(self, address):
+        normal_txs, internal_txs = self.get_transactions_including_internal(address, 'univ2', 0)
+        if len(normal_txs) >= Constant.TX_LIMIT_1:
+            return False
+        for ntx in normal_txs:
+            if ntx.sender.lower() == address.lower():  # sender of normal txs must be EOA
+                return True
+            if ntx.is_creation_contract_tx() and ntx.contractAddress.lower() == address.lower():  # address is a contract created by an EOA
+                return False
+            if ntx.is_contract_call_tx() and ntx.to.lower() == address.lower():  # address is a contract called by other address
+                return False
+        for itx in internal_txs:
+            if itx.sender.lower() == address.lower():  # sender of internal txs must be contract
+                return False
+            if itx.is_creation_contract_tx() and itx.contractAddress.lower() == address.lower():  # address is a contract created by another contract
+                return False
+        return True
+
     def download_transactions(self, job, addresses, dex='univ2'):
         api = explorer_api[dex]["explorer"]
         keys = explorer_api[dex]["keys"]

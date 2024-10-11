@@ -146,8 +146,8 @@ def get_largest_transaction(normal_txs, scammer_address, liquidity_function_name
 
 
 def run_chain_on_scammers():
-    simple_chain_path = os.path.join(path.panv2_scammer_chain_path, "simple_chain.csv")
-    no_chain_path = os.path.join(path.panv2_scammer_chain_path, "no_chain.csv")
+    simple_chain_path = os.path.join(path.univ2_scammer_chain_path, "simple_chain.csv")
+    no_chain_path = os.path.join(path.univ2_scammer_chain_path, "no_chain.csv")
 
     # remove scammers that don't belong in a chain
     scammers_remaining = set(dataloader.scammers)
@@ -196,7 +196,7 @@ def run_chain_on_scammers():
 
 
 def write_chain_stats_on_data():
-    simple_chain_path = os.path.join(path.panv2_scammer_chain_path, "simple_chain.csv")
+    simple_chain_path = os.path.join(path.univ2_scammer_chain_path, "simple_chain.csv")
 
     all_chains = []
 
@@ -207,80 +207,36 @@ def write_chain_stats_on_data():
         for line in reader:
             all_chains.append([int(line[0]), ast.literal_eval(line[1])])
 
-    chain_stats = {"min": sys.maxsize, "max": -1, "average": 0, "median": 0, "num_chains": 0}
-    scams_performed_stats = {"min": sys.maxsize, "max": -1, "average": 0, "median": 0}
-    transfer_amount_stats = {"min": sys.maxsize, "max": -1, "average": 0, "median": 0}
-    transfer_time_stats = {"min": sys.maxsize, "max": -1, "average": 0, "median": 0}
+    chain_stats_path = os.path.join(path.univ2_scammer_chain_path, "chain_stats.csv")
+    chain_stats_headers = ["start_address", "end_address", "chain_length", "num_scams_avg", "trans_amt_avg", "trans_diff_avg"]
+    with open(chain_stats_path, "w", newline='') as chain_stats_file:
+        csv_writer = csv.writer(chain_stats_file, quotechar='"', delimiter='|', quoting=csv.QUOTE_ALL)
+        csv_writer.writerow(chain_stats_headers)
 
-    chain_values = []
-    scams_performed_values = []
-    transfer_amount_values = []
-    transfer_time_values = []
-    for chain in all_chains:
-        # chain stats
-        chain_values.append(chain[0])
-        if chain[0] > chain_stats['max']:
-            chain_stats['max'] = chain[0]
-        if chain[0] < chain_stats['min']:
-            chain_stats['min'] = chain[0]
+        for chain in all_chains:
+            scams_performed_values = []
+            transfer_amount_values = []
+            transfer_time_values = []
+            started_address = chain[1][0][0]
+            end_address = chain[1][-1][0]
+            for scammer_index in range(len(chain[1])):
+                # liquidity scams performed stats
+                scams_performed_values.append(chain[1][scammer_index][1])
 
-        for scammer_index in range(len(chain[1])):
-            scammer = chain[1][scammer_index]
+                # transfer amount stats (no data in last scammer)
+                if scammer_index < len(chain[1]) - 1:
+                    transfer_amount_values.append(chain[1][scammer_index][3])
 
-            # liquidity scams performed stats
-            scams_performed_values.append(scammer[1])
-            if scammer[1] > scams_performed_stats['max']:
-                scams_performed_stats['max'] = scammer[1]
-            if scammer[1] < scams_performed_stats['min']:
-                scams_performed_stats['min'] = scammer[1]
+                # time difference
+                if scammer_index < len(chain[1]) - 2:
+                    time_difference = chain[1][scammer_index + 1][2] - chain[1][scammer_index][2]
+                    transfer_time_values.append(time_difference)
 
-            # transfer amount stats (no data in last scammer)
-            if scammer_index < len(chain[1]) - 1:
-                transfer_amount_values.append(scammer[3])
-                if scammer[3] > transfer_amount_stats['max']:
-                    transfer_amount_stats['max'] = scammer[3]
-                if scammer[3] < transfer_amount_stats['min']:
-                    transfer_amount_stats['min'] = scammer[3]
-
-            # time difference
-            if scammer_index < len(chain[1]) - 2:
-                time_difference = chain[1][scammer_index + 1][2] - scammer[2]
-                transfer_time_values.append(time_difference)
-                if time_difference > transfer_time_stats['max']:
-                    transfer_time_stats['max'] = time_difference
-                if time_difference < transfer_time_stats['min']:
-                    transfer_time_stats['min'] = time_difference
-
-    chain_stats['average'] = statistics.mean(chain_values)
-    chain_stats['median'] = statistics.median(chain_values)
-    chain_stats['num_chains'] = len(all_chains)
-
-    scams_performed_stats['average'] = statistics.mean(scams_performed_values)
-    scams_performed_stats['median'] = statistics.median(scams_performed_values)
-
-    transfer_amount_stats['average'] = statistics.mean(transfer_amount_values)
-    transfer_amount_stats['median'] = statistics.median(transfer_amount_values)
-
-    transfer_time_average = statistics.mean(transfer_time_values)
-    transfer_time_median = statistics.median(transfer_time_values)
-    transfer_time_stats['average'] = {'unix_time': transfer_time_average, 'str_time': convert_seconds_to_hms_string(transfer_time_average)}
-    transfer_time_stats['median'] = {'unix_time': transfer_time_median, 'str_time': convert_seconds_to_hms_string(transfer_time_median)}
-    transfer_time_stats['min'] = {'unix_time': transfer_time_stats['min'], 'str_time': convert_seconds_to_hms_string(transfer_time_stats['min'])}
-    transfer_time_stats['max'] = {'unix_time': transfer_time_stats['max'], 'str_time': convert_seconds_to_hms_string(transfer_time_stats['max'])}
-
-    chain_stats_path = os.path.join(path.panv2_scammer_chain_path, "chain_stats.json")
-
-    all_stats = {
-        'chain_stats': chain_stats,
-        'scams_performed_stats': scams_performed_stats,
-        'transfer_amount_stats': transfer_amount_stats,
-        'transfer_time_stats': transfer_time_stats
-    }
-    json_object = json.dumps(all_stats, indent=2)
-    with open(chain_stats_path, 'w') as file:
-        file.write(json_object)
+            transfer_time_mean = statistics.mean(transfer_time_values) if len(transfer_time_values) > 0 else ""
+            csv_writer.writerow([started_address, end_address, chain[0], statistics.mean(scams_performed_values), statistics.mean(transfer_amount_values), transfer_time_mean])
 
 
+# REFERENCE unused atm
 def convert_seconds_to_hms_string(time_difference: int) -> str:
     days = time_difference // 86400
     hours = (time_difference % 86400) // 3600
@@ -300,10 +256,8 @@ def convert_seconds_to_hms_string(time_difference: int) -> str:
     return ", ".join(output)
 
 
-
-
 if __name__ == '__main__':
-    # write_chain_stats_on_data()
-    run_chain_on_scammers()
-    # print(*chain_pattern_detection("0x0ff9c199389de33a8494a93bc99d64ee11bf2efd"), sep='\n')
+    write_chain_stats_on_data()
+    # run_chain_on_scammers()
+    # print(*chain_pattern_detection("0x98680d288803f0a63a5f78673508e8d407b16e15"), sep='\n')
     # print(chain_pattern_detection("0x7edda39fd502cb71aa577452f1cc7e83fda9c5c7"))

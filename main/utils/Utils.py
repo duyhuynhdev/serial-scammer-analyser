@@ -18,7 +18,6 @@ path = ProjectPath()
 
 class Utils:
     def __init__(self):
-        return
         is_contract_address_path = os.path.join(path.univ2_star_shape_path, "is_contract_address.csv")
         if os.path.exists(is_contract_address_path):
             self.contract_address_dict = {}
