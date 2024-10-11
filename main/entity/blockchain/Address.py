@@ -1,6 +1,7 @@
-from typing import Set, Tuple
+from typing import Set, Tuple, List
 
 from enum import Enum
+from entity.blockchain.Event import Event, SwapEvent
 from entity.blockchain.Transaction import InternalTransaction, NormalTransaction
 from entity.blockchain.DTO import DTO
 from utils import Constant
@@ -72,7 +73,8 @@ class Pool(ERC20):
             return 1
         raise HighValueTokenNotFound("Neither token0 nor token1 are in HIGH_VALUE_TOKENS.")
 
-    def calculate_total_value_and_fees(self, items, amount_attr: str) -> Tuple[float, float]:
+    def calculate_total_value_and_fees(self, items: List[Event], amount_attr: str) -> Tuple[float,
+    float]:
         """
         Generic method to calculate the total values and fees from a list of transactions.
         :param items: List of transaction objects (mints, burns, swaps).
@@ -84,7 +86,7 @@ class Pool(ERC20):
         decimals = int(token.decimals) 
         
         for item in items:
-            total_value += float(eval(f"item.{amount_attr}")) / 10 ** decimals
+            total_value += float(getattr(item, amount_attr)) / 10 ** decimals
             total_fees += float(item.gasUsed * item.gasPrice) / 10 ** Constant.WETH_BNB_DECIMALS
 
         return total_value, total_fees
@@ -97,8 +99,14 @@ class Pool(ERC20):
         return self.calculate_total_value_and_fees(self.burns, f"amount{self.high_value_token_position}")
 
     def calculate_total_swap_value_and_fees(self, addresses: Set[str], direction: SwapDirection) -> Tuple[float, float]:
-        filtered_swaps = [swap for swap in self.swaps if swap.to.lower() in addresses]
-        return self.calculate_total_value_and_fees(filtered_swaps, f"amount{self.high_value_token_position}{direction.value}")
+        amount_attr = f"amount{self.high_value_token_position}{direction.value}"
+        filtered_swaps = [swap for swap in self.swaps if swap.to.lower() in addresses and
+                          self.is_target_swap(swap, amount_attr)]
+        return self.calculate_total_value_and_fees(filtered_swaps, amount_attr)
+
+    @staticmethod
+    def is_target_swap(swap: SwapEvent, amount_attr: str) -> bool:
+        return getattr(swap, amount_attr) != 0
 
 
 class Token(ERC20):
