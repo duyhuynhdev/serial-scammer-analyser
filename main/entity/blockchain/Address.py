@@ -1,3 +1,4 @@
+from functools import cached_property
 from typing import Set, Tuple, List
 
 from enum import Enum
@@ -50,10 +51,17 @@ class ERC20(Contract):
         self.creator = creator
         self.creation_tx = creation_tx
 
+class Token(ERC20):
+    def __init__(self, address=None, name=None, symbol=None, supply=None, decimals=None,
+                 transfers=None, creator=None, creation_tx=None):
+        super().__init__(address, name, symbol, supply, decimals, transfers, creator, creation_tx)
+
 
 class Pool(ERC20):
-    def __init__(self, address=None, token0=None, token1=None, scammers=None, mints=None, burns=None, swaps=None, transfers=None, creator=None, creation_tx=None):
-        super().__init__(address, "Uniswap V2", "UNI-V2", None, 18, transfers, creator, creation_tx)
+    def __init__(self, address=None, token0=None, token1=None, scammers=None, mints=None,
+                 burns=None, swaps=None, transfers=None, creator=None, creation_tx=None):
+        super().__init__(address, "Uniswap V2","UNI-V2", None, 18, transfers, creator,
+                         creation_tx)
         self.token0: Token = token0
         self.token1: Token = token1
         self.scammers = scammers if scammers is not None else []
@@ -63,10 +71,29 @@ class Pool(ERC20):
         self.high_value_token_position = self.get_high_value_position()
         self.scam_token_position = 1 - self.high_value_token_position
 
-    def get_scam_token(self):
+    @cached_property
+    def investing_swaps(self) -> List[SwapEvent]:
+        """
+        Returns all swap transactions where the high-value token is used to purchase the scam token,
+        regardless of whether the purchase is made by washer nodes or real investor nodes.
+        """
+        amount_attr = f"amount{self.high_value_token_position}{SwapDirection.IN.value}"
+        return [swap for swap in self.swaps if getattr(swap, amount_attr) > 0]
+
+    @cached_property
+    def divesting_swaps(self) -> List[SwapEvent]:
+        """
+        Returns all swap transactions where the high-value token is withdrawn, regardless of
+        whether the withdrawal is made by washer nodes or real investor nodes.
+        """
+        amount_attr = f"amount{self.high_value_token_position}{SwapDirection.OUT.value}"
+        return [swap for swap in self.swaps if getattr(swap, amount_attr) > 0]
+
+    @cached_property
+    def scam_token(self) -> Token:
         return eval(f"self.token{self.scam_token_position}")
 
-    def get_high_value_position(self):
+    def get_high_value_position(self) -> int:
         if self.token0 is not None and (self.token0.address.lower() in Constant.HIGH_VALUE_TOKENS):
             return 0
         if self.token1 is not None and (self.token1.address.lower() in Constant.HIGH_VALUE_TOKENS):
@@ -109,6 +136,4 @@ class Pool(ERC20):
         return getattr(swap, amount_attr) != 0
 
 
-class Token(ERC20):
-    def __init__(self, address=None, name=None, symbol=None, supply=None, decimals=None, transfers=None, creator=None, creation_tx=None):
-        super().__init__(address, name, symbol, supply, decimals, transfers, creator, creation_tx)
+
