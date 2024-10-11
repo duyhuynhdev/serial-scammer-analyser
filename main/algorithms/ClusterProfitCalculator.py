@@ -33,13 +33,22 @@ class ClusterProfitCalculator:
         return {
             node.address.lower()
             for node in self.cluster
-            if (
-                NodeLabel.is_scammer(node)
-                # TODO: remove this line once we're confident that the given cluster is made only of scammer nodes
-                and node.address
-                in self.dataloader.scammers_set
+            if NodeLabel.is_scammer(node)
+               # TODO: remove this line once we're confident that the given cluster does not
+               #  include contracts
+           and node.address
+           in self.dataloader.scammers_set
+        }
 
-            )
+    @cached_property
+    def wash_trader_node_addresses(self) -> Set[str]:
+        """
+        Returns a set of wash trader nodes in the cluster.
+        """
+        return {
+            node.address.lower()
+            for node in self.cluster
+            if NodeLabel.is_wash_trader(node)
         }
 
     @cached_property
@@ -83,17 +92,19 @@ class ClusterProfitCalculator:
         """
         Calculates the total value (y) of a pool.
 
-        This function evaluates the total burn value and associated fees, as well as the total swap-out value and fees.
-        Swaps are only considered if the destination address (`swap_to`) is included in the set of node addresses in
-        the cluster.
+        This function evaluates the total burn value and associated fees, as well as the total
+        swap-out value and fees. Swaps are only considered if the destination address (`swap_to`)
+        is included in the set of node addresses in the cluster
         """
         y = 0.0
 
         burn_total, fee_total = pool.calculate_total_burn_value_and_fees()
         y += burn_total - fee_total
 
-        sell_total, fee_total = pool.calculate_total_swap_value_and_fees(self.node_addresses_in_cluster, SwapDirection.OUT)
-        y += sell_total - fee_total
+        rug_pulling_swap_total, fee_total = (
+            pool.calculate_total_divesting_value_and_fees_by_addressees(
+             self.node_addresses_in_cluster))
+        y += rug_pulling_swap_total - fee_total
 
         return y
 
@@ -102,8 +113,8 @@ class ClusterProfitCalculator:
         Calculates the total value (X) for a given pool by evaluating its
         mint value, associated fees, and token creation fee.
 
-        Note that the pool creation event is the same as the mint event; there is no need to add the pool creation
-        transaction amount and fee.
+        Note that the pool creation event is the same as the mint event; there is no need to add
+        the pool creation transaction amount and fee.
         """
         x = 0.0
 
@@ -147,7 +158,7 @@ class ClusterProfitCalculator:
         """
         token_creation_fee = 0.0
 
-        scam_token = pool.get_scam_token()
+        scam_token = pool.scam_token
 
         self._validate_scam_token_is_created_by_cluster(scam_token, pool)
 
@@ -162,13 +173,16 @@ class ClusterProfitCalculator:
 
     def calculate_z_per_pool(self, pool: Pool) -> float:
         """
-        Calculate the total 'z' value for a pool by summing swap in (buy) value and fees.
+        Calculate the total 'z' value for a pool by summing disingenuous investing value and fees.
         """
         z = 0.0
 
-        buy_total, fee_total = pool.calculate_total_swap_value_and_fees(self.node_addresses_in_cluster, SwapDirection.IN)
-        z += buy_total + fee_total
+        disingenuous_investing_value_total, fee_total = (
+            pool.calculate_total_investing_value_and_fees_by_addressees(
+            self.node_addresses_in_cluster))
+        z += disingenuous_investing_value_total + fee_total
         return z
+
 
     def calculate_profit_per_pool(self, pool: Pool) -> float:
         """
@@ -179,6 +193,7 @@ class ClusterProfitCalculator:
         z = self.calculate_z_per_pool(pool)
 
         return y - x - z
+
 
     def calculate_batch(self, cluster_names: List[str]) -> List[float]:
         """

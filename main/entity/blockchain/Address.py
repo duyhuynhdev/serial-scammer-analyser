@@ -71,14 +71,24 @@ class Pool(ERC20):
         self.high_value_token_position = self.get_high_value_position()
         self.scam_token_position = 1 - self.high_value_token_position
 
+    def get_high_value_position(self) -> int:
+        if self.token0 is not None and (self.token0.address.lower() in Constant.HIGH_VALUE_TOKENS):
+            return 0
+        if self.token1 is not None and (self.token1.address.lower() in Constant.HIGH_VALUE_TOKENS):
+            return 1
+        raise HighValueTokenNotFound("Neither token0 nor token1 are in HIGH_VALUE_TOKENS.")
+
     @cached_property
     def investing_swaps(self) -> List[SwapEvent]:
         """
         Returns all swap transactions where the high-value token is used to purchase the scam token,
         regardless of whether the purchase is made by washer nodes or real investor nodes.
         """
-        amount_attr = f"amount{self.high_value_token_position}{SwapDirection.IN.value}"
-        return [swap for swap in self.swaps if getattr(swap, amount_attr) > 0]
+        return [swap for swap in self.swaps if getattr(swap, self.investing_amount_attr) > 0]
+
+    @cached_property
+    def investing_amount_attr(self) -> str:
+        return f"amount{self.high_value_token_position}{SwapDirection.IN.value}"
 
     @cached_property
     def divesting_swaps(self) -> List[SwapEvent]:
@@ -86,19 +96,20 @@ class Pool(ERC20):
         Returns all swap transactions where the high-value token is withdrawn, regardless of
         whether the withdrawal is made by washer nodes or real investor nodes.
         """
-        amount_attr = f"amount{self.high_value_token_position}{SwapDirection.OUT.value}"
-        return [swap for swap in self.swaps if getattr(swap, amount_attr) > 0]
+
+        return [swap for swap in self.swaps if getattr(swap, self.divesting_amount_attr) > 0]
+
+    @cached_property
+    def divesting_amount_attr(self) -> str:
+        return f"amount{self.high_value_token_position}{SwapDirection.OUT.value}"
 
     @cached_property
     def scam_token(self) -> Token:
         return eval(f"self.token{self.scam_token_position}")
 
-    def get_high_value_position(self) -> int:
-        if self.token0 is not None and (self.token0.address.lower() in Constant.HIGH_VALUE_TOKENS):
-            return 0
-        if self.token1 is not None and (self.token1.address.lower() in Constant.HIGH_VALUE_TOKENS):
-            return 1
-        raise HighValueTokenNotFound("Neither token0 nor token1 are in HIGH_VALUE_TOKENS.")
+    @cached_property
+    def high_value_token(self) -> Token:
+        return eval(f"self.token{self.high_value_token_position}")
 
     def calculate_total_value_and_fees(self, items: List[Event], amount_attr: str) -> Tuple[float,
     float]:
@@ -109,31 +120,35 @@ class Pool(ERC20):
         :return: A tuple of total value and total fees.
         """
         total_value, total_fees = 0, 0
-        token: Token = eval(f"self.token{self.high_value_token_position}")
-        decimals = int(token.decimals) 
-        
+
         for item in items:
-            total_value += float(getattr(item, amount_attr)) / 10 ** decimals
+            total_value += (float(getattr(item, amount_attr)) / 10 **
+                            int(self.high_value_token.decimals))
             total_fees += float(item.gasUsed * item.gasPrice) / 10 ** Constant.WETH_BNB_DECIMALS
 
         return total_value, total_fees
 
 
     def calculate_total_mint_value_and_fees(self) -> Tuple[float, float]:
-        return self.calculate_total_value_and_fees(self.mints, f"amount{self.high_value_token_position}")
+        return self.calculate_total_value_and_fees(self.mints,f"amount"
+                                                              f"{self.high_value_token_position}")
 
     def calculate_total_burn_value_and_fees(self) -> Tuple[float, float]:
-        return self.calculate_total_value_and_fees(self.burns, f"amount{self.high_value_token_position}")
+        return self.calculate_total_value_and_fees(self.burns, f"amount"
+                                                               f"{self.high_value_token_position}")
 
-    def calculate_total_swap_value_and_fees(self, addresses: Set[str], direction: SwapDirection) -> Tuple[float, float]:
-        amount_attr = f"amount{self.high_value_token_position}{direction.value}"
-        filtered_swaps = [swap for swap in self.swaps if swap.to.lower() in addresses and
-                          self.is_target_swap(swap, amount_attr)]
-        return self.calculate_total_value_and_fees(filtered_swaps, amount_attr)
+    def calculate_total_investing_value_and_fees_by_addressees(self, addresses: Set[str]) -> (
+            Tuple)[float, float]:
+        filtered_investing_swaps = [swap for swap in self.investing_swaps if swap.to.lower() in
+                                    addresses]
+        return self.calculate_total_value_and_fees(filtered_investing_swaps,
+                                                   self.investing_amount_attr)
 
-    @staticmethod
-    def is_target_swap(swap: SwapEvent, amount_attr: str) -> bool:
-        return getattr(swap, amount_attr) != 0
-
+    def calculate_total_divesting_value_and_fees_by_addressees(self, addresses: Set[str]) -> (
+            Tuple)[float, float]:
+        filtered_divesting_swaps = [swap for swap in self.divesting_swaps if swap.to.lower() in
+                                    addresses]
+        return self.calculate_total_value_and_fees(filtered_divesting_swaps,
+                                                   self.divesting_amount_attr)
 
 
