@@ -7,6 +7,7 @@ from enum import Enum
 from data_collection.AccountCollector import TransactionCollector
 from utils.DataLoader import DataLoader, load_pool
 from utils.ProjectPath import ProjectPath
+from utils.Utils import TransactionUtils
 
 dataloader = DataLoader()
 path = ProjectPath()
@@ -126,6 +127,7 @@ def find_star_shape_for_scammer(scammer_address, scammer_dict=None, star_to_igno
     return stars
 
 
+# DEPRECATED
 def find_liquidity_transactions_in_pool(scammer_address):
     def calc_liquidity_amount(event, use_value):
         return event.amount0 / 10 ** 18 if use_value == 0 else event.amount1 / 10 ** 18
@@ -160,26 +162,23 @@ def get_funder_and_beneficiary(scammer_address):
     num_remove_liquidities = 0
     passed_add_liquidity = passed_remove_liquidity = False
     duplicate_in_amt = duplicate_out_amt = False
-    liquidity_transactions_dict = find_liquidity_transactions_in_pool(scammer_address)
-    normal_txs = transaction_collector.get_transactions(scammer_address)
+    normal_txs, internal_txs = transaction_collector.get_transactions_including_internal(scammer_address)
 
     for transaction in normal_txs:
         if transaction.is_not_error():
             # LOGIC upon passing the first add liquidity, mark down the amount and don't check any more add liquidaties
             if not passed_add_liquidity and ADD_LIQUIDITY_SUBSTRING in str(transaction.functionName):
-                candidate_liq_amt = liquidity_transactions_dict.get(transaction.hash)
-                if candidate_liq_amt:
+                if TransactionUtils.is_scam_add_liq(transaction, dataloader):
                     passed_add_liquidity = True
-                    add_liquidity_amt = candidate_liq_amt
+                    add_liquidity_amt = transaction.get_transaction_amount()
             # LOGIC upon passing a remove liquidity - current largest_out becomes ineligible
             elif REMOVE_LIQUIDITY_SUBSTRING in str(transaction.functionName):
-                candidate_liq_amt = liquidity_transactions_dict.get(transaction.hash)
-                if candidate_liq_amt:
+                if TransactionUtils.is_scam_remove_liq(transaction, dataloader):
                     passed_remove_liquidity = True
                     largest_out_transaction = None
                     duplicate_out_amt = False
                     num_remove_liquidities += 1
-                    remove_liquidity_amt = candidate_liq_amt
+                    remove_liquidity_amt = TransactionUtils.get_related_amount_from_internal_txs(transaction, internal_txs)
 
             # LOGIC transaction before we encounter the first add liquidity, find the largest IN transaction
             if not passed_add_liquidity and is_valid_address(False, transaction, scammer_address):
@@ -371,7 +370,7 @@ def process_stars_on_all_scammers():
 
 
 if __name__ == '__main__':
-    process_stars_on_all_scammers()
+    # process_stars_on_all_scammers()
     # print(find_star_shape_for_scammer('0x5a918fe2596916b513d4d2c9dd569acb7c73d4bf'))
-    # result = get_funder_and_beneficiary('0x3e589da9a106123093aace082043b35cc00cfa19')
+    result = get_funder_and_beneficiary('0xf34d27ff98e386be146cb000e3029bb098b0335d')
     # print(result)

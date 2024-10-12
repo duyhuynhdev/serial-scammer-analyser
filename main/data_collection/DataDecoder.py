@@ -15,6 +15,34 @@ setting = Setting()
 
 class FunctionInputDecoder:
     codec = ABICodec(build_strict_registry())
+    router_remove_liq_functions = {
+        "0xbaa2abde": {"signature": "removeLiquidity(address,address,uint256,uint256,uint256,address,uint256)",
+                       "types": ["address", "address", "uint256", "uint256", "uint256", "address", "uint256"],
+                       "names": ["tokenA", "tokenB", "liquidity", "amountAMin", "amountBMin", "to", "deadline"]},
+        "0x02751cec": {"signature": "removeLiquidityETH(address,uint256,uint256,uint256,address,uint256)",
+                       "types": ["address", "uint256", "uint256", "uint256", "address", "uint256"],
+                       "names": ["token", "liquidity", "amountTokenMin", "amountETHMin", "to", "deadline"]},
+        "0xaf2979eb": {"signature": "removeLiquidityETHSupportingFeeOnTransferTokens(address,uint256,uint256,uint256,address,uint256)",
+                       "types": ["address", "uint256", "uint256", "uint256", "address", "uint256"],
+                       "names": ["token", "liquidity", "amountTokenMin", "amountETHMin", "to", "deadline"]},
+        "0xded9382a": {"signature": "removeLiquidityETHWithPermit(address,uint256,uint256,uint256,address,uint256,bool,uint8,bytes32,bytes32)",
+                       "types": ["address", "uint256", "uint256", "uint256", "address", "uint256", "bool", "uint8", "bytes32", "bytes32"],
+                       "names": ['token', 'liquidity', 'amountTokenMin', 'amountETHMin', 'to', 'deadline', 'approveMax', 'v', 'r', 's']},
+        "0x5b0d5984": {"signature": "removeLiquidityETHWithPermitSupportingFeeOnTransferTokens(address,uint256,uint256,uint256,address,uint256,bool,uint8,bytes32,bytes32)",
+                       "types": ["address", "uint256", "uint256", "uint256", "address", "uint256", "bool", "uint8", "bytes32", "bytes32"],
+                       "names": ['token', 'liquidity', 'amountTokenMin', 'amountETHMin', 'to', 'deadline', 'approveMax', 'v', 'r', 's']},
+        "0x2195995c": {"signature": "removeLiquidityWithPermit(address,address,uint256,uint256,uint256,address,uint256,bool,uint8,bytes32,bytes32)",
+                       "types": ["address", "address", "uint256", "uint256", "uint256", "address", "uint256", "bool", "uint8", "bytes32", "bytes32"],
+                       "names": ['tokenA', 'tokenB', 'liquidity', 'amountAMin', 'amountBMin', 'to', 'deadline', 'approveMax', 'v', 'r', 's']},
+    }
+    router_add_liq_functions = {
+        "0xbaa2abde": {"signature": "addLiquidity(address,address,uint256,uint256,uint256,uint256,address,uint256)",
+                       "types": ["address", "address", "uint256", "uint256", "uint256", "uint256", "address", "uint256"],
+                       "names": ["tokenA", "tokenB", "amountADesired", "amountBDesired", "amountAMin", "amountBMin", "to", "deadline"]},
+        "0xf305d719": {"signature": "addLiquidityETH(address,uint256,uint256,uint256,address,uint256)",
+                       "types": ["address", "uint256", "uint256", "uint256", "address", "uint256"],
+                       "names": ["token", "amountTokenDesired", "amountTokenMin", "amountETHMin", "to", "deadline"]},
+    }
 
     router_functions = {
         # V2 ROUTER
@@ -50,7 +78,7 @@ class FunctionInputDecoder:
                        "types": ["uint256", "address[]", "address", "uint256", "uint256", "uint256", "uint256"],
                        "names": ['amountOut', 'path', 'to', 'deadline', "unknown0", "unknown1", "unknown2"]},
         "0x088890dc": {"signature": "swapExactETHForTokensSupportingFeeOnTransferTokens(uint256,address[],address,uint256,address)",
-                       "types": ["uint256", "address[]", "address","uint256","address"],
+                       "types": ["uint256", "address[]", "address", "uint256", "address"],
                        "names": ['amountOutMin', 'path', 'to', 'deadline', 'referrer']},
         # V3 ROUTER
         "0x472b43f3": {"signature": "swapExactTokensForTokens(uint256,uint256,address[],address,uint256)",
@@ -167,7 +195,7 @@ class FunctionInputDecoder:
         is_swap = False
         for dec in command_bytes:
             command_dex = '0x{0:0{1}x}'.format(dec, 2)
-            if command_dex in ["0x00", "0x08"]: # swap in
+            if command_dex in ["0x00", "0x08"]:  # swap in
                 is_swap = True
             if command_dex in ["0x08", "0x09"]:
                 command_info = self.v3_router_commands[command_dex]
@@ -180,36 +208,32 @@ class FunctionInputDecoder:
             idx += 1
         return is_swap, parsed_results
 
-    def decode_function_input(self, input):
+    def decode_remove_liq_function_input(self, liq_input):
         try:
-            data = HexBytes(input)
-            methodId, params = data[:4], data[4:]
-            if methodId.hex() not in self.router_functions.keys():
-                # print("Cannot find method ", methodId.hex())
-                return False, []
-            function_info = self.router_functions[methodId.hex()]
-            signature = function_info["signature"]
-            types = function_info["types"]
-            names = function_info["names"]
-            decoded_data = self.codec.decode(types, HexBytes(params))
-            normalized = map_abi_data(BASE_RETURN_NORMALIZERS, types, decoded_data)
-            parsed = dict(zip(names, normalized))
-            if "multicall" in signature:
-                parsed_results = []
-                is_swap_call = False
-                for b in parsed["data"]:
-                    call = HexBytes(b).hex()
-                    is_swap, parsed_call = self.decode_function_input(call)
-                    if is_swap:
-                        is_swap_call = True
-                    parsed_results.extend(parsed_call)
-                return is_swap_call, parsed_results
-            if "execute" in signature:
-                return self.decode_command_input(parsed["commands"], parsed["inputs"])
-            return True, [parsed]
+            return self.decode_function_input(liq_input, self.router_remove_liq_functions)
         except Exception as e:
             print(e)
+            return None
+
+    def decode_add_liq_function_input(self, liq_input):
+        try:
+            return self.decode_function_input(liq_input, self.router_add_liq_functions)
+        except Exception as e:
+            print(e)
+            return None
+
+    def decode_function_input(self, function_input, signature_dict):
+        data = HexBytes(function_input)
+        methodId, params = data[:4], data[4:]
+        if methodId.hex() not in signature_dict.keys():
             return False, []
+        function_info = signature_dict[methodId.hex()]
+        types = function_info["types"]
+        names = function_info["names"]
+        decoded_data = self.codec.decode(types, HexBytes(params))
+        normalized = map_abi_data(BASE_RETURN_NORMALIZERS, types, decoded_data)
+        parsed = dict(zip(names, normalized))
+        return parsed
 
 
 class EventLogDecoder:
