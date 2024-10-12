@@ -256,6 +256,6 @@ def convert_seconds_to_hms_string(time_difference: int) -> str:
 
 if __name__ == '__main__':
     # write_chain_stats_on_data()
-    # run_chain_on_scammers()
-    print(*chain_pattern_detection("0x9d143bcbf058553ddd86e13a6ed7c3b38b6c73c1"), sep='\n')
+    run_chain_on_scammers()
+    # print(*chain_pattern_detection("0x9d143bcbf058553ddd86e13a6ed7c3b38b6c73c1"), sep='\n')
     # print(chain_pattern_detection("0x7edda39fd502cb71aa577452f1cc7e83fda9c5c7"))
