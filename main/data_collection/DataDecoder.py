@@ -225,7 +225,9 @@ class FunctionInputDecoder:
     def decode_function_input(self, function_input, signature_dict):
         data = HexBytes(function_input)
         methodId, params = data[:4], data[4:]
-        if methodId.hex() not in signature_dict.keys():
+        method_id_hex = methodId.hex()
+        print("method id hex value is={}".format(method_id_hex))
+        if method_id_hex not in signature_dict.keys():
             return False, []
         function_info = signature_dict[methodId.hex()]
         types = function_info["types"]
