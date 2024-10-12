@@ -63,9 +63,8 @@ def determine_assigned_star_shape_and_f_b(scammer_address, scammer_dict):
     star_shapes = set()
     funder_details = f_b_dict.get('funder')
     beneficiary_details = f_b_dict.get('beneficiary')
-    if funder_details and beneficiary_details:
-        if funder_details['address'] == beneficiary_details['address']:
-            star_shapes.add(StarShape.IN_OUT)
+    if funder_details and beneficiary_details and funder_details['address'] == beneficiary_details['address']:
+        star_shapes.add(StarShape.IN_OUT)
     else:
         if funder_details:
             star_shapes.add(StarShape.OUT)
