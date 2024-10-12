@@ -67,9 +67,8 @@ def determine_assigned_star_shape_and_f_b(scammer_address, scammer_dict):
     star_shapes = set()
     funder_details = f_b_dict.get('funder')
     beneficiary_details = f_b_dict.get('beneficiary')
-    if funder_details and beneficiary_details:
-        if funder_details['address'] == beneficiary_details['address']:
-            star_shapes.add(StarShape.IN_OUT)
+    if funder_details and beneficiary_details and funder_details['address'] == beneficiary_details['address']:
+        star_shapes.add(StarShape.IN_OUT)
     else:
         if funder_details:
             star_shapes.add(StarShape.OUT)
@@ -110,7 +109,6 @@ def find_star_shape_for_scammer(scammer_address, scammer_dict=None, star_to_igno
                     satellite_star_shapes, f_b_dict = determine_assigned_star_shape_and_f_b(scammer_address_dest, scammer_dict)
                     if star_shape in satellite_star_shapes:
                         # LOGIC for an OUT star, center sends to satellites so check the best funder of the satellite is same as center
-                        use_funder_or_beneficiary = None
                         if is_out:
                             use_funder_or_beneficiary = 'funder'
                         # LOGIC, otherwise for an IN or IN_OUT star, we need to see who the satellites send money to which will match if same center address
@@ -328,7 +326,8 @@ def process_stars_on_all_scammers():
 
     while scammers_ran < scammers_to_run and len(in_scammers_remaining) + len(out_scammers_remaining) > 0:
         print("Scammers ran {} and scammers left {}".format(scammers_ran, len(in_scammers_remaining) + len(out_scammers_remaining)))
-        with (open(in_stars_path, "a", newline='') as in_file, open(out_stars_path, "a", newline='') as out_file, open(in_out_stars_path, "a", newline='') as in_out_file, open(no_stars_path, "a", newline='') as no_star_file):
+        with (open(in_stars_path, "a", newline='') as in_file, open(out_stars_path, "a", newline='') as out_file, open(in_out_stars_path, "a", newline='') as in_out_file, open(no_stars_path, "a",
+                                                                                                                                                                                newline='') as no_star_file):
             in_star_writer = csv.writer(in_file, quotechar='"', delimiter='|', quoting=csv.QUOTE_ALL)
             out_star_writer = csv.writer(out_file, quotechar='"', delimiter='|', quoting=csv.QUOTE_ALL)
             in_out_star_writer = csv.writer(in_out_file, quotechar='"', delimiter='|', quoting=csv.QUOTE_ALL)
@@ -375,8 +374,46 @@ def process_stars_on_all_scammers():
                 scammers_ran += 1
 
 
+def write_chain_stats_on_data():
+    in_stars_path = os.path.join(path.univ2_star_shape_path, "in_stars.csv")
+    out_stars_path = os.path.join(path.univ2_star_shape_path, "out_stars.csv")
+    in_out_stars_path = os.path.join(path.univ2_star_shape_path, "in_out_stars.csv")
+
+    def create_reader_and_skip(file):
+        reader = csv.reader(in_file, quotechar='"', delimiter='|', quoting=csv.QUOTE_ALL)
+        next(reader)
+        return reader
+
+    all_stars = []
+
+    with open(in_stars_path, 'r', newline='') as in_file, open(out_stars_path, 'r', newline='') as out_file, open(in_out_stars_path, 'r', newline='') as in_out_file:
+        in_reader = create_reader_and_skip(in_file)
+        out_reader = create_reader_and_skip(out_file)
+        in_out_reader = create_reader_and_skip(in_out_file)
+
+        # LOGIC Read in data
+        for line in in_reader:
+            all_stars.append([StarShape.IN.name, line[0], line[1], ast.literal_eval(line[2])])
+        for line in out_reader:
+            all_stars.append([StarShape.OUT.name, line[0], line[1], ast.literal_eval(line[2])])
+        for line in in_out_reader:
+            all_stars.append([StarShape.IN_OUT.name, line[0], line[1], ast.literal_eval(line[2])])
+
+        # LOGIC needed for IN_OUT
+        scammer_dict = read_from_in_out_scammer_as_dict()
+        star_stats_path = os.path.join(path.univ2_star_shape_path, "star_stats.csv")
+        star_stats_header = ["star_type", "center_address", "funds_in_avg", "funds_in_total", "funds_out_avg", "funds_out_total", ""]
+        with open(star_stats_path, "w", newline='') as star_stats_file:
+            for star in all_stars:
+                print('hello')
+                # TODO
+
+
+
+
+
 if __name__ == '__main__':
     process_stars_on_all_scammers()
-    # print(find_star_shape_for_scammer('0x5a918fe2596916b513d4d2c9dd569acb7c73d4bf'))
+    # print(find_star_shape_for_scammer('0xf376773ab9777f41122677da6faccfc87f5fdf44'))
     # result = get_funder_and_beneficiary('0x3e589da9a106123093aace082043b35cc00cfa19')
     # print(result)
