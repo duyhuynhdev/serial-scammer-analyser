@@ -226,8 +226,10 @@ def load_transaction_by_address(address, dex='univ2'):
     normal_txs, internal_txs = transaction_collector.get_transactions(address, dex)
     return normal_txs, internal_txs
 
+
 # LOGIC create this object and read data once
 creator_collector = CreatorCollector()
+
 
 def load_pool(scammer_address, dataloader, dex='univ2'):
     pool_addresses = dataloader.scammer_pools[scammer_address.lower()]

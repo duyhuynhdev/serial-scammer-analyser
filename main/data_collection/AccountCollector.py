@@ -219,7 +219,7 @@ class TransactionCollector:
                 ptx = InternalTransaction()
                 ptx.from_dict(tx)
                 parsed_internal_txs.append(ptx)
-        return parsed_normal_txs
+        return parsed_normal_txs, parsed_internal_txs
 
     def ensure_valid_eoa_address(self, address):
         normal_txs, internal_txs = self.get_transactions_including_internal(address, 'univ2', 0)
