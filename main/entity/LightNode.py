@@ -1,6 +1,9 @@
 import sys
 import os
 from tkinter.font import NORMAL
+import operator
+
+import numpy as np
 
 sys.path.append(os.path.join(os.path.dirname(sys.path[0])))
 from data_collection.AccountCollector import TransactionCollector
@@ -93,6 +96,31 @@ class LightNodeFactory:
             if itx.is_creation_contract_tx() and itx.contractAddress.lower() == address.lower():  # address is a contract created by another contract
                 return False
         return True
+
+    def is_main_funder(self, address, scam_neighbour, cluster_id):
+        normal_txs, _ = self.transaction_collector.get_transactions(scam_neighbour, self.dex, cluster_id)
+        sender_amounts = dict()
+        for tx in normal_txs:
+            if tx.is_in_tx(scam_neighbour):
+                if tx.sender.lower() not in sender_amounts:
+                    sender_amounts[tx.sender.lower()] = tx.get_transaction_amount()
+                else:
+                    sender_amounts[tx.sender.lower()] += tx.get_transaction_amount()
+        if len(sender_amounts) == 0:
+            return False
+        send_values = list(sender_amounts.values())
+        senders = list(sender_amounts.keys())
+        max_value = np.max(send_values)
+        max_idxs = np.argwhere(send_values == max_value).flatten().tolist()
+        main_funders = [senders[i].lower() for i in max_idxs]
+        return address.lower() in main_funders
+
+    def count_valid_scam_neighbours(self, address, scam_neighbours, cluster_id):
+        count = 0
+        for scam_neighbour in scam_neighbours:
+            if self.is_main_funder(address, scam_neighbour, cluster_id):
+                count += 1
+        return count
 
     def get_scammer_if_swap_tx(self, tx):
         is_swap, parsed_inputs = self.decoder.decode_swap_function_input(tx.input)
@@ -193,7 +221,7 @@ class LightNodeFactory:
                 true_in_value,
                 true_out_value)
 
-    def get_node_labels(self, address, normal_txs, internal_txs):
+    def get_node_labels(self, address, normal_txs, internal_txs, cluster_id):
         labels = set()
         (scam_neighbours,
          eoa_neighbours,
@@ -213,6 +241,8 @@ class LightNodeFactory:
         # print("scam_tokens", len(scam_tokens))
         # print("unique_tokens", set(scam_tokens))
         ## MAIN LABELS
+        valid_scam_neighbours = self.count_valid_scam_neighbours(address, scam_neighbours, cluster_id)
+        print(f"SCAM NB {len(scam_neighbours)} VS VALID SCAM NB {valid_scam_neighbours}")
         if self.is_scammer_address(address):
             labels.add(LightNodeLabel.SCAMMER)
         if len(to_cex_txs) > 0:
@@ -226,9 +256,9 @@ class LightNodeFactory:
                 # print("scam tokens = ", scam_tokens,"\n")
             else:
                 labels.add(LightNodeLabel.WASHTRADER)
-        if len(scam_neighbours) >= Constant.COORDINATOR_SCAM_NEIGHBOUR and len(scam_neighbours) / len(eoa_neighbours) > Constant.COORDINATOR_SCAM_NEIGHBOUR_RATE:
+        if valid_scam_neighbours >= Constant.COORDINATOR_SCAM_NEIGHBOUR and valid_scam_neighbours / len(eoa_neighbours) > Constant.COORDINATOR_SCAM_NEIGHBOUR_RATE:
             labels.add(LightNodeLabel.COORDINATOR)
-        #if (LightNodeLabel.SCAMMER not in labels
+        # if (LightNodeLabel.SCAMMER not in labels
         #        and LightNodeLabel.COORDINATOR not in labels
         #        and len(swap_in_txs) >= Constant.BOUNDARY_SWAP
         #        and len(scam_swap_in_txs) / len(swap_in_txs) < Constant.BOUNDARY_SCAM_SWAP_RATE):
@@ -265,7 +295,7 @@ class LightNodeFactory:
     def createNode(self, address, parent_path, cluster_id):
         normal_txs, internal_txs = self.transaction_collector.get_transactions(address, self.dex, cluster_id)
         print("\t\t CREATE NODE FOR ", address, " WITH NORMAL TX:", len(normal_txs) if normal_txs is not None else 0, "AND INTERNAL TX:", len(internal_txs) if internal_txs is not None else 0)
-        labels = self.get_node_labels(address, normal_txs, internal_txs)
+        labels = self.get_node_labels(address, normal_txs, internal_txs, cluster_id)
         print("\t\t LABELS", labels)
         valid_neighbours = []
         # Skip verify neighbours if the node is boundary node
@@ -273,7 +303,7 @@ class LightNodeFactory:
             valid_neighbours = self.get_valid_neighbours(address, normal_txs, cluster_id)
             if len(valid_neighbours) > 50:
                 labels.add(LightNodeLabel.BIG_CONNECTOR)
-        group_id = None # for scammer node only
+        group_id = None  # for scammer node only
         if LightNodeLabel.SCAMMER in labels:
             group_id = self.dataloader.scammer_group[address.lower()]
         path = parent_path.copy() if parent_path is not None else []
@@ -310,5 +340,11 @@ if __name__ == '__main__':
     #     node = factory.create(address, [])
     #     print(address,":",node.labels)
 
-    node = factory.createNode("0xe2351b9b195a99ee93b0154d6e5c1e4dd97551ad", [], 3)
-    print("0xe2351b9b195a99ee93b0154d6e5c1e4dd97551ad", ":", node.labels)
+    # node = factory.createNode("0xe2351b9b195a99ee93b0154d6e5c1e4dd97551ad", [], 3)
+    # print("0xe2351b9b195a99ee93b0154d6e5c1e4dd97551ad", ":", node.labels)
+    # stats = {'a': 1000, 'b': 3000, 'c': 100, 'd': 3000}
+    # values = list(stats.values())
+    # print(np.argwhere(values == np.max(values)).flatten().tolist())
+
+    result = factory.is_main_funder("0xdA9df68fD0e5a31935Da5d11523D760B1701aC45", "0xcc7Cf327b3965dbce9A450A358C357E36c0a99bB", 12)
+    print(result)

@@ -30,9 +30,9 @@ from data_collection.AccountCollector import TransactionCollector
 
 
 if __name__ == '__main__':
-    dex = "panv2"
+    dex = "univ2"
     collector = TransactionCollector()
-    address = "0x98d3047Fb31b6ED04bB1dFA3558F3AAD1c147b12"
+    address = "0x7D4aF645Ec6Cc3766A8F2C3231ECAC2C7Fb07932".lower()
     dataloader = DataLoader(dex=dex)
     normal_txs, internal_txs = collector.get_transactions(address, dex=dex, key_idx=17)
     for normal_tx in normal_txs:

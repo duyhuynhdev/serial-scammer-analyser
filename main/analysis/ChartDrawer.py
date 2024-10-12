@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import matplotlib.colors as mcolors
 from wordcloud import WordCloud, STOPWORDS
 
 
@@ -157,6 +158,55 @@ def wordcloud(text: str, title):
     plt.tight_layout(pad=0)
     plt.show()
 
+
+class MultiLineChart:
+    color_set = {
+        "ETH" : [mcolors.CSS4_COLORS["dodgerblue"],mcolors.CSS4_COLORS["darkcyan"],mcolors.CSS4_COLORS["blueviolet"],mcolors.CSS4_COLORS["springgreen"]],
+        "BNB" : [mcolors.CSS4_COLORS["darkorange"],mcolors.CSS4_COLORS["gold"],mcolors.CSS4_COLORS["tomato"],mcolors.CSS4_COLORS["chocolate"]]
+    }
+    def __init__(self, x, ys, labels, title, x_label=None, y_label=None, legend_label=None, colors=None, legend_pos = 'upper left'):
+        self.x = x
+        self.ys = ys
+        self.labels = labels
+        self.title = title
+        self.x_label = x_label
+        self.y_label = y_label
+        self.legend_label = legend_label
+        self.legend_pos = legend_pos
+        self.colors = colors if colors is not None else list(mcolors.TABLEAU_COLORS.values())
+
+
+def multi_lines_plot(ax, setting: MultiLineChart):
+    line_styles = ["-", "--", "-.", ":"]
+    for i in range(len(setting.ys)):
+        y = setting.ys[i]
+        label = setting.labels[i]
+        ls = line_styles[i % len(line_styles)]
+        color = setting.colors[i % len(setting.colors)]
+        ax.plot(setting.x, y, label=label, linestyle=ls, color=color)
+    if setting.title is not None:
+        ax.set_title(setting.title)
+    if setting.y_label is not None:
+        ax.set_ylabel(setting.y_label)
+    if setting.x_label is not None:
+        ax.set_xlabel(setting.x_label)
+    if setting.legend_label is not None:
+        ax.legend(title=setting.legend_label, loc=setting.legend_pos)
+
+def pair_chart_multi_lines_plot(setting1: MultiLineChart, setting2: MultiLineChart):
+    fig, ax = plt.subplots(1,2)
+    multi_lines_plot(ax[0], setting1)
+    multi_lines_plot(ax[1], setting2)
+    plt.show()
+
+def multi_lines(filename, setting1: MultiLineChart):
+    fig, ax = plt.subplots()
+    fig.set_figwidth(5)
+    fig.set_figheight(3)
+    multi_lines_plot(ax, setting1)
+    fig.tight_layout()
+    plt.savefig(filename, dpi=100)
+    plt.show()
 
 if __name__ == '__main__':
     # x = ['apple', 'blueberry', 'cherry', 'orange']
