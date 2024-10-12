@@ -372,7 +372,7 @@ def process_stars_on_all_scammers():
 
 
 if __name__ == '__main__':
-    # process_stars_on_all_scammers()
+    process_stars_on_all_scammers()
     # print(find_star_shape_for_scammer('0x5a918fe2596916b513d4d2c9dd569acb7c73d4bf'))
-    result = get_funder_and_beneficiary('0xf34d27ff98e386be146cb000e3029bb098b0335d')
+    # result = get_funder_and_beneficiary('0xf34d27ff98e386be146cb000e3029bb098b0335d')
     # print(result)
