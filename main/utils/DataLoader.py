@@ -309,7 +309,7 @@ class DataLoader(object):
             self.scam_pools,
             self.scammers,
             self.scammer_pools,
-        ) = load_rug_pull_dataset(dex=dex, scammer_file_name="1_pair_scammers.csv", pool_file_name="1_pair_pool_labels.csv")
+        ) = load_rug_pull_dataset(dex=dex, scammer_file_name="filtered_simple_rp_scammers.csv", pool_file_name="filtered_simple_rp_pool.csv")
         self.scammers_set = set(self.scammers)
         self.group_scammers, self.scammer_group = load_group_scammers(dex)
         self.pool_group = link_pool_and_group(self.scammer_pools, self.group_scammers)
