@@ -144,8 +144,8 @@ def get_largest_transaction(normal_txs, scammer_address, liquidity_function_name
 
 
 def run_chain_on_scammers():
-    simple_chain_path = os.path.join(path.univ2_scammer_chain_path, "simple_chain.csv")
-    no_chain_path = os.path.join(path.univ2_scammer_chain_path, "no_chain.csv")
+    simple_chain_path = os.path.join(path.panv2_scammer_chain_path, "simple_chain.csv")
+    no_chain_path = os.path.join(path.panv2_scammer_chain_path, "no_chain.csv")
 
     # remove scammers that don't belong in a chain
     scammers_remaining = set(dataloader.scammers)
@@ -194,7 +194,7 @@ def run_chain_on_scammers():
 
 
 def write_chain_stats_on_data():
-    simple_chain_path = os.path.join(path.univ2_scammer_chain_path, "simple_chain.csv")
+    simple_chain_path = os.path.join(path.panv2_scammer_chain_path, "simple_chain.csv")
 
     all_chains = []
 
@@ -205,7 +205,7 @@ def write_chain_stats_on_data():
         for line in reader:
             all_chains.append([int(line[0]), ast.literal_eval(line[1])])
 
-    chain_stats_path = os.path.join(path.univ2_scammer_chain_path, "chain_stats.csv")
+    chain_stats_path = os.path.join(path.panv2_scammer_chain_path, "chain_stats.csv")
     chain_stats_headers = ["start_address", "end_address", "chain_length", "num_scams_avg", "trans_amt_avg", "trans_time_diff_avg"]
     with open(chain_stats_path, "w", newline='') as chain_stats_file:
         csv_writer = csv.writer(chain_stats_file, quotechar='"', delimiter='|', quoting=csv.QUOTE_ALL)

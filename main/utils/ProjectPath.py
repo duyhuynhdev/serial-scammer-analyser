@@ -56,6 +56,7 @@ class ProjectPath(object):
         self.panv2_inter_similarity_path = os.path.join(self.panv2_token_path, "inter_similarity")
         self.panv2_processed_path = os.path.join(self.panv2_base_path, "processed")
         self.panv2_scammer_chain_path = os.path.join(self.panv2_base_path, "scammer_chain")
+        self.panv2_star_shape_path = os.path.join(self.panv2_base_path, "star_shape")
         self.panv2_public_addresses_path = os.path.join(self.panv2_processed_path, "public_addresses")
         self.panv2_cluster_path = os.path.join(self.panv2_processed_path, "cluster")
         self.panv2_visited_scammer_path = os.path.join(self.panv2_processed_path, "visited_scammers")

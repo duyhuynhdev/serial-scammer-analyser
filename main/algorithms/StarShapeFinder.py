@@ -4,19 +4,15 @@ import itertools
 import os
 from enum import Enum
 
-from deprecated import deprecated
-
 from data_collection.AccountCollector import TransactionCollector
-from entity.LightNode import LightNodeFactory
 from utils.DataLoader import DataLoader, load_pool
 from utils.ProjectPath import ProjectPath
-from utils.Utils import is_contract_address
 
 dataloader = DataLoader()
 path = ProjectPath()
 transaction_collector = TransactionCollector()
 
-SCAMMER_F_AND_B_PATH = os.path.join(path.univ2_star_shape_path, "scammer_funder_and_beneficiary.csv")
+SCAMMER_F_AND_B_PATH = os.path.join(path.panv2_star_shape_path, "scammer_funder_and_beneficiary.csv")
 
 REMOVE_LIQUIDITY_SUBSTRING = "removeLiquidity"
 ADD_LIQUIDITY_SUBSTRING = "addLiquidity"
@@ -297,10 +293,10 @@ def process_stars_on_all_scammers():
                 for scammer in scammer_chain:
                     set_to_remove.remove(scammer[0])
 
-    in_stars_path = os.path.join(path.univ2_star_shape_path, "in_stars.csv")
-    out_stars_path = os.path.join(path.univ2_star_shape_path, "out_stars.csv")
-    in_out_stars_path = os.path.join(path.univ2_star_shape_path, "in_out_stars.csv")
-    no_stars_path = os.path.join(path.univ2_star_shape_path, "no_star.csv")
+    in_stars_path = os.path.join(path.panv2_star_shape_path, "in_stars.csv")
+    out_stars_path = os.path.join(path.panv2_star_shape_path, "out_stars.csv")
+    in_out_stars_path = os.path.join(path.panv2_star_shape_path, "in_out_stars.csv")
+    no_stars_path = os.path.join(path.panv2_star_shape_path, "no_star.csv")
 
     in_scammers_remaining = set(dataloader.scammers)
 
