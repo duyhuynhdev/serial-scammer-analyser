@@ -2,6 +2,8 @@ import ast
 import csv
 import itertools
 import os
+import sys
+sys.path.append(os.path.join(os.path.dirname(sys.path[0])))
 from enum import Enum
 
 from data_collection.AccountCollector import TransactionCollector
