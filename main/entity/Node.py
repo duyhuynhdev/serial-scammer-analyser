@@ -45,6 +45,10 @@ class NodeLabel:
     def is_scammer(node):
         return NodeLabel.SCAMMER in node.labels
 
+    @staticmethod
+    def is_wash_trader(node):
+        return NodeLabel.WASHTRADER in node.labels
+
 
 class Node:
     def __init__(self, address, path, eoa_neighbours=None, contract_neighbours=None, normal_txs=None,
