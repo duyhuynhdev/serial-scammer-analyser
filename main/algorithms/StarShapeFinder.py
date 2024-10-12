@@ -2,6 +2,7 @@ import ast
 import csv
 import itertools
 import os
+import statistics
 from enum import Enum
 
 from deprecated import deprecated
@@ -375,12 +376,12 @@ def process_stars_on_all_scammers():
 
 
 def write_chain_stats_on_data():
-    in_stars_path = os.path.join(path.univ2_star_shape_path, "in_stars.csv")
-    out_stars_path = os.path.join(path.univ2_star_shape_path, "out_stars.csv")
-    in_out_stars_path = os.path.join(path.univ2_star_shape_path, "in_out_stars.csv")
+    in_stars_path = os.path.join(path.univ2_star_shape_path, "in_stars_COPY.csv")
+    out_stars_path = os.path.join(path.univ2_star_shape_path, "out_stars_COPY.csv")
+    in_out_stars_path = os.path.join(path.univ2_star_shape_path, "in_out_stars_COPY.csv")
 
     def create_reader_and_skip(file):
-        reader = csv.reader(in_file, quotechar='"', delimiter='|', quoting=csv.QUOTE_ALL)
+        reader = csv.reader(file, quotechar='"', delimiter='|', quoting=csv.QUOTE_ALL)
         next(reader)
         return reader
 
@@ -393,27 +394,54 @@ def write_chain_stats_on_data():
 
         # LOGIC Read in data
         for line in in_reader:
-            all_stars.append([StarShape.IN.name, line[0], line[1], ast.literal_eval(line[2])])
+            all_stars.append([StarShape.IN, line[0], line[1], ast.literal_eval(line[2])])
         for line in out_reader:
-            all_stars.append([StarShape.OUT.name, line[0], line[1], ast.literal_eval(line[2])])
+            all_stars.append([StarShape.OUT, line[0], line[1], ast.literal_eval(line[2])])
         for line in in_out_reader:
-            all_stars.append([StarShape.IN_OUT.name, line[0], line[1], ast.literal_eval(line[2])])
+            all_stars.append([StarShape.IN_OUT, line[0], line[1], ast.literal_eval(line[2])])
 
-        # LOGIC needed for IN_OUT
-        scammer_dict = read_from_in_out_scammer_as_dict()
-        star_stats_path = os.path.join(path.univ2_star_shape_path, "star_stats.csv")
-        star_stats_header = ["star_type", "center_address", "funds_in_avg", "funds_in_total", "funds_out_avg", "funds_out_total", ""]
-        with open(star_stats_path, "w", newline='') as star_stats_file:
-            for star in all_stars:
-                print('hello')
-                # TODO
+    scammer_f_b_dict = read_from_in_out_scammer_as_dict()
+    star_stats_path = os.path.join(path.univ2_star_shape_path, "star_stats.csv")
+    star_stats_header = ["star_type", "center_address", "star_size", "funds_in_to_center_avg", "funds_in_to_center_total", "funds_out_from_center_avg", "funds_out_from_center_total", "scam_duration", "num_scams_total"]
+    with open(star_stats_path, "w", newline='') as star_stats_file:
+        csv_writer = csv.writer(star_stats_file, quotechar='"', delimiter='|', quoting=csv.QUOTE_ALL)
+        csv_writer.writerow(star_stats_header)
+        # LOGIC for all stars
+        for star in all_stars:
+            funds_in = []
+            funds_out = []
+            num_scams_total = []
+            transfer_timestamps = []
+            for satellite in star[3]:
+                num_scams_total.append(satellite[1])
+                transfer_timestamps.append(satellite[2])
+                if star[0] == StarShape.IN:
+                    funds_in.append(satellite[3])
+                elif star[0] == StarShape.OUT:
+                    funds_out.append(satellite[3])
+                elif star[0] == StarShape.IN_OUT:
+                    funds_in.append(satellite[3])
+                    funder_from_dict = scammer_f_b_dict[satellite[0]]['funder']
+                    funds_out.append(funder_from_dict['amount'])
+                    transfer_timestamps.append(funder_from_dict['timestamp'])
 
-
-
+            funds_in_avg = ''
+            funds_in_total = ''
+            if len(funds_in) > 0:
+                funds_in_avg = statistics.mean(funds_in)
+                funds_in_total = sum(funds_in)
+            funds_out_avg = ''
+            funds_out_total = ''
+            if len(funds_out) > 0:
+                funds_out_avg = statistics.mean(funds_out)
+                funds_out_total = sum(funds_out)
+            scam_duration = max(transfer_timestamps) - min(transfer_timestamps)
+            csv_writer.writerow([star[0].name, star[1], star[2], funds_in_avg, funds_in_total, funds_out_avg, funds_out_total, scam_duration, sum(num_scams_total)])
 
 
 if __name__ == '__main__':
+    write_chain_stats_on_data()
     process_stars_on_all_scammers()
-    # print(find_star_shape_for_scammer('0xf376773ab9777f41122677da6faccfc87f5fdf44'))
+    # print(find_star_shape_for_scammer('0x1cba916c149658a8a0ebb6a597ac0cd8305ef108'))
     # result = get_funder_and_beneficiary('0x3e589da9a106123093aace082043b35cc00cfa19')
     # print(result)
