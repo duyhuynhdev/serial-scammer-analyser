@@ -203,7 +203,8 @@ def write_chain_stats_on_data():
         reader = csv.reader(file, quotechar='"', delimiter='|', quoting=csv.QUOTE_ALL)
         next(reader)
         for line in reader:
-            all_chains.append([int(line[0]), ast.literal_eval(line[1])])
+            result_chain = ast.literal_eval(line[1])
+            all_chains.append([len(result_chain), ast.literal_eval(line[1])])
 
     chain_stats_path = os.path.join(path.univ2_scammer_chain_path, "chain_stats.csv")
     chain_stats_headers = ["start_address", "end_address", "chain_length", "num_scams_avg", "trans_amt_avg", "trans_time_diff_avg"]
@@ -255,7 +256,7 @@ def convert_seconds_to_hms_string(time_difference: int) -> str:
 
 
 if __name__ == '__main__':
-    # write_chain_stats_on_data()
+    write_chain_stats_on_data()
     # run_chain_on_scammers()
-    print(*chain_pattern_detection("0x9d143bcbf058553ddd86e13a6ed7c3b38b6c73c1"), sep='\n')
+    # print(*chain_pattern_detection("0x9d143bcbf058553ddd86e13a6ed7c3b38b6c73c1"), sep='\n')
     # print(chain_pattern_detection("0x7edda39fd502cb71aa577452f1cc7e83fda9c5c7"))
