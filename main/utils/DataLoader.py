@@ -41,7 +41,7 @@ def load_full_end_nodes(dex="univ2"):
      MEV_addresses,
      mixer_addresses,
      wallet_addresses,
-     other_addresses,) = load_end_nodes()
+     other_addresses,) = load_end_nodes(dex)
     return bridge_addresses | defi_addresses | cex_addresses | MEV_addresses | mixer_addresses | wallet_addresses | other_addresses
 
 
@@ -321,11 +321,5 @@ if __name__ == "__main__":
     # print(pool.get_max_swap_value(pos))
     # print(pool.get_total_mint_value(pos))
     # print(pool.get_total_burn_value(pos))
-    (bridge_addresses,
-     defi_addresses,
-     cex_addresses,
-     MEV_addresses,
-     mixer_addresses,
-     wallet_addresses,
-     other_addresses,) = load_end_nodes(dex="panv2")
-    print(MEV_addresses)
+    print(len(load_full_end_nodes('univ2')))
+    print(len(load_full_end_nodes('panv2')))

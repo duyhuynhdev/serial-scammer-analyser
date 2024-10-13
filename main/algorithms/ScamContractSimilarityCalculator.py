@@ -177,21 +177,22 @@ def inter_cluster_similarity(group_1_id, avaiHash1, group_tokens, dex='univ2', l
     similarity_path = eval(f"path.{dex}_inter_similarity_path")
     similarity_file = os.path.join(similarity_path, f"inter_{group_1_id}_similarity.json")
     similarites = dict()
-    random_groups = pick_random_groups(group_tokens, 500)
-    for group_2_id, avaiHash2 in random_groups.items():
-        print("-" * 50)
-        print(f"\t GROUP {group_2_id} AVAILABLE AST SIZE:", len(avaiHash2))
-        if len(avaiHash2) == 0:
-            print(f"G{group_2_id} EMPTY >>> SKIP")
-            print("EMPTY AST >>> SKIP")
-            continue
-        if len(avaiHash1) > limit:
-            avaiHash1 = pruning_data(avaiHash1, limit)
-            print(f"\t GROUP {group_1_id} PRUNNING AST SIZE:", len(avaiHash1))
-        if len(avaiHash2) > limit:
-            avaiHash2 = pruning_data(avaiHash2, limit)
-            print(f"\t GROUP {group_2_id} PRUNNING AST SIZE:", len(avaiHash2))
-        similarites[group_2_id] = compare_similarities_between_sets(avaiHash1, avaiHash2, min_required_similarity=0)
+    for r in range (0,10):
+        random_groups = pick_random_groups(group_tokens, 500)
+        for group_2_id, avaiHash2 in random_groups.items():
+            print("-" * 50)
+            print(f"\t GROUP {group_2_id} AVAILABLE AST SIZE:", len(avaiHash2))
+            if len(avaiHash2) == 0:
+                print(f"G{group_2_id} EMPTY >>> SKIP")
+                print("EMPTY AST >>> SKIP")
+                continue
+            if len(avaiHash1) > limit:
+                avaiHash1 = pruning_data(avaiHash1, limit)
+                print(f"\t GROUP {group_1_id} PRUNNING AST SIZE:", len(avaiHash1))
+            if len(avaiHash2) > limit:
+                avaiHash2 = pruning_data(avaiHash2, limit)
+                print(f"\t GROUP {group_2_id} PRUNNING AST SIZE:", len(avaiHash2))
+            similarites[group_2_id] = compare_similarities_between_sets(avaiHash1, avaiHash2, min_required_similarity=0)
     ut.write_json(similarity_file, similarites)
     print("\t SAVED SIM TO ", similarity_file)
     print("*" * 100)
@@ -276,12 +277,34 @@ def generate_individual_sim(scammer_hashed_tokens, dex='univ2'):
             if len(similarites) > 0:
                 print(scammer, ":", similarites)
 
+def calculate_individual_avg_sim(scammer_hashed_tokens, dex='univ2'):
+    global_sim = []
+    sim_data = []
+    for scammer, hashed_tokens in tqdm(scammer_hashed_tokens.items()):
+        similarity_path = eval(f"path.{dex}_individual_similarity_path")
+        similarity_file = os.path.join(similarity_path, f"{scammer}_similarity.json")
+        values = []
+        if os.path.exists(similarity_file):
+            sims = ut.read_json(similarity_file)
+            for k, pairs in sims.items():
+                for v in pairs.values():
+                    values.append(v)
+            avg = np.mean(values)
+            global_sim.append(avg)
+            record = {"scammer:": scammer, "available_tokens": len(hashed_tokens), "intra_similarity": avg}
+            sim_data.append(record)
+            print(record)
+    df = pd.DataFrame(sim_data)
+    df.to_csv(f"{dex}_individual_similarities.csv", index=False)
+    print("TOTAL", len(global_sim), "WITH AVG SIM", np.mean(global_sim))
+
 if __name__ == '__main__':
     dex='univ2'
     group_hashed_tokens, group_scammers, scammer_hashed_tokens = load_data(dex=dex)
     print("DATA SIZE", len(group_hashed_tokens))
     print("SCAMMER SIZE", len(group_scammers))
     print("SCAMMER SIZE", len(scammer_hashed_tokens))
+    print("TOTAL HASHED TOKENS", sum([len(s) for s in scammer_hashed_tokens.values()]))
     # generate_intra_sim(group_hashed_tokens, group_scammers, dex='panv2')
     # print("GENERATE PAIRS SIM")
     # for gid, tokens in tqdm(group_tokens.items()):
@@ -297,10 +320,11 @@ if __name__ == '__main__':
     # calculate_intra_avg_sim(group_hashed_tokens, group_scammers,dex=dex)
     # print("CALCULATE ONE SCAMMER GROUP INTRA SIM")
     # calculate_intra_avg_sim(group_hashed_tokens, group_scammers, prefix="one_scammer_group_",dex=dex)
-    generate_inter_sim(group_hashed_tokens, dex=dex)
-    calculate_inter_avg_sim(group_hashed_tokens, group_scammers,dex=dex)
+    # generate_inter_sim(group_hashed_tokens, dex=dex)
+    # calculate_inter_avg_sim(group_hashed_tokens, group_scammers,dex=dex)
     # generate_individual_sim(scammer_hashed_tokens, dex=dex)
     # g_count = []
     # for gi, hash_token in group_hashed_tokens.items():
     #     g_count.append(len(hash_token))
     # print(g_count.count(1))
+    calculate_individual_avg_sim(scammer_hashed_tokens, dex=dex)

@@ -43,6 +43,12 @@ def call_api(module, action, params, apikey=setting.ETHERSCAN_API_KEY):
     assert (response_data is not None) and (response_data["status"] == "1" or isinstance(response_data["result"], list) or response_data["message"] == 'No data found')
     return response_data["result"] if response_data["result"] is not None else []
 
+def geth_api(module, action, params, apikey=setting.ETHERSCAN_API_KEY):
+    api_url = build_url(module, action, params, apikey)
+    print(api_url)
+    response = requests.get(api_url, headers={"Content-Type": "application/json"})
+    response_data = response.json()
+    return response_data["result"]
 
 def get_normal_transactions(address, fromBlock, toBlock, page=1, offset=10000, apikey=setting.ETHERSCAN_API_KEY):
     module = "account"
@@ -94,6 +100,11 @@ def get_event_logs(address, fromBlock, toBlock, topic, page=1, offset=1000, apik
               "offset": str(offset)}
     return call_api(module, action, params, apikey)
 
+def get_tx_by_hash(txhash, apikey=setting.ETHERSCAN_API_KEY):
+    module = "proxy"
+    action = "eth_getTransactionByHash"
+    params = {"txhash": txhash}
+    return geth_api(module, action, params, apikey)
 
 if __name__ == '__main__':
     # print(get_event_logs("0xc3Db44ADC1fCdFd5671f555236eae49f4A8EEa18", 0, 99999999999, "0x1c411e9a96e071241c2f21f7726b17ae89e3cab4c78be50e062b03a9fffbbad1"))

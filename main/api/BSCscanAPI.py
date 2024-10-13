@@ -90,3 +90,9 @@ def get_event_logs(address, fromBlock, toBlock, topic, page=1, offset=1000, apik
               "page": str(page),
               "offset": str(offset)}
     return call_api(module, action, params, apikey)
+
+def get_tx_by_hash(txhash, apikey=setting.BSCSCAN_API_KEY):
+    module = "proxy"
+    action = "eth_getTransactionByHash"
+    params = {"txhash": txhash}
+    return call_api(module, action, params, apikey)

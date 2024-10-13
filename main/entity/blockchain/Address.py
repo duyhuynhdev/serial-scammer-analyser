@@ -114,8 +114,8 @@ class Pool(ERC20):
         self.mints = mints if mints is not None else []
         self.burns = burns if burns is not None else []
         self.swaps = swaps if swaps is not None else []
-        self.high_value_token_position = self.get_high_value_position()
-        self.scam_token_position = 1 - self.high_value_token_position
+        # self.high_value_token_position = self.get_high_value_position()
+        # self.scam_token_position = 1 - self.high_value_token_position
         self.x: Optional[float] = None
         self.y: Optional[float] = None
         self.z: Optional[float] = None
