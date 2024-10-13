@@ -96,7 +96,7 @@ def get_first_add_last_remove_lqd_txs_decoder(normal_txs, internal_txs):
             if int(normal_tx.timeStamp) > max:
                 max = int(normal_tx.timeStamp)
                 last_remove_lqd_tran = normal_tx
-                last_remove_amount = TransactionUtils.get_related_amount_from_internal_txs(normal_tx, internal_txs)
+                last_remove_amount = TransactionUtils.get_related_amount_from_internal_txs(normal_tx, normal_txs, internal_txs)
     return first_add_lqd_tran, first_add_amount, last_remove_lqd_tran, last_remove_amount
 
 def get_valid_funding_txs(all_scammmer_addrs):

@@ -41,7 +41,7 @@ class FunctionInputDecoder:
                        "names": ["tokenA", "tokenB", "amountADesired", "amountBDesired", "amountAMin", "amountBMin", "to", "deadline"]},
         "0xf305d719": {"signature": "addLiquidityETH(address,uint256,uint256,uint256,address,uint256)",
                        "types": ["address", "uint256", "uint256", "uint256", "address", "uint256"],
-                       "names": ["token", "amountTokenDesired", "amountTokenMin", "amountETHMin", "to", "deadline"]},
+                       "names": ["token", "amountTokenDesired", "amountTokenMin", "amountETHMin", "to", "deadline"]}
     }
     router_swap_functions = {
         # V2 ROUTER
@@ -218,6 +218,7 @@ class FunctionInputDecoder:
         decoded_data = self.codec.decode(types, HexBytes(params))
         normalized = map_abi_data(BASE_RETURN_NORMALIZERS, types, decoded_data)
         parsed = dict(zip(names, normalized))
+        # print(parsed)
         return parsed
 
     def decode_remove_liq_function_input(self, input):
@@ -322,9 +323,9 @@ if __name__ == '__main__':
     # decoder = FunctionInputDecoder()
     # print(decoder.decode_swap_function_input(input))
 
-    input = "0xf305d719000000000000000000000000b0d4ecb8ded30bc9a8af7076a389385dce72cc1d00000000000000000000000000000000000000000000000000038d7ea4c6800000000000000000000000000000000000000000000000000000038d7ea4c680000000000000000000000000000000000000000000000000015af1d78b58c4000000000000000000000000000098d3047fb31b6ed04bb1dfa3558f3aad1c147b120000000000000000000000000000000000000000000000000000000061795899"
+    input = "0x5b0d5984000000000000000000000000c750ee1d84671048cce637a406249af88877ab71000000000000000000000000000000000000000000000000006bc25714dff592000000000000000000000000000000000000000000000000000235cfb97d685f000000000000000000000000000000000000000000000000142b5113940160ed00000000000000000000000030948fe32bbec0b1a76095908f0dd0600d8576430000000000000000000000000000000000000000000000000000000063c30a130000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001c9c9d0b05945c5f6d2f47d8ee0e52d9ba64d4afa28edc8a47ebb24ad8d0fcabdf0c587e090ad509ebecf4ef800d77546fdc60e28816d7c9ab283c91187cf6182d"
     decoder = FunctionInputDecoder()
-    print(decoder.decode_add_liq_function_input(input))
+    print(decoder.decode_remove_liq_function_input(input))
 
     # snt = [
     #     "swapExactTokensForTokens(uint256,uint256,address[],address,uint256)",
