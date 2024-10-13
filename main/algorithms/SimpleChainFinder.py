@@ -10,6 +10,7 @@ from algorithms.ScammerNetworkBuilder import dataloader
 from data_collection.AccountCollector import TransactionCollector
 from utils.DataLoader import DataLoader, load_pool
 from utils.ProjectPath import ProjectPath
+from utils.Utils import TransactionUtils
 
 dataloader = DataLoader()
 path = ProjectPath()
@@ -99,6 +100,7 @@ def get_largest_in_before_add_liquidity(scammer_address: str, normal_txs=None):
     return get_largest_transaction(normal_txs, scammer_address, ADD_LIQUIDITY_SUBSTRING, False, 0, len(normal_txs), 1)
 
 
+# REFERENCE UNUSED
 def return_valid_remove_liquidity_transactions(scammer_address):
     valid_remove_liquidities = set()
     scammer_pool = load_pool(scammer_address, dataloader)
@@ -114,11 +116,10 @@ def get_largest_transaction(normal_txs, scammer_address, liquidity_function_name
     passed_liquidity_function = False
     exists_duplicate_amount = False
     largest_transaction = None
-    valid_liquidities = return_valid_remove_liquidity_transactions(scammer_address)
 
     for index in range(range_loop_args[0], range_loop_args[1], range_loop_args[2]):
         if liquidity_function_name in str(normal_txs[index].functionName) and not normal_txs[index].isError:
-            if normal_txs[index].hash in valid_liquidities:
+            if TransactionUtils.is_scam_add_liq(normal_txs[index], dataloader) or TransactionUtils.is_scam_remove_liq(normal_txs[index], dataloader):
                 passed_liquidity_function = True
                 if liquidity_function_name == REMOVE_LIQUIDITY_SUBSTRING:
                     num_remove_liquidities_found += 1
