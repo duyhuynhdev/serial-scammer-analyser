@@ -258,11 +258,11 @@ if __name__ == '__main__':
     # # print(len(all_scammer_addrs))
     # all_scammer_addrs = list(OrderedSet(all_scammer_addrs))[:10]
 
-    group_id = 150
-    scammers_set = set(dataloader.scammers)
-    scammers_group = set(dataloader.group_scammers[group_id])
-    print(f"LOAD {len(scammers_group)} SCAMMER FROM GROUP {group_id}")
-    all_scammer_addrs = scammers_set.intersection(scammers_group)
+    # group_id = 150
+    # scammers_set = set(dataloader.scammers)
+    # scammers_group = set(dataloader.group_scammers[group_id])
+    # print(f"LOAD {len(scammers_group)} SCAMMER FROM GROUP {group_id}")
+    # all_scammer_addrs = scammers_set.intersection(scammers_group)
 
     print(len(all_scammer_addrs))
 
