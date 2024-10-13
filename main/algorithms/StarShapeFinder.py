@@ -5,13 +5,10 @@ import os
 import statistics
 from enum import Enum
 
-from deprecated import deprecated
 
 from data_collection.AccountCollector import TransactionCollector
-from entity.LightNode import LightNodeFactory
 from utils.DataLoader import DataLoader, load_pool
 from utils.ProjectPath import ProjectPath
-from utils.Utils import is_contract_address
 
 dataloader = DataLoader()
 path = ProjectPath()
@@ -317,8 +314,11 @@ def process_stars_on_all_scammers():
     remove_from_set(in_stars_path, in_scammers_remaining)
     remove_from_set(out_stars_path, out_scammers_remaining)
 
+    print('data is all good!')
+    return
+
     # start processing the writing
-    save_file_freq = 500
+    save_file_freq = 1
     scammers_to_run = 500_000
     scammers_ran = 0
 
@@ -334,7 +334,22 @@ def process_stars_on_all_scammers():
             in_out_star_writer = csv.writer(in_out_file, quotechar='"', delimiter='|', quoting=csv.QUOTE_ALL)
             no_star_writer = csv.writer(no_star_file, quotechar='"', delimiter='|', quoting=csv.QUOTE_ALL)
             for _ in range(save_file_freq):
-                current_scammer_to_run = in_scammers_remaining.pop() if pop_from_in else out_scammers_remaining.pop()
+                current_scammer_to_run = ''
+                if pop_from_in and len(in_scammers_remaining) > 0:
+                    current_scammer_to_run = in_scammers_remaining.pop()
+                elif not pop_from_in and len(out_scammers_remaining) > 0:
+                    current_scammer_to_run = out_scammers_remaining.pop()
+                else:
+                    if len(in_scammers_remaining) > 0:
+                        current_scammer_to_run = in_scammers_remaining.pop()
+                        pop_from_in = True
+                    elif len(out_scammers_remaining) > 0:
+                        current_scammer_to_run = out_scammers_remaining.pop()
+                        pop_from_in = False
+                    else:
+                        print('no more scammers remaining')
+                        break
+
                 # LOGIC if the removed scammer address doesn't exist in the other set, don't look for that star again
                 star_to_ignore = None
                 if pop_from_in and current_scammer_to_run not in out_scammers_remaining:
@@ -376,9 +391,9 @@ def process_stars_on_all_scammers():
 
 
 def write_chain_stats_on_data():
-    in_stars_path = os.path.join(path.univ2_star_shape_path, "in_stars_COPY.csv")
-    out_stars_path = os.path.join(path.univ2_star_shape_path, "out_stars_COPY.csv")
-    in_out_stars_path = os.path.join(path.univ2_star_shape_path, "in_out_stars_COPY.csv")
+    in_stars_path = os.path.join(path.univ2_star_shape_path, "in_stars.csv")
+    out_stars_path = os.path.join(path.univ2_star_shape_path, "out_stars.csv")
+    in_out_stars_path = os.path.join(path.univ2_star_shape_path, "in_out_stars.csv")
 
     def create_reader_and_skip(file):
         reader = csv.reader(file, quotechar='"', delimiter='|', quoting=csv.QUOTE_ALL)
@@ -441,7 +456,8 @@ def write_chain_stats_on_data():
 
 if __name__ == '__main__':
     write_chain_stats_on_data()
-    process_stars_on_all_scammers()
+    # process_stars_on_all_scammers()
+    # transaction_collector.ensure_valid_eoa_address('0x4e5b2e1dc63f6b91cb6cd759936495434c7e972f')
     # print(find_star_shape_for_scammer('0x1cba916c149658a8a0ebb6a597ac0cd8305ef108'))
     # result = get_funder_and_beneficiary('0x3e589da9a106123093aace082043b35cc00cfa19')
     # print(result)
