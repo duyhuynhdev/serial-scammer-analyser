@@ -3,6 +3,8 @@ import sys
 import os
 
 import queue
+
+import numpy as np
 import pandas as pd
 import pickle
 import networkx as nx
@@ -101,10 +103,13 @@ def get_first_add_last_remove_lqd_txs_decoder(normal_txs, internal_txs):
 
 def get_valid_funding_txs(all_scammmer_addrs):
     global all_funding_txs, all_funding_tx_hashes, F_txs, B_txs
-    # global all_funding_txs, F_txs, B_txs
     tmp_txs = set()
+    count_no_lqd = 0
+    count_lqd = 0
     for scammer_addr in all_scammmer_addrs:
-        print(f'Scammer {scammer_addr}')
+        B_txs[scammer_addr] = []
+        F_txs[scammer_addr] = []
+        # print(f'Scammer {index}')
         # scammer_addr = '0xB2b1f0De0B5Bcb234d4c60378a5Bbd2c8aCC3096'
         normal_txs, internal_txs = transaction_collector.get_transactions(scammer_addr, dex='univ2')
         # t = time.time()
@@ -113,9 +118,10 @@ def get_valid_funding_txs(all_scammmer_addrs):
         # print(f"Time to get first add lqd and last remove lqd {time.time() - t}")
         if first_add_lqd_tx == None or funding_value == None or last_remove_lqd_tx == None or revenue_value == None:
             print(f"Scammer {scammer_addr} has no first_add_lqd_tx or no last_remove_lqd_txs")
+            count_no_lqd += 1
             continue
-
-
+        count_lqd += 1
+        print(f'Scammer {scammer_addr}')
         funding_value = funding_value * (10 ** Constant.WETH_BNB_DECIMALS)
         revenue_value = revenue_value * (10 ** Constant.WETH_BNB_DECIMALS)
 
@@ -146,7 +152,6 @@ def get_valid_funding_txs(all_scammmer_addrs):
                 break
             sum_in += float(tx.value)
             f_txs.append(tx)
-
         if sum_in >= funding_value:
             F_txs[scammer_addr] = f_txs # update funding txs to scammer addr (funders of scammer addr)
             tmp_txs.update(f_txs)
@@ -159,19 +164,19 @@ def get_valid_funding_txs(all_scammmer_addrs):
                 break
             sum_out += float(tx.value)
             b_txs.append(tx)
-
         if sum_out >= 0.9 * revenue_value:
             B_txs[scammer_addr] = b_txs # update funding txs from scammer addr (beneficiaries of scammer addr)
             tmp_txs.update(b_txs)
-    # create all_funding_txs from tmp_txs
+
+    print(f'Number of scammer has no first_add_lqd_tx or no last_remove_lqd_tx: {count_no_lqd}')
+    print(f'Number of scammer has both first_add_lqd_tx and no last_remove_lqd_tx: {count_lqd}')
     for tx in tmp_txs:
-        if tx.sender in B_txs.keys():
-            if tx.to in [tx_.to for tx_ in B_txs[tx.sender]]: # tx.to is a beneficiary of tx.sender
-                if tx.to in F_txs.keys():
-                    if tx.sender in [tx_.sender for tx_ in F_txs[tx.to]]: # tx.sender is a funder of tx.to
-                        if tx.hash not in all_funding_tx_hashes:
-                            all_funding_tx_hashes.add(tx.hash)
-                            all_funding_txs.add(tx)
+        sender = tx.sender
+        to = tx.to
+        if tx.hash in [tx_.hash for tx_ in B_txs[sender]] and tx.hash in [tx_.hash for tx_ in F_txs[to]]:
+            if tx.hash not in all_funding_tx_hashes:
+                all_funding_tx_hashes.add(tx.hash)
+                all_funding_txs.add(tx)
 
 class MaximalScamFundingCluster():
     def __init__(self, tx_id):
@@ -180,6 +185,7 @@ class MaximalScamFundingCluster():
         self.E = set()
         q = queue.Queue()
         q.put(tx_id)
+        # only valid funding txs in queue
         while not q.empty():
             tx = q.get()
             self.E.add(tx)
@@ -188,21 +194,19 @@ class MaximalScamFundingCluster():
             visited_tx.add(tx.hash)
             self.V.add(sender)
             self.V.add(receiver)
-            if sender in B_txs.keys():
-                for b_tx in B_txs[sender]:
-                    if b_tx.hash not in visited_tx:
-                        q.put(b_tx)
 
-            if receiver in F_txs.keys():
-                for f_tx in F_txs[receiver]:
-                    if f_tx.hash not in visited_tx:
-                        q.put(f_tx)
+            for b_tx in B_txs[sender]:
+                if b_tx.hash in all_funding_tx_hashes and b_tx.hash not in visited_tx:
+                    q.put(b_tx)
+
+            for f_tx in F_txs[receiver]:
+                if f_tx.hash in all_funding_tx_hashes and f_tx.hash not in visited_tx:
+                    q.put(f_tx)
 
     def merge(self, other_group):
-        tmp_E = self.E.union(other_group.E)
         E_hashes = set()
         E_ = set()
-        for e in tmp_E:
+        for e in self.E.union(other_group.E):
             if e.hash not in E_hashes:
                 E_hashes.add(e.hash)
                 E_.add(e)
@@ -234,17 +238,31 @@ def find_MSF_clusters(atomic_MSF_groups):
     return connected_components, MSF_clusters
 
 if __name__ == '__main__':
+    # dex = "univ2"
+    # address = "0x9a3a50f4d0df8dae8fe97e89edd2a39b51c86997"
+    # dataloader = DataLoader(dex=dex)
+    # normal_txs, internal_txs = transaction_collector.get_transactions(address, dex=dex, key_idx=17)
+    # for normal_tx in normal_txs:
+    #     # print("Function name: ",normal_tx.functionName, " is matched", True if "addLiquidity" in str(normal_tx.functionName) or "removeLiquidity" in str(normal_tx.functionName) else False)
+    #     if TransactionUtils.is_scam_add_liq(normal_tx, dataloader):
+    #         amount = normal_tx.get_transaction_amount()
+    #         print(f"\tFOUND SCAM LIQ ADDING {normal_tx.hash} WITH ADDED AMOUNT iS {amount}")
+    #
+    #     if TransactionUtils.is_scam_remove_liq(normal_tx, dataloader):
+    #         amount = TransactionUtils.get_related_amount_from_internal_txs(normal_tx, internal_txs)
+    #         print(f"\tFOUND SCAM LIQ REMOVAL {normal_tx.hash} WITH REMOVED AMOUNT iS {amount}")
+
     start_time = time.time()
-    # # all_scammer_addrs = pd.read_csv("complex_chain_example.txt", header=None)
-    # # all_scammer_addrs = [s.lower() for s in all_scammer_addrs.to_numpy().flatten().tolist()]
+    # all_scammer_addrs = pd.read_csv("complex_chain_example.txt", header=None)
+    # all_scammer_addrs = [s.lower() for s in all_scammer_addrs.to_numpy().flatten().tolist()]
     # # print(len(all_scammer_addrs))
     # all_scammer_addrs = list(OrderedSet(all_scammer_addrs))[:10]
 
-    # group_id = 150
-    # scammers_set = set(dataloader.scammers)
-    # scammers_group = set(dataloader.group_scammers[group_id])
-    # print(f"LOAD {len(scammers_group)} SCAMMER FROM GROUP {group_id}")
-    # all_scammer_addrs = scammers_set.intersection(scammers_group)
+    group_id = 150
+    scammers_set = set(dataloader.scammers)
+    scammers_group = set(dataloader.group_scammers[group_id])
+    print(f"LOAD {len(scammers_group)} SCAMMER FROM GROUP {group_id}")
+    all_scammer_addrs = scammers_set.intersection(scammers_group)
 
     print(len(all_scammer_addrs))
 
@@ -259,20 +277,26 @@ if __name__ == '__main__':
 
     t = time.time()
     create_atomic_MSF_groups()
-    print(f"Creating atomic MSF groups in {time.time() - t}")
 
-    for fs_group in atomic_MSF_groups:
-        if len(fs_group.E) >= 2:
-            print(f"{fs_group.id}: {len(fs_group.E)}")
+    # if not os.path.exists('atomic_groups.pkl'):
+    #     create_atomic_MSF_groups()
+    #     with open('atomic_groups.pkl', 'wb') as file:
+    #         pickle.dump(atomic_MSF_groups, file)
+    # else:
+    #     with open('atomic_groups.pkl', 'rb') as file:
+    #         atomic_MSF_groups = pickle.load(file)
+    # print(f"Creating atomic MSF groups in {time.time() - t}")
 
     t = time.time()
-    if not os.path.exists('MSF_clusters.pkl'):
-        connected_components, MSF_clusters = find_MSF_clusters(atomic_MSF_groups)
-        with open('MSF_clusters.pkl', 'wb') as file:
-            pickle.dump((connected_components, MSF_clusters), file)
-    else:
-        with open('MSF_clusters.pkl', 'rb') as file:
-            connected_components, MSF_clusters = pickle.load(file)
+    connected_components, MSF_clusters = find_MSF_clusters(atomic_MSF_groups)
+
+    # if not os.path.exists('MSF_clusters.pkl'):
+    #     connected_components, MSF_clusters = find_MSF_clusters(atomic_MSF_groups)
+    #     with open('MSF_clusters.pkl', 'wb') as file:
+    #         pickle.dump((connected_components, MSF_clusters), file)
+    # else:
+    #     with open('MSF_clusters.pkl', 'rb') as file:
+    #         connected_components, MSF_clusters = pickle.load(file)
 
     print(f"Finding connected components MSF_clusters in {time.time() - t}")
 
@@ -280,35 +304,43 @@ if __name__ == '__main__':
 
     # Statistics
     df = pd.DataFrame(index=range(len(MSF_clusters)),
-                              columns=['cluster_id', 'no of V', 'no of E', 'width', 'len',
-                                       'inputs', 'outputs', 'fund_in', 'fund_out'])
+                              columns=['cluster_id', 'len(V)', 'len(E)', 'len', 'width',
+                                       'widest_atomic_group.V', 'widest_atomic_group.E'])
+                                       # 'inputs', 'outputs', 'fund_in', 'fund_out'])
     all_funding_tx_hashes = set([tx.hash for tx in all_funding_txs])
     for i, cluster in enumerate(MSF_clusters):
         df.loc[i, 'cluster_id'] = cluster.id
-        df.loc[i, 'no of V'] = len(cluster.V)
-        df.loc[i, 'no of E'] = len(cluster.E)
-        df.loc[i, 'width'] = max([len(atomic_group.E) for atomic_group in connected_components[i]])
+        df.loc[i, 'len(V)'] = len(cluster.V)
+        # df.loc[i, 'V'] = cluster.V
+        df.loc[i, 'len(E)'] = len(cluster.E)
+        # df.loc[i, 'E'] = [e.hash for e in cluster.E]
         df.loc[i, 'len'] = len(connected_components[i])
 
-        # determine inputs, outputs
-        inputs = []
-        outputs = []
-        for v in cluster.V:
-            if v in F_txs.keys():
-                if set([tx.hash for tx in F_txs[v]]).isdisjoint(all_funding_tx_hashes):
-                    inputs.append(v)
-            else:
-                inputs.append(v)
-            if v in B_txs.keys():
-                if set([tx.hash for tx in B_txs[v]]).isdisjoint(all_funding_tx_hashes):
-                    outputs.append(v)
-            else:
-                outputs.append(v)
-        df.loc[i, 'inputs'] = inputs
-        df.loc[i, 'outputs'] = outputs
+        widest_atomic_group = list(connected_components[i])[np.argmax([len(atomic_group.V) for atomic_group in connected_components[i]])]
+        df.loc[i, 'width'] = len(widest_atomic_group.V)
+        df.loc[i, 'widest_atomic_group.V'] = widest_atomic_group.V
+        df.loc[i, 'widest_atomic_group.E'] = [e.hash for e in widest_atomic_group.E]
 
-        # determine fund_in, fund_out
-        df.loc[i, 'fund_in'] = sum([tx.get_transaction_amount() for v in inputs if v in B_txs.keys() for tx in B_txs[v]])
-        df.loc[i, 'fund_out'] = sum([tx.get_transaction_amount() for v in outputs if v in F_txs.keys() for tx in F_txs[v]])
+        # # determine inputs, outputs
+        # inputs = []
+        # outputs = []
+        # for v in cluster.V:
+        #     if v in F_txs.keys():
+        #         # if set([tx.hash for tx in F_txs[v]]).isdisjoint(all_funding_tx_hashes):
+        #         if len(F_txs[v]) == 0 and len(B_txs[v]) > 0:
+        #             inputs.append(v)
+        #     else:
+        #         inputs.append(v)
+        #     if v in B_txs.keys():
+        #         if set([tx.hash for tx in B_txs[v]]).isdisjoint(all_funding_tx_hashes):
+        #             outputs.append(v)
+        #     else:
+        #         outputs.append(v)
+        # df.loc[i, 'inputs'] = inputs
+        # df.loc[i, 'outputs'] = outputs
+        #
+        # # determine fund_in, fund_out
+        # df.loc[i, 'fund_in'] = sum([tx.get_transaction_amount() for v in inputs if v in B_txs.keys() for tx in B_txs[v]])
+        # df.loc[i, 'fund_out'] = sum([tx.get_transaction_amount() for v in outputs if v in F_txs.keys() for tx in F_txs[v]])
 
     df.to_csv('MSF_clusters_statistics.csv')
