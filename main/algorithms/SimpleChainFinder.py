@@ -75,15 +75,13 @@ def chain_pattern_detection(starter_address):
 
 
 def count_number_of_remove_liquidity_calls(scammer_address, normal_txs=None):
-    valid_rmv_liquidity_calls = return_valid_remove_liquidity_transactions(scammer_address)
     num_remove_liquidity_calls = 0
     if normal_txs is None:
         normal_txs = transaction_collector.get_transactions(scammer_address)
 
     for transaction in normal_txs:
-        if REMOVE_LIQUIDITY_SUBSTRING in str(transaction.functionName) and not transaction.isError:
-            if transaction.hash in valid_rmv_liquidity_calls:
-                num_remove_liquidity_calls += 1
+        if TransactionUtils.is_scam_remove_liq(transaction, dataloader) and not transaction.isError:
+            num_remove_liquidity_calls += 1
 
     return num_remove_liquidity_calls
 
