@@ -304,16 +304,16 @@ if __name__ == '__main__':
 
     # Statistics
     df = pd.DataFrame(index=range(len(MSF_clusters)),
-                              columns=['cluster_id', 'len(V)', 'len(E)', 'len', 'width',
+                              columns=['cluster_id', 'len(V)', 'V', 'len(E)', 'E', 'len', 'width',
                                        'widest_atomic_group.V', 'widest_atomic_group.E'])
                                        # 'inputs', 'outputs', 'fund_in', 'fund_out'])
     all_funding_tx_hashes = set([tx.hash for tx in all_funding_txs])
     for i, cluster in enumerate(MSF_clusters):
         df.loc[i, 'cluster_id'] = cluster.id
         df.loc[i, 'len(V)'] = len(cluster.V)
-        # df.loc[i, 'V'] = cluster.V
+        df.loc[i, 'V'] = cluster.V
         df.loc[i, 'len(E)'] = len(cluster.E)
-        # df.loc[i, 'E'] = [e.hash for e in cluster.E]
+        df.loc[i, 'E'] = [e.hash for e in cluster.E]
         df.loc[i, 'len'] = len(connected_components[i])
 
         widest_atomic_group = list(connected_components[i])[np.argmax([len(atomic_group.V) for atomic_group in connected_components[i]])]
