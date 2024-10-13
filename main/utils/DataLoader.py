@@ -154,7 +154,7 @@ def load_token_info(dex='panv2'):
 
 def load_group_scammers(dex='panv2'):
     group_scammers, scammer_group = dict(), dict()
-    file_path = os.path.join(eval('path.{}_processed_path'.format(dex)), "simple_rp_scammer_group.csv")
+    file_path = os.path.join(eval('path.{}_processed_path'.format(dex)), "non_swap_simple_rp_scammer_group.csv")
     scammers = set()
     if os.path.exists(file_path):
         groups = pd.read_csv(file_path)
@@ -184,11 +184,13 @@ def link_pool_and_group(scammer_pools, group_scammers):
 
 
 def load_rug_pull_dataset(dex='panv2', scammer_file_name="1_pair_scammers.csv", pool_file_name="1_pair_pool_labels.csv"):
-    print("LOAD RUG PULL INFO")
+    print("LOAD RUG PULL INFO with dex={} file_name={} and pool_name={}".format(dex, scammer_file_name, pool_file_name))
     scam_pools = list()
     # scammers = list()
+    processed_path = os.path.join(eval("path.{}_processed_path".format(dex)), scammer_file_name)
+    print("The path to look for loading data is={}".format(processed_path))
     scammers = pd.read_csv(
-        os.path.join(eval("path.{}_processed_path".format(dex)), scammer_file_name)
+        processed_path
     )
     index_issue = scammers[(scammers["pool"] == scammers["scammer"])].index
     scammers.drop(index_issue, inplace=True)

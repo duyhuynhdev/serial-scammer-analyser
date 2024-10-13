@@ -222,7 +222,7 @@ class TransactionCollector:
         return parsed_normal_txs, parsed_internal_txs
 
     def ensure_valid_eoa_address(self, address):
-        normal_txs, internal_txs = self.get_transactions_including_internal(address, 'univ2', 0)
+        normal_txs, internal_txs = self.get_transactions_including_internal(address, 'panv2', 0)
         if len(normal_txs) >= Constant.TX_LIMIT_1:
             return False
         for ntx in normal_txs:

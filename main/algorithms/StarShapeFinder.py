@@ -171,16 +171,20 @@ def get_funder_and_beneficiary(scammer_address):
             # LOGIC upon passing the first add liquidity, mark down the amount and don't check any more add liquidaties
             if not passed_add_liquidity and ADD_LIQUIDITY_SUBSTRING in str(transaction.functionName):
                 if TransactionUtils.is_scam_add_liq(transaction, dataloader):
-                    passed_add_liquidity = True
-                    add_liquidity_amt = transaction.get_transaction_amount()
+                    candidate_add_liquidity_amt = transaction.get_transaction_amount()
+                    if candidate_add_liquidity_amt > 0.0:
+                        passed_add_liquidity = True
+                        add_liquidity_amt = candidate_add_liquidity_amt
             # LOGIC upon passing a remove liquidity - current largest_out becomes ineligible
             elif REMOVE_LIQUIDITY_SUBSTRING in str(transaction.functionName):
                 if TransactionUtils.is_scam_remove_liq(transaction, dataloader):
-                    passed_remove_liquidity = True
-                    largest_out_transaction = None
-                    duplicate_out_amt = False
-                    num_remove_liquidities += 1
-                    remove_liquidity_amt = TransactionUtils.get_related_amount_from_internal_txs(transaction, internal_txs)
+                    candidate_rmv_amt = TransactionUtils.get_related_amount_from_internal_txs(transaction, internal_txs)
+                    if candidate_rmv_amt > 0.0:
+                        passed_remove_liquidity = True
+                        largest_out_transaction = None
+                        duplicate_out_amt = False
+                        num_remove_liquidities += 1
+                        remove_liquidity_amt = candidate_rmv_amt
 
             # LOGIC transaction before we encounter the first add liquidity, find the largest IN transaction
             if not passed_add_liquidity and is_valid_address(False, transaction, scammer_address):
@@ -330,7 +334,22 @@ def process_stars_on_all_scammers():
             in_out_star_writer = csv.writer(in_out_file, quotechar='"', delimiter='|', quoting=csv.QUOTE_ALL)
             no_star_writer = csv.writer(no_star_file, quotechar='"', delimiter='|', quoting=csv.QUOTE_ALL)
             for _ in range(save_file_freq):
-                current_scammer_to_run = in_scammers_remaining.pop() if pop_from_in else out_scammers_remaining.pop()
+                current_scammer_to_run = ''
+                if pop_from_in and len(in_scammers_remaining) > 0:
+                    current_scammer_to_run = in_scammers_remaining.pop()
+                elif not pop_from_in and len(out_scammers_remaining) > 0:
+                    current_scammer_to_run = out_scammers_remaining.pop()
+                else:
+                    if len(in_scammers_remaining) > 0:
+                        current_scammer_to_run = in_scammers_remaining.pop()
+                        pop_from_in = True
+                    elif len(out_scammers_remaining) > 0:
+                        current_scammer_to_run = out_scammers_remaining.pop()
+                        pop_from_in = False
+                    else:
+                        print('no more scammers remaining')
+                        break
+
                 # LOGIC if the removed scammer address doesn't exist in the other set, don't look for that star again
                 star_to_ignore = None
                 if pop_from_in and current_scammer_to_run not in out_scammers_remaining:
