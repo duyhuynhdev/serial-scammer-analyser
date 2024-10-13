@@ -305,7 +305,7 @@ def process_stars_on_all_scammers():
         reader = csv.reader(file, quotechar='"', delimiter='|', quoting=csv.QUOTE_ALL)
         next(reader)
         for line in reader:
-            in_scammers_remaining.remove(line[0])
+            in_scammers_remaining.discard(line[0])
 
     # LOGIC remove the scammers that have an in_out star since the satellites cannot belong to another star
     remove_from_set(in_out_stars_path, in_scammers_remaining)
@@ -315,7 +315,7 @@ def process_stars_on_all_scammers():
     remove_from_set(out_stars_path, out_scammers_remaining)
 
     # start processing the writing
-    save_file_freq = 500
+    save_file_freq = 750
     scammers_to_run = 500_000
     scammers_ran = 0
 
@@ -374,5 +374,5 @@ def process_stars_on_all_scammers():
 if __name__ == '__main__':
     process_stars_on_all_scammers()
     # print(find_star_shape_for_scammer('0x5a918fe2596916b513d4d2c9dd569acb7c73d4bf'))
-    # result = get_funder_and_beneficiary('0xf34d27ff98e386be146cb000e3029bb098b0335d')
+    # result = get_funder_and_beneficiary('0xef460dab4adbdd5a1823714a0a4431fd76194252')
     # print(result)
