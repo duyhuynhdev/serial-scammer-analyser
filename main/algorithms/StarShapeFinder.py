@@ -327,7 +327,7 @@ def process_stars_on_all_scammers():
     remove_from_set(out_stars_path, out_scammers_remaining)
 
     # start processing the writing
-    save_file_freq = 750
+    save_file_freq = 500
     scammers_to_run = 500_000
     scammers_ran = 0
 
