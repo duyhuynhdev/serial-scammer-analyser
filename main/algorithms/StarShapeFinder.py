@@ -324,7 +324,7 @@ def process_stars_on_all_scammers():
     return
 
     # start processing the writing
-    save_file_freq = 1
+    save_file_freq = 2_500
     scammers_to_run = 500_000
     scammers_ran = 0
 
@@ -462,8 +462,8 @@ def write_chain_stats_on_data():
 
 
 if __name__ == '__main__':
-    # write_chain_stats_on_data()
-    process_stars_on_all_scammers()
+    write_chain_stats_on_data()
+    # process_stars_on_all_scammers()
     # transaction_collector.ensure_valid_eoa_address('0x4e5b2e1dc63f6b91cb6cd759936495434c7e972f')
     # print(find_star_shape_for_scammer('0x1cba916c149658a8a0ebb6a597ac0cd8305ef108'))
     # result = get_funder_and_beneficiary('0x76280c2af6101b730010957cda8d12ccec9921f9')

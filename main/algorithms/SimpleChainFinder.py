@@ -194,7 +194,7 @@ def run_chain_on_scammers():
 
 
 def write_chain_stats_on_data():
-    simple_chain_path = os.path.join(path.univ2_scammer_chain_path, "simple_chain.csv")
+    simple_chain_path = os.path.join(path.panv2_scammer_chain_path, "simple_chain.csv")
 
     all_chains = []
 
@@ -206,8 +206,8 @@ def write_chain_stats_on_data():
             result_chain = ast.literal_eval(line[1])
             all_chains.append([len(result_chain), ast.literal_eval(line[1])])
 
-    chain_stats_path = os.path.join(path.univ2_scammer_chain_path, "chain_stats.csv")
-    chain_stats_headers = ["start_address", "end_address", "chain_length", "num_scams_avg", "trans_amt_avg", "trans_time_diff_avg"]
+    chain_stats_path = os.path.join(path.panv2_scammer_chain_path, "chain_stats.csv")
+    chain_stats_headers = ["start_address", "end_address", "chain_length", "num_scams_avg", "trans_amt_avg", "scam_duration"]
     with open(chain_stats_path, "w", newline='') as chain_stats_file:
         csv_writer = csv.writer(chain_stats_file, quotechar='"', delimiter='|', quoting=csv.QUOTE_ALL)
         csv_writer.writerow(chain_stats_headers)
@@ -215,7 +215,7 @@ def write_chain_stats_on_data():
         for chain in all_chains:
             scams_performed_values = []
             transfer_amount_values = []
-            transfer_time_values = []
+            transfer_time = []
             started_address = chain[1][0][0]
             end_address = chain[1][-1][0]
             for scammer_index in range(len(chain[1])):
@@ -227,12 +227,12 @@ def write_chain_stats_on_data():
                     transfer_amount_values.append(chain[1][scammer_index][3])
 
                 # time difference
-                if scammer_index < len(chain[1]) - 2:
-                    time_difference = chain[1][scammer_index + 1][2] - chain[1][scammer_index][2]
-                    transfer_time_values.append(time_difference)
+                if scammer_index < len(chain[1]) - 1:
+                    timestamp = chain[1][scammer_index][2]
+                    transfer_time.append(timestamp)
 
-            transfer_time_mean = statistics.mean(transfer_time_values) if len(transfer_time_values) > 0 else ""
-            csv_writer.writerow([started_address, end_address, chain[0], statistics.mean(scams_performed_values), statistics.mean(transfer_amount_values), transfer_time_mean])
+            scam_duration = max(transfer_time) - min(transfer_time) if len(transfer_time) >= 2 else ""
+            csv_writer.writerow([started_address, end_address, chain[0], statistics.mean(scams_performed_values), statistics.mean(transfer_amount_values), scam_duration])
 
 
 # REFERENCE unused atm

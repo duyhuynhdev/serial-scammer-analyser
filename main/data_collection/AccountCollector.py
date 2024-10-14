@@ -141,7 +141,7 @@ class TransactionCollector:
     panv2_last_block = Constant.PANCAKESWAP_END_BLOCK
 
     def get_transactions(self, address, dex='univ2', key_idx=1):
-        print('Fetching transactions for address={}'.format(address))
+        # print('Fetching transactions for address={}'.format(address))
         from_block = eval('self.{}_first_block'.format(dex))
         to_block = eval('self.{}_last_block'.format(dex))
         api = explorer_api[dex]["explorer"]
@@ -183,7 +183,7 @@ class TransactionCollector:
         return parsed_normal_txs
 
     def get_transactions_including_internal(self, address, dex='univ2', key_idx=0):
-        print('Fetching transactions for address={}'.format(address))
+        # print('Fetching transactions for address={}'.format(address))
         from_block = eval('self.{}_first_block'.format(dex))
         to_block = eval('self.{}_last_block'.format(dex))
         api = explorer_api[dex]["explorer"]
