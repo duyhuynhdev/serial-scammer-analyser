@@ -183,18 +183,20 @@ def get_funder_and_beneficiary(scammer_address):
                     remove_liquidity_amt = candidate_liq_amt
 
             # LOGIC transaction before we encounter the first add liquidity, find the largest IN transaction
-            if not passed_add_liquidity and is_valid_address(False, transaction, scammer_address):
+            if is_valid_address(False, transaction, scammer_address):
+                # LOGIC still track all the IN addresses even if we passed add liqudity
                 in_addresses.add(transaction.sender)
                 # LOGIC assume first IN is largest
-                if not largest_in_transaction:
-                    largest_in_transaction = transaction
-                elif transaction.get_transaction_amount() >= largest_in_transaction.get_transaction_amount():
-                    # LOGIC if amount is the same, mark as duplicate, otherwise this becomes new largest transaction
-                    if transaction.get_transaction_amount() == largest_in_transaction.get_transaction_amount():
-                        duplicate_in_amt = True
-                    else:
-                        duplicate_in_amt = False
+                if not passed_add_liquidity:
+                    if not largest_in_transaction:
                         largest_in_transaction = transaction
+                    elif transaction.get_transaction_amount() >= largest_in_transaction.get_transaction_amount():
+                        # LOGIC if amount is the same, mark as duplicate, otherwise this becomes new largest transaction
+                        if transaction.get_transaction_amount() == largest_in_transaction.get_transaction_amount():
+                            duplicate_in_amt = True
+                        else:
+                            duplicate_in_amt = False
+                            largest_in_transaction = transaction
             # LOGIC OUT transaction
             elif is_valid_address(True, transaction, scammer_address):
                 out_addresses.add(transaction.to)
@@ -219,20 +221,22 @@ def get_funder_and_beneficiary(scammer_address):
 
     if passed_add_liquidity and passed_remove_liquidity:
         # LOGIC case where the in sender and out receiver are the same for IN_OUT star
+        # TODO check INLINE here they've passed the threshold
+        # TODO DON'T DO INNER IF otherwise it won't go into other
         if largest_in_transaction and largest_out_transaction and not duplicate_out_amt and not duplicate_in_amt and largest_in_transaction.sender == largest_out_transaction.to:
             funder_dict = get_dict_info(largest_in_transaction, largest_in_transaction.sender)
             beneficiary_dict = get_dict_info(largest_out_transaction, largest_out_transaction.to)
         else:
             # LOGIC for funder, if it didn't perform any out transactions, no duplicate, passed the threshold then add
             if largest_in_transaction:
-                passed_threshold = largest_in_transaction.get_transaction_amount_and_fee() / add_liquidity_amt >= IN_PERCENTAGE_THRESHOLD
-                if passed_threshold and not duplicate_in_amt and largest_in_transaction.sender not in out_addresses:
+                passed_in_threshold = largest_in_transaction.get_transaction_amount_and_fee() / add_liquidity_amt >= IN_PERCENTAGE_THRESHOLD
+                if passed_in_threshold and not duplicate_in_amt and largest_in_transaction.sender not in out_addresses:
                     funder_dict = get_dict_info(largest_in_transaction, largest_in_transaction.sender)
 
             # LOGIC for beneficiary, if it didn't perform any in transactions, no duplicate, and passed the threshold and is not a contract address
             if largest_out_transaction:
-                passed_threshold = largest_out_transaction.get_transaction_amount_and_fee() / remove_liquidity_amt >= OUT_PERCENTAGE_THRESHOLD
-                if passed_threshold and not duplicate_out_amt and largest_out_transaction.to not in in_addresses and transaction_collector.ensure_valid_eoa_address(largest_out_transaction.to):
+                passed_out_threshold = largest_out_transaction.get_transaction_amount_and_fee() / remove_liquidity_amt >= OUT_PERCENTAGE_THRESHOLD
+                if passed_out_threshold and not duplicate_out_amt and largest_out_transaction.to not in in_addresses and transaction_collector.ensure_valid_eoa_address(largest_out_transaction.to):
                     beneficiary_dict = get_dict_info(largest_out_transaction, largest_out_transaction.to)
 
     if funder_dict:
@@ -455,9 +459,9 @@ def write_chain_stats_on_data():
 
 
 if __name__ == '__main__':
-    write_chain_stats_on_data()
+    # write_chain_stats_on_data()
     # process_stars_on_all_scammers()
     # transaction_collector.ensure_valid_eoa_address('0x4e5b2e1dc63f6b91cb6cd759936495434c7e972f')
     # print(find_star_shape_for_scammer('0x1cba916c149658a8a0ebb6a597ac0cd8305ef108'))
-    # result = get_funder_and_beneficiary('0x3e589da9a106123093aace082043b35cc00cfa19')
-    # print(result)
+    result = get_funder_and_beneficiary('0x76280c2af6101b730010957cda8d12ccec9921f9')
+    print(result)
