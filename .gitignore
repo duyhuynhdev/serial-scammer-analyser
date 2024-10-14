@@ -163,3 +163,7 @@ cython_debug/
 resources/data/*
 .DS_Store
 resources/.DS_Store
+main/analysis/data/*
+main/analysis/img/*
+main/algorithms/*.csv
+main/algorithms/*.pkl
