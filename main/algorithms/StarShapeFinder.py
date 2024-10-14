@@ -397,7 +397,7 @@ def process_stars_on_all_scammers():
 
 
 if __name__ == '__main__':
-    # process_stars_on_all_scammers()
-    # THIS SHOULD NOW NOT RETURN ANYTHING
-    result = get_funder_and_beneficiary('0xceb3fd461abd8df52052d50d100f7f9ae839c266')
-    print(result)
+    process_stars_on_all_scammers()
+    # THIS address SHOULD NOW NOT RETURN ANYTHING
+    # result = get_funder_and_beneficiary('0xceb3fd461abd8df52052d50d100f7f9ae839c266')
+    # print(result)
