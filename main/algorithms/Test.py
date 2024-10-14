@@ -56,7 +56,8 @@ def test_single_scammer(address, collector, dataloader,  dex='univ2'):
             # print(f"\tFOUND SCAM LIQ REMOVAL {normal_tx.hash} WITH REMOVED AMOUNT iS {amount}")
             if amount > 0:
                 found_rev = True
-
+    assert found_add
+    assert found_rev
     return found_add, found_rev
 
 def test_all_scammer(collector, dataloader, dex='univ2'):
@@ -81,8 +82,8 @@ def test_all_scammer(collector, dataloader, dex='univ2'):
         if not found_rev:
             no_rev.append(s)
     print(len(no_add), len(no_rev))
-    print("NO ADD", len(no_add), no_add)
-    print("NO REV", len(no_rev), no_rev)
+    print("NO ADD", len(no_add))
+    print("NO REV", len(no_rev))
 
 if __name__ == '__main__':
     dex = "univ2"

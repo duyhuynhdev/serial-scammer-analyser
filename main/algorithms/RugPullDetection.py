@@ -156,14 +156,14 @@ def is_valid_scammer_address(address, pool_address, scam_token_address, idx=0):
 def rug_pull_detection(job, dex='univ2'):
     global endnodes
     endnodes = DataLoader.load_full_end_nodes(dex=dex)
-    out_pool_label_path = os.path.join(eval('path.{}_processed_path'.format(dex)), "1_pair_pool_labels.csv")
-    out_scammer_path = os.path.join(eval('path.{}_processed_path'.format(dex)), "1_pair_scammers.csv")
+    out_pool_label_path = os.path.join(eval('path.{}_processed_path'.format(dex)), "simple_rp_pool_labels.csv")
+    out_scammer_path = os.path.join(eval('path.{}_processed_path'.format(dex)), "simple_rp_scammers.csv")
     processed_pools = []
     if os.path.exists(out_pool_label_path):
         processed_pools = pd.read_csv(out_pool_label_path)["pool"].values
     event_path = eval('path.{}_pool_events_path'.format(dex))
 
-    pool_path = os.path.join(eval('path.{}_processed_path'.format(dex)), "pool_addresses.csv")
+    pool_path = os.path.join(eval('path.{}_processed_path'.format(dex)), "filtered_simple_rp_pool.csv")
     pool_addresses = pd.read_csv(pool_path)["pool"].values
 
     pool_infos = pd.read_csv(os.path.join(eval('path.{}_processed_path'.format(dex)), "pool_info.csv"), low_memory=False)
@@ -293,8 +293,9 @@ def debug_detection(pool_address, dex='univ2'):
 
 
 if __name__ == '__main__':
-    dex = "univ2"
-    job = 11
-    # collector = ContractSourceCodeCollector(dex)
-    # rug_pull_detection(job, dex)
-    debug_detection("0x382eb12750c4E8716D54c4723df25907e521A836", dex)
+    dex = "panv2"
+    job = 20
+    collector = ContractSourceCodeCollector(dex)
+    rug_pull_detection(job, dex)
+    # debug_detection("0x0Aef3e46E51b72962A625D8eE894Fe2A1DCEFb6B", dex)
+    # # debug_detection("0x382eb12750c4E8716D54c4723df25907e521A836", dex)

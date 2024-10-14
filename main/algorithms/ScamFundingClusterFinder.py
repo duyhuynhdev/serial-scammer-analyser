@@ -9,19 +9,18 @@ import pandas as pd
 import pickle
 import networkx as nx
 import time
-from ordered_set import OrderedSet
 
 
 sys.path.append(os.path.join(os.path.dirname(sys.path[0])))
 
 from utils.Utils import  TransactionUtils, Constant
 from data_collection.AccountCollector import TransactionCollector
-from utils.DataLoader import DataLoader, load_pool
+from utils.DataLoader import DataLoader, load_light_pool
 from utils.ProjectPath import ProjectPath
 from entity.blockchain import Transaction
 
-
-dex = 'univ2'
+# dex = 'univ2'
+dex = 'panv2'
 dataloader = DataLoader(dex=dex)
 path = ProjectPath()
 transaction_collector = TransactionCollector()
@@ -275,6 +274,7 @@ def find_MSF_clusters(atomic_MSF_groups):
         MSF_clusters.append(msf_cluster)
     return connected_components, MSF_clusters
 
+<<<<<<< HEAD
 def test_remove_lqd_detector():
     scammer_addrs = ["0x9a3a50f4d0df8dae8fe97e89edd2a39b51c86997", \
                    "0xe7daf02024dfcf0d36ed49a6f9b33beb430edb5b",
@@ -288,6 +288,29 @@ def test_remove_lqd_detector():
                     "0x612a6b21dbe9ad95857a4d1c5838f4804f3526bd",
                     "0xbbb8915d99377512773887db6b424fe91b50e4f7"]
     for addr in scammer_addrs:
+=======
+if __name__ == '__main__':
+    # scammer_addrs = ["0x9a3a50f4d0df8dae8fe97e89edd2a39b51c86997", \
+    #                "0xe7daf02024dfcf0d36ed49a6f9b33beb430edb5b",
+    #                 "0x62dc0eafe9ff0fe87302491d05cb9446ddf81f3f",
+    #                 "0x37af1c8c957d017a6b596ef6589923dbba1e2a7a",
+    #                 "0xc2bfc6ac230664b2ad76f850d46c0bc208df6b6d",
+    #                 "0x9eafeca178376002a45f936dbfd866185f5697d8",
+    #                 "0xc20390d3a70f2143ae7c967386ee2b2f1d6d66d2",
+    #                 "0x30948fe32bbec0b1a76095908f0dd0600d857643",
+    #                 "0xf88a8c160846afd82801b37a309425403d7c8e87",
+    #                 "0x612a6b21dbe9ad95857a4d1c5838f4804f3526bd",
+    #                 "0xbbb8915d99377512773887db6b424fe91b50e4f7"]
+    # for addr in scammer_addrs:
+    #
+    start_time = time.time()
+    #     print(get_first_add_last_remove_lqd_txs(addr))
+    #     print(f'Time {time.time() - start_time}')
+    #     t = time.time()
+    #     normal_txs, internal_txs = transaction_collector.get_transactions(addr, dex=dex)
+    #     print(get_first_add_last_remove_lqd_txs_decoder(normal_txs, internal_txs))
+    #     print(f'Time {time.time() - t}')
+>>>>>>> 1f4b2cdf313fb1932201f876d27d3ab63e2bf4ab
 
         start_time = time.time()
         print(get_first_add_last_remove_lqd_txs(addr))

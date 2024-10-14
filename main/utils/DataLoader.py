@@ -226,7 +226,40 @@ def load_transaction_by_address(address, dex="univ2"):
     normal_txs, internal_txs = transaction_collector.get_transactions(address, dex)
     return normal_txs, internal_txs
 
-
+def load_light_pool(scammer_address, dataloader, dex="univ2"):
+    pool_addresses = dataloader.scammer_pools[scammer_address.lower()]
+    pool_event_path = eval("path.{}_pool_events_path".format(dex))
+    contract_event_collector = ContractEventCollector()
+    creator_collector = CreatorCollector()
+    pools = []
+    for pool_address in pool_addresses:
+        burns_list = contract_event_collector.get_event(
+            pool_address, "Burn", pool_event_path, dex
+        )
+        burns = [BurnEvent().from_dict(e) for e in burns_list]
+        mint_list = contract_event_collector.get_event(
+            pool_address, "Mint", pool_event_path, dex
+        )
+        mints = [MintEvent().from_dict(e) for e in mint_list]
+        pool_info = dataloader.pool_infos[pool_address.lower()]
+        scammers = dataloader.pool_scammers[pool_address.lower()]
+        pool_creation = creator_collector.get_pool_creator(pool_address, dex)
+        token0 = pool_info["token0"]
+        token1 = pool_info["token1"]
+        pool = Pool(
+            pool_address,
+            token0,
+            token1,
+            scammers,
+            mints,
+            burns,
+            None,
+            None,
+            pool_creation["contractCreator"],
+            pool_creation["txHash"],
+        )
+        pools.append(pool)
+    return pools
 def load_pool(scammer_address, dataloader, dex="univ2"):
     pool_addresses = dataloader.scammer_pools[scammer_address.lower()]
     pool_event_path = eval("path.{}_pool_events_path".format(dex))
@@ -253,16 +286,16 @@ def load_pool(scammer_address, dataloader, dex="univ2"):
         pool_info = dataloader.pool_infos[pool_address.lower()]
         scammers = dataloader.pool_scammers[pool_address.lower()]
         pool_creation = creator_collector.get_pool_creator(pool_address, dex)
-        token0 = Token(pool_info["token0"])
-        token0.from_dict(dataloader.token_infos[pool_info["token0"]])
-        token0_creation = creator_collector.get_token_creator(token0.address, dex)
-        token0.creator = token0_creation["contractCreator"]
-        token0.creation_tx = token0_creation["txHash"]
-        token1 = Token(pool_info["token1"])
-        token1.from_dict(dataloader.token_infos[pool_info["token1"]])
-        token1_creation = creator_collector.get_token_creator(token1.address, dex)
-        token1.creator = token1_creation["contractCreator"]
-        token1.creation_tx = token1_creation["txHash"]
+        token0 = pool_info["token0"]
+        # token0.from_dict(dataloader.token_infos[pool_info["token0"]])
+        # token0_creation = creator_collector.get_token_creator(token0.address, dex)
+        # token0.creator = token0_creation["contractCreator"]
+        # token0.creation_tx = token0_creation["txHash"]
+        token1 = pool_info["token1"]
+        # token1.from_dict(dataloader.token_infos[pool_info["token1"]])
+        # token1_creation = creator_collector.get_token_creator(token1.address, dex)
+        # token1.creator = token1_creation["contractCreator"]
+        # token1.creation_tx = token1_creation["txHash"]
         pool = Pool(
             pool_address,
             token0,
@@ -311,7 +344,7 @@ class DataLoader(object):
 
 
 if __name__ == "__main__":
-    # dataloader = DataLoader(dex='univ2')
+    dataloader = DataLoader(dex='panv2')
     # print(load_cluster("cluster_0x7f0a9d794bba0a588f4c8351d8549bb5f76a34c4", dex='univ2'))
     # print(load_token_info(dex='univ2'))
     # pool = load_pool("0x19b98792e98c54f58c705cddf74316aec0999aa6", DataLoader(dex='univ2'))
@@ -321,5 +354,6 @@ if __name__ == "__main__":
     # print(pool.get_max_swap_value(pos))
     # print(pool.get_total_mint_value(pos))
     # print(pool.get_total_burn_value(pos))
-    print(len(load_full_end_nodes('univ2')))
-    print(len(load_full_end_nodes('panv2')))
+    # print(len(load_full_end_nodes('univ2')))
+    # print(len(load_full_end_nodes('panv2')))
+    load_pool("0x173c79f6f9e6c090a6055d07778a25c0009ea30a", dataloader, dex='panv2')
