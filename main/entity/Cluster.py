@@ -7,7 +7,9 @@ import os
 
 
 class ClusterNode:
-    def __init__(self, address, path, eoa_nb, contract_nb, normal_txs, internal_txs, labels):
+    def __init__(
+        self, address, path, eoa_nb, contract_nb, normal_txs, internal_txs, labels
+    ):
         self.address = address
         self.eoa_nb = eoa_nb
         self.contract_nb = contract_nb
@@ -27,20 +29,20 @@ class ClusterNode:
 
     @staticmethod
     def from_dict(data):
-        address = data['address']
-        eoa_nb = data['eoa_nb'] if 'eoa_nb' in data else None
-        contract_nb = data['contract_nb'] if 'contract_nb' in data else None
-        normal_txs = data['normal_txs'] if 'normal_txs' in data else None
-        internal_txs = data['internal_txs'] if 'internal_txs' in data else None
-        labels = data['labels'].split(';') if 'labels' in data else []
-        path = data['path'].split('>>') if 'path' in data else []
-        return ClusterNode(address,
-                           path,
-                           eoa_nb,
-                           contract_nb,
-                           normal_txs,
-                           internal_txs,
-                           labels)
+        address = data["address"]
+        eoa_nb = data["eoa_nb"] if "eoa_nb" in data else None
+        contract_nb = data["contract_nb"] if "contract_nb" in data else None
+        normal_txs = data["normal_txs"] if "normal_txs" in data else None
+        internal_txs = data["internal_txs"] if "internal_txs" in data else None
+        labels = (
+            data["labels"].split(";")
+            if "labels" in data and isinstance(data["labels"], str)
+            else []
+        )
+        path = data["path"].split(">>") if "path" in data else []
+        return ClusterNode(
+            address, path, eoa_nb, contract_nb, normal_txs, internal_txs, labels
+        )
 
 
 class Cluster:
@@ -56,13 +58,15 @@ class Cluster:
         return address in self.nodes.keys()
 
     def add_node(self, node: Node):
-        cnode = ClusterNode(node.address,
-                            node.path,
-                            len(node.eoa_neighbours),
-                            len(node.contract_neighbours),
-                            len(node.normal_txs),
-                            len(node.internal_txs),
-                            node.labels)
+        cnode = ClusterNode(
+            node.address,
+            node.path,
+            len(node.eoa_neighbours),
+            len(node.contract_neighbours),
+            len(node.normal_txs),
+            len(node.internal_txs),
+            node.labels,
+        )
         self.nodes[cnode.address] = cnode
 
     def add_group(self, group):
@@ -70,13 +74,17 @@ class Cluster:
 
     def write_node(self, outpath, n: Node):
         node_list_file = os.path.join(outpath, f"cluster_{self.id}.csv")
-        data = [{"address": n.address,
-                 "eoa_n": len(n.eoa_neighbours),
-                 "contract_n": len(n.contract_neighbours),
-                 "normal": len(n.normal_txs),
-                 "internal": len(n.internal_txs),
-                 "labels": ";".join(n.labels),
-                 "path": ">>".join(n.path)}]
+        data = [
+            {
+                "address": n.address,
+                "eoa_n": len(n.eoa_neighbours),
+                "contract_n": len(n.contract_neighbours),
+                "normal": len(n.normal_txs),
+                "internal": len(n.internal_txs),
+                "labels": ";".join(n.labels),
+                "path": ">>".join(n.path),
+            }
+        ]
         ut.save_or_append_if_exist(data, node_list_file)
 
     def write_queue(self, outpath, q: OrderedQueue, traversed_nodes):
@@ -84,7 +92,12 @@ class Cluster:
         traversed_file = os.path.join(outpath, f"traversed_{self.id}.txt")
         nodes = []
         for node in q.queue:
-            nodes.append({"address": node.address, "path": ";".join(node.path) if node.path else None})
+            nodes.append(
+                {
+                    "address": node.address,
+                    "path": ";".join(node.path) if node.path else None,
+                }
+            )
         ut.save_overwrite_if_exist(nodes, queue_file)
         ut.write_list_to_file(traversed_file, traversed_nodes)
 
@@ -99,10 +112,12 @@ class Cluster:
             try:
                 queue_df = pd.read_csv(queue_file)
                 for idx, row in queue_df.iterrows():
-                    path = row['path'].split(';') if 'path' in row else []
+                    path = row["path"].split(";") if "path" in row else []
                     if row["address"] in path:
                         path.remove(row["address"])
-                    node = create_node(row["address"], path, dataloader, existing_groups)
+                    node = create_node(
+                        row["address"], path, dataloader, existing_groups
+                    )
                     queue.put(node)
             except Exception as e:
                 print("CANNOT LOAD QUEUE FILE INTO DF >> START FROM SCRATCH")
@@ -124,12 +139,15 @@ class Cluster:
         node_list_file = os.path.join(outpath, f"cluster_{self.id}.csv")
         data = []
         for n in self.nodes.values():
-            data.append({"address": n.address,
-                         "eoa_nb": n.eoa_nb,
-                         "contract_nb": n.contract_nb,
-                         "normal_txs": n.normal_txs,
-                         "internal_txs": n.internal_txs,
-                         "labels": ";".join(n.labels),
-                         "path": ">>".join(n.path)
-                         })
+            data.append(
+                {
+                    "address": n.address,
+                    "eoa_nb": n.eoa_nb,
+                    "contract_nb": n.contract_nb,
+                    "normal_txs": n.normal_txs,
+                    "internal_txs": n.internal_txs,
+                    "labels": ";".join(n.labels),
+                    "path": ">>".join(n.path),
+                }
+            )
         ut.save_overwrite_if_exist(data, node_list_file)

@@ -6,11 +6,13 @@ from data_collection.AccountCollector import TransactionCollector
 from entity.Cluster import ClusterNode
 from entity.Node import NodeLabel
 from entity.blockchain.Address import Pool, Token
-from typing import Set, List, Union, Tuple
+from typing import Set, List, Union, Mapping
 
 from entity.blockchain.Transaction import NormalTransaction
-from utils import DataLoader
+from utils import DataLoader, Constant
 from utils.Utils import get_transaction_by_hash
+
+ProfitPool = namedtuple("ProfitPool", ["profit", "pool"])
 
 
 def log_cluster_calculation(func):
@@ -30,7 +32,14 @@ def log_cluster_calculation(func):
             f"{'=' * 100}"
         )
 
-        print(f"The entire cluster profit is {result}")
+        print(f"Total pool profits in the cluster: {result}")
+        print(
+            f"Total transfer fees between nodes in the cluster: {args[0].cluster_transfer_fees}"
+        )
+        print(
+            f"Net cluster profit after deducting transfer fees: {result - args[0].cluster_transfer_fees}"
+        )
+
         return result
 
     return wrapper
@@ -38,7 +47,7 @@ def log_cluster_calculation(func):
 
 class ClusterProfitCalculator:
     def __init__(self):
-        self.dataloader = DataLoader.DataLoader()
+        self.dataloader = DataLoader.DataLoader(dex="panv2")
         self.transactionCollector = TransactionCollector()
         # self.cluster_name and self.cluster will be set in the _initialise_cluster function.
         self.cluster_name: Union[str, None] = None
@@ -49,7 +58,7 @@ class ClusterProfitCalculator:
         """
         Returns a set of node addresses in the cluster.
         """
-        return {node.address.lower() for node in self.cluster}
+        return {node.address.lower() for node in self.cluster if len(node.labels) > 0}
 
     @cached_property
     def scammer_node_addresses(self) -> Set[str]:
@@ -62,7 +71,7 @@ class ClusterProfitCalculator:
             if NodeLabel.is_scammer(node)
             # TODO: remove this line once we're confident that the given cluster does not
             #  include contracts
-            and node.address in self.dataloader.scammers_set
+            # and node.address in self.dataloader.scammers_set
         }
 
     @cached_property
@@ -73,8 +82,40 @@ class ClusterProfitCalculator:
         return {
             pool
             for scammer_node_address in self.scammer_node_addresses
-            for pool in DataLoader.load_pool(scammer_node_address, self.dataloader)
+            for pool in DataLoader.load_pool(
+                scammer_node_address, self.dataloader, dex="panv2"
+            )
         }
+
+    @cached_property
+    def cluster_transfers(self) -> Set[NormalTransaction]:
+        """
+        Returns a set of NormalTransaction objects representing transfer transactions between
+        nodes in the cluster.
+        """
+        return {
+            normal_tx
+            for node_address in self.node_addresses_in_cluster
+            for normal_tx in TransactionCollector().get_transactions(
+                node_address, dex="panv2"
+            )[0]
+            if normal_tx.is_transfer_tx()
+            and normal_tx.sender.lower() in self.node_addresses_in_cluster
+            and normal_tx.to.lower() in self.node_addresses_in_cluster
+        }
+
+    @cached_property
+    def cluster_transfer_fees(self) -> float:
+        """
+        Returns the total transfer fees incurred from direct transfers between nodes within this
+        cluster.
+
+        This includes only the fees from normal transactions between the nodes
+        """
+        return sum(
+            float(tx.gasUsed) * float(tx.gasPrice) / 10**Constant.WETH_BNB_DECIMALS
+            for tx in self.cluster_transfers
+        )
 
     def _initialise_cluster(self, cluster_name: str) -> None:
         """
@@ -82,12 +123,14 @@ class ClusterProfitCalculator:
         and invalidates cached properties related to the cluster.
         """
         self.cluster_name = cluster_name
-        self.cluster = DataLoader.load_cluster(cluster_name)
+        self.cluster = DataLoader.load_cluster(cluster_name, dex="panv2")
 
         # Invalidate cached properties for a new cluster
         self.__dict__.pop("node_addresses_in_cluster", None)
         self.__dict__.pop("scammer_node_addresses", None)
         self.__dict__.pop("scammer_pools", None)
+        self.__dict__.pop("cluster_transfers", None)
+        self.__dict__.pop("cluster_transfer_fees", None)
 
     @log_cluster_calculation
     def calculate(self, cluster_name: str) -> float:
@@ -99,22 +142,22 @@ class ClusterProfitCalculator:
         """
         self._initialise_cluster(cluster_name)
 
-        ProfitPool = namedtuple("ProfitPool", ["profit", "pool"])
-
         for scammer_pool in self.scammer_pools:
             self.update_profit_metrics_per_pool(scammer_pool)
 
-        profits_and_pools = [
-            ProfitPool(scammer_pool.profit, scammer_pool)
-            for scammer_pool in self.scammer_pools
-        ]
+        pools_sorted_bt_profit = sorted(
+            [ProfitPool(pool.profit, pool) for pool in self.scammer_pools],
+            key=lambda x: x.profit,
+        )
 
-        profits_and_pools.sort(key=lambda x: x.profit)
-
-        for _, pool in profits_and_pools:
+        for _, pool in pools_sorted_bt_profit:
             self.log_pool_calculation_results(pool)
 
-        return sum(profit_and_pool.profit for profit_and_pool in profits_and_pools)
+        pools_profits_total = sum(
+            profit_and_pool.profit for profit_and_pool in pools_sorted_bt_profit
+        )
+
+        return pools_profits_total
 
     def calculate_y_per_pool(self, pool: Pool) -> float:
         """
@@ -199,7 +242,9 @@ class ClusterProfitCalculator:
 
         self._validate_scam_token_is_created_by_cluster(scam_token, pool)
 
-        normal_txs, _ = DataLoader.load_transaction_by_address(scam_token.creator)
+        normal_txs, _ = DataLoader.load_transaction_by_address(
+            scam_token.creator, dex="panv2"
+        )
         token_creation_tx = get_transaction_by_hash(normal_txs, scam_token.creation_tx)
 
         self._validate_transaction_amount_is_zero(token_creation_tx, pool)
@@ -278,4 +323,4 @@ class ClusterProfitCalculator:
 
 if __name__ == "__main__":
     calculator = ClusterProfitCalculator()
-    calculator.calculate("cluster_150")
+    calculator.calculate("cluster_1327")

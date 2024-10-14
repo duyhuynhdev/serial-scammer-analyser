@@ -201,7 +201,9 @@ class Pool(ERC20):
                 self.high_value_token.decimals
             )
             total_fees += (
-                float(item.gasUsed * item.gasPrice) / 10**Constant.WETH_BNB_DECIMALS
+                float(item.gasUsed)
+                * float(item.gasPrice)
+                / 10**Constant.WETH_BNB_DECIMALS
             )
 
         return total_value, total_fees
