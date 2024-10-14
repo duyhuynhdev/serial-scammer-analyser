@@ -59,19 +59,25 @@ def create_pool_statistic_data(job, size, dex):
     print(f"DOWNLOAD ALL POOL EVENTS FROM {chunk['from']} TO {chunk['to']} (JOB {job})")
     load_pools(addresses, dex)
 
-def fulfill_block_number_for_pool(job, size, dex):
+def fulfill_block_number_for_pool(job, dex):
     result = []
     api = explorer_api[dex]["explorer"]
     keys = explorer_api[dex]["keys"]
     key = keys[job % len(keys)]
     pool_creation_path = os.path.join(eval('path.{}_processed_path'.format(dex)), "pool_creation_info.csv")
-    output_path = os.path.join("data", "pool_creation_with_block_number.csv")
+    scam_pool_path = os.path.join(eval('path.{}_processed_path'.format(dex)), "filtered_simple_rp_pool.csv")
+    output_path = os.path.join("data", f"{dex}_scam_pool_creation_with_block_number.csv")
     pool_creation = pd.read_csv(pool_creation_path)
+    scam_pools = pd.read_csv(scam_pool_path)["pool"].str.lower().values
+    print("SCAM:", len(scam_pools))
+    pool_creation= pool_creation[pool_creation["contractAddress"].str.lower().isin(scam_pools)]
+    print("CREATION:", len(pool_creation))
+
     pool_creation.drop_duplicates(inplace=True)
-    chunks = ut.partitioning(0, len(pool_creation), int(len(pool_creation) / size))
+    chunks = ut.partitioning(0, len(pool_creation), int(len(pool_creation) / len(keys)))
     chunk = chunks[job]
     addresses = pool_creation.iloc[chunk["from"]:(chunk["to"] + 1), :]
-    print(f"DOWNLOAD ALL POOL EVENTS FROM {chunk['from']} TO {chunk['to']} (JOB {job})")
+    print(f"DOWNLOAD ALL POOL EVENTS FROM {chunk['from']} TO {chunk['to']} (JOB {job}/{len(chunks)})")
     processed_addresses = []
     if os.path.isfile(output_path):
         processed_addresses = list(pd.read_csv(output_path, low_memory=False)["pool"].str.lower().values)
@@ -110,6 +116,6 @@ def fulfill_block_number_for_pool(job, size, dex):
     print("DONE")
 
 if __name__ == '__main__':
-    job = 20
-    dex = 'univ2'
-    fulfill_block_number_for_pool(job, 20, dex)
+    job = 24
+    dex = 'panv2'
+    fulfill_block_number_for_pool(job, dex)

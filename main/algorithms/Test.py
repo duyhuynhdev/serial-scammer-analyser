@@ -81,11 +81,11 @@ def test_all_scammer(collector, dataloader, dex='univ2'):
         if not found_rev:
             no_rev.append(s)
     print(len(no_add), len(no_rev))
-    print("NO ADD", len(no_add), no_add)
-    print("NO REV", len(no_rev), no_rev)
+    print("NO ADD", len(no_add))
+    print("NO REV", len(no_rev))
 
 if __name__ == '__main__':
-    dex = "univ2"
+    dex = "panv2"
     collector = TransactionCollector()
     dataloader = DataLoader(dex=dex)
     # address = "0xe7daf02024dfcf0d36ed49a6f9b33beb430edb5b".lower()

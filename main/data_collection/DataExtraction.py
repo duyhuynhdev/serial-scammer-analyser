@@ -59,8 +59,8 @@ zero_txs_addresses = ["0x00c8357eebba2021ee4d8cbd2946145bcc7aa2fb",
 "0x9e7292514bdb02e40e0272f5191556ff22ec27e3",
 "0x8cdc0eb3c9f94694dae870ad39cb2193b25985f6"]
 def extract_simple_rp(dex='univ2'):
-    scammer_df = pd.read_csv(os.path.join(eval("path.{}_processed_path".format(dex)), "1_pair_scammers.csv"))
-    rp_pools = pd.read_csv(os.path.join(eval("path.{}_processed_path".format(dex)), "1_pair_pool_labels.csv"))
+    scammer_df = pd.read_csv(os.path.join(eval("path.{}_processed_path".format(dex)), "simple_rp_scammers.csv"))
+    rp_pools = pd.read_csv(os.path.join(eval("path.{}_processed_path".format(dex)), "simple_rp_pool_labels.csv"))
     rp_pools.fillna("", inplace=True)
     print("All pool:", len(rp_pools))
     print("All scammer:", len(scammer_df["scammer"].unique()))
@@ -112,5 +112,5 @@ def filter_non_scammer_addresses(dex='univ2'):
     rp_scammer_df.to_csv(os.path.join(eval("path.{}_processed_path".format(dex)), "filtered_simple_rp_scammers.csv"), index=False)
 
 if __name__ == '__main__':
-    # extract_simple_rp(dex="panv2")
-    filter_non_scammer_addresses(dex="panv2")
+    extract_simple_rp(dex="univ2")
+    filter_non_scammer_addresses(dex="univ2")

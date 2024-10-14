@@ -108,8 +108,8 @@ class Pool(ERC20):
         super().__init__(
             address, "Uniswap V2", "UNI-V2", None, 18, transfers, creator, creation_tx
         )
-        self.token0: Token = token0
-        self.token1: Token = token1
+        self.token0: str = token0
+        self.token1: str = token1
         self.scammers = scammers if scammers is not None else []
         self.mints = mints if mints is not None else []
         self.burns = burns if burns is not None else []
@@ -123,11 +123,11 @@ class Pool(ERC20):
 
     def get_high_value_position(self) -> int:
         if self.token0 is not None and (
-            self.token0.address.lower() in Constant.HIGH_VALUE_TOKENS
+            self.token0.lower() in Constant.HIGH_VALUE_TOKENS
         ):
             return 0
         if self.token1 is not None and (
-            self.token1.address.lower() in Constant.HIGH_VALUE_TOKENS
+            self.token1.lower() in Constant.HIGH_VALUE_TOKENS
         ):
             return 1
         raise HighValueTokenNotFound(
