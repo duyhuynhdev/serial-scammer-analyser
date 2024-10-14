@@ -9,7 +9,6 @@ import pandas as pd
 import pickle
 import networkx as nx
 import time
-from ordered_set import OrderedSet
 
 
 sys.path.append(os.path.join(os.path.dirname(sys.path[0])))
@@ -21,7 +20,7 @@ from utils.ProjectPath import ProjectPath
 from entity.blockchain import Transaction
 
 
-dex = 'univ2'
+dex = 'panv2'
 dataloader = DataLoader(dex=dex)
 path = ProjectPath()
 transaction_collector = TransactionCollector()

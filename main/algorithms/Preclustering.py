@@ -104,4 +104,4 @@ def pre_clusterting(dex='univ2'):
 
 
 if __name__ == '__main__':
-    pre_clusterting(dex='univ2')
+    pre_clusterting(dex='panv2')

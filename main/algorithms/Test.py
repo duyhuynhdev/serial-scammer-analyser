@@ -46,14 +46,14 @@ def test_single_scammer(address, collector, dataloader,  dex='univ2'):
         if TransactionUtils.is_scam_add_liq(normal_tx, dataloader):
             found_add = True
             amount = TransactionUtils.get_add_liq_amount(normal_tx, normal_txs, dataloader)
-            # print(f"\tFOUND SCAM LIQ ADDING {normal_tx.hash} WITH ADDED AMOUNT iS {amount}")
+            print(f"\tFOUND SCAM LIQ ADDING {normal_tx.hash} WITH ADDED AMOUNT iS {amount}")
             if amount > 0:
                 found_add = True
 
         if TransactionUtils.is_scam_remove_liq(normal_tx, dataloader):
             found_rev = True
             amount = TransactionUtils.get_related_amount_from_internal_txs(normal_tx, normal_txs, internal_txs)
-            # print(f"\tFOUND SCAM LIQ REMOVAL {normal_tx.hash} WITH REMOVED AMOUNT iS {amount}")
+            print(f"\tFOUND SCAM LIQ REMOVAL {normal_tx.hash} WITH REMOVED AMOUNT iS {amount}")
             if amount > 0:
                 found_rev = True
     assert found_add
@@ -86,9 +86,9 @@ def test_all_scammer(collector, dataloader, dex='univ2'):
     print("NO REV", len(no_rev))
 
 if __name__ == '__main__':
-    dex = "univ2"
+    dex = "panv2"
     collector = TransactionCollector()
     dataloader = DataLoader(dex=dex)
-    # address = "0xe7daf02024dfcf0d36ed49a6f9b33beb430edb5b".lower()
-    # test_single_scammer(address,collector, dataloader, dex)
-    test_all_scammer(collector, dataloader, dex=dex)
+    address = "0x7e5bdb82d402409db22c50818b38febe3d808a5f".lower()
+    test_single_scammer(address,collector, dataloader, dex)
+    # test_all_scammer(collector, dataloader, dex=dex)

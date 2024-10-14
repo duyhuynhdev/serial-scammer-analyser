@@ -207,12 +207,12 @@ def find_complete_group(dex):
 
 
 if __name__ == '__main__':
-    dex = "panv2"
+    dex = "univ2"
     dataloader = DataLoader(dex)
     collector = ContractSourceCodeCollector(dex)
     # finish groups: 2, 150
     # Note: 1402 - 0xcc7cf327b3965dbce9a450a358c357e36c0a99bb -> big connector who transfer money to many WT
     # job = 0
     # explore_with_max_iter(job, 100, 5000)
-    run_clustering(363, dex)
+    run_clustering(126, dex)
     # find_complete_group(dex)

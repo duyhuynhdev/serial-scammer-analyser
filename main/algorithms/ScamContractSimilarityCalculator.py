@@ -299,32 +299,20 @@ def calculate_individual_avg_sim(scammer_hashed_tokens, dex='univ2'):
     print("TOTAL", len(global_sim), "WITH AVG SIM", np.mean(global_sim))
 
 if __name__ == '__main__':
-    dex='univ2'
+    dex='panv2'
     group_hashed_tokens, group_scammers, scammer_hashed_tokens = load_data(dex=dex)
     print("DATA SIZE", len(group_hashed_tokens))
     print("SCAMMER SIZE", len(group_scammers))
-    print("SCAMMER SIZE", len(scammer_hashed_tokens))
+    print("TOKEN SIZE", len(scammer_hashed_tokens))
     print("TOTAL HASHED TOKENS", sum([len(s) for s in scammer_hashed_tokens.values()]))
-    # generate_intra_sim(group_hashed_tokens, group_scammers, dex='panv2')
-    # print("GENERATE PAIRS SIM")
-    # for gid, tokens in tqdm(group_tokens.items()):
-    #     scammers = group_scammers[gid]
-    #     print("GID:", gid, "SCAMMERS:", len(scammers), "TOKENS:", len(tokens))
-    #     if len(scammers) > 1:
-    #         similarites = intra_cluster_similarity(gid, tokens, dex='univ2')
-    #     else:
-    #         similarites = intra_cluster_similarity(gid, tokens, dex='univ2', prefix="one_scammer_group")
-    #     if len(similarites) > 0:
-    #         print(gid, ":", similarites)
-    # print("CALCULATE INTRA SIM")
+    # generate_intra_sim(group_hashed_tokens, group_scammers, dex=dex)
     # calculate_intra_avg_sim(group_hashed_tokens, group_scammers,dex=dex)
-    # print("CALCULATE ONE SCAMMER GROUP INTRA SIM")
     # calculate_intra_avg_sim(group_hashed_tokens, group_scammers, prefix="one_scammer_group_",dex=dex)
-    # generate_inter_sim(group_hashed_tokens, dex=dex)
-    # calculate_inter_avg_sim(group_hashed_tokens, group_scammers,dex=dex)
+    generate_inter_sim(group_hashed_tokens, dex=dex)
+    calculate_inter_avg_sim(group_hashed_tokens, group_scammers,dex=dex)
     # generate_individual_sim(scammer_hashed_tokens, dex=dex)
+    # calculate_individual_avg_sim(scammer_hashed_tokens, dex=dex)
     # g_count = []
     # for gi, hash_token in group_hashed_tokens.items():
     #     g_count.append(len(hash_token))
     # print(g_count.count(1))
-    calculate_individual_avg_sim(scammer_hashed_tokens, dex=dex)

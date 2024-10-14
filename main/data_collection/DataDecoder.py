@@ -211,14 +211,13 @@ class FunctionInputDecoder:
         data = HexBytes(input)
         methodId, params = data[:4], data[4:]
         if methodId.hex() not in signature_dict.keys():
-            return False, []
+            return None
         function_info = signature_dict[methodId.hex()]
         types = function_info["types"]
         names = function_info["names"]
         decoded_data = self.codec.decode(types, HexBytes(params))
         normalized = map_abi_data(BASE_RETURN_NORMALIZERS, types, decoded_data)
         parsed = dict(zip(names, normalized))
-        # print(parsed)
         return parsed
 
     def decode_remove_liq_function_input(self, input):
