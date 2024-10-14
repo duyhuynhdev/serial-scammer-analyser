@@ -237,7 +237,7 @@ def get_funder_and_beneficiary(scammer_address):
         else:
             # LOGIC for funder, if it didn't perform any out transactions, no duplicate, passed the threshold then add
             if largest_in_transaction:
-                if passed_in_threshold and not duplicate_in_amt and largest_in_transaction.sender not in out_addresses:
+                if passed_in_threshold and not duplicate_in_amt and largest_in_transaction.sender not in out_addresses and transaction_collector.ensure_valid_eoa_address(largest_in_transaction.sender):
                     funder_dict = get_dict_info(largest_in_transaction, largest_in_transaction.sender)
 
             # LOGIC for beneficiary, if it didn't perform any in transactions, no duplicate, and passed the threshold and is not a contract address
@@ -397,7 +397,7 @@ def process_stars_on_all_scammers():
 
 
 if __name__ == '__main__':
-    process_stars_on_all_scammers()
-    # print(find_star_shape_for_scammer('0xb2fa1e6a77ed9eaf41cf90ff9db27feb07d32a2a'))
-    # result = get_funder_and_beneficiary('0xef460dab4adbdd5a1823714a0a4431fd76194252')
-    # print(result)
+    # process_stars_on_all_scammers()
+    # THIS SHOULD NOW NOT RETURN ANYTHING
+    result = get_funder_and_beneficiary('0xceb3fd461abd8df52052d50d100f7f9ae839c266')
+    print(result)
