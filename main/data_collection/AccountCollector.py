@@ -182,6 +182,7 @@ class TransactionCollector:
         return parsed_normal_txs
 
     def get_transactions_including_internal(self, address, dex='panv2', key_idx=0):
+        print("Get normal and internal txs for address={}".format(address))
         from_block = eval('self.{}_first_block'.format(dex))
         to_block = eval('self.{}_last_block'.format(dex))
         api = explorer_api[dex]["explorer"]
@@ -222,6 +223,7 @@ class TransactionCollector:
         return parsed_normal_txs, parsed_internal_txs
 
     def ensure_valid_eoa_address(self, address):
+        print("Ensuring valid_eoa_address={}".format(address))
         normal_txs, internal_txs = self.get_transactions_including_internal(address, 'panv2', 0)
         if len(normal_txs) >= Constant.TX_LIMIT_1:
             return False
