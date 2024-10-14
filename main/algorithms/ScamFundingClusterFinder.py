@@ -21,7 +21,7 @@ from utils.ProjectPath import ProjectPath
 from entity.blockchain import Transaction
 
 
-dex = 'univ2'
+dex = 'panv2'
 dataloader = DataLoader(dex=dex)
 path = ProjectPath()
 transaction_collector = TransactionCollector()
@@ -123,21 +123,21 @@ def get_valid_funding_txs(all_scammmer_addrs):
             print({f"Done till scammer index = {index}"})
         normal_txs, internal_txs = transaction_collector.get_transactions(scammer_addr, dex=dex)
         found_add, first_add_timestamp, funding_value, found_rev, last_remove_timestamp, revenue_value = get_first_add_last_remove_lqd_txs_decoder(normal_txs, internal_txs)
-        # if not found_add:
-        #     print(f"Scammer {index}: {scammer_addr} has no first add lqd")
-        #     F_txs[scammer_addr] = []
-        # if not found_rev:
-        #     print(f"Scammer {index}: {scammer_addr} has no last remove lqd")
-        #     B_txs[scammer_addr] = []
-        if (not found_add) or (not found_rev):
-            found_add, first_add_timestamp, funding_value, found_rev, last_remove_timestamp, revenue_value = get_first_add_last_remove_lqd_txs(
-                scammer_addr)
-            if not found_add:
-                print(f"Scammer {index}: {scammer_addr} has no first add lqd")
-                F_txs[scammer_addr] = []
-            if not found_rev:
-                print(f"Scammer {index}: {scammer_addr} has no last remove lqd")
-                B_txs[scammer_addr] = []
+        if not found_add:
+            print(f"Scammer {index}: {scammer_addr} has no first add lqd")
+            F_txs[scammer_addr] = []
+        if not found_rev:
+            print(f"Scammer {index}: {scammer_addr} has no last remove lqd")
+            B_txs[scammer_addr] = []
+        # if (not found_add) or (not found_rev):
+        #     found_add, first_add_timestamp, funding_value, found_rev, last_remove_timestamp, revenue_value = get_first_add_last_remove_lqd_txs(
+        #         scammer_addr)
+        #     if not found_add:
+        #         print(f"Scammer {index}: {scammer_addr} has no first add lqd")
+        #         F_txs[scammer_addr] = []
+        #     if not found_rev:
+        #         print(f"Scammer {index}: {scammer_addr} has no last remove lqd")
+        #         B_txs[scammer_addr] = []
         if not found_add and not found_rev:
             continue
         # print(f"Time to get first add lqd and last remove lqd {time.time() - t}")
