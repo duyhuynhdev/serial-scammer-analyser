@@ -225,13 +225,15 @@ def get_funder_and_beneficiary(scammer_address):
     if passed_add_liquidity and passed_remove_liquidity:
         passed_in_threshold = False
         passed_out_threshold = False
+        valid_out_address = False
         if largest_in_transaction:
             passed_in_threshold = largest_in_transaction.get_transaction_amount_and_fee() / add_liquidity_amt >= IN_PERCENTAGE_THRESHOLD
         if largest_out_transaction:
             passed_out_threshold = largest_out_transaction.get_transaction_amount_and_fee() / remove_liquidity_amt >= OUT_PERCENTAGE_THRESHOLD
+            valid_out_address = transaction_collector.ensure_valid_eoa_address(largest_out_transaction.to)
 
         # LOGIC case where the in sender and out receiver are the same for IN_OUT star
-        if passed_in_threshold and passed_out_threshold and largest_in_transaction and largest_out_transaction and not duplicate_out_amt and not duplicate_in_amt and largest_in_transaction.sender == largest_out_transaction.to:
+        if valid_out_address and passed_in_threshold and passed_out_threshold and largest_in_transaction and largest_out_transaction and not duplicate_out_amt and not duplicate_in_amt and largest_in_transaction.sender == largest_out_transaction.to:
             funder_dict = get_dict_info(largest_in_transaction, largest_in_transaction.sender)
             beneficiary_dict = get_dict_info(largest_out_transaction, largest_out_transaction.to)
         else:
@@ -242,7 +244,7 @@ def get_funder_and_beneficiary(scammer_address):
 
             # LOGIC for beneficiary, if it didn't perform any in transactions, no duplicate, and passed the threshold and is not a contract address
             if largest_out_transaction:
-                if passed_out_threshold and not duplicate_out_amt and largest_out_transaction.to not in in_addresses and transaction_collector.ensure_valid_eoa_address(largest_out_transaction.to):
+                if passed_out_threshold and not duplicate_out_amt and largest_out_transaction.to not in in_addresses and valid_out_address:
                     beneficiary_dict = get_dict_info(largest_out_transaction, largest_out_transaction.to)
 
     if funder_dict:
