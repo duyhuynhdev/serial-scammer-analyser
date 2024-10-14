@@ -293,8 +293,8 @@ def debug_detection(pool_address, dex='univ2'):
 
 
 if __name__ == '__main__':
-    dex = "univ2"
-    job = 21
+    dex = "panv2"
+    job = 20
     collector = ContractSourceCodeCollector(dex)
     rug_pull_detection(job, dex)
     # debug_detection("0x0Aef3e46E51b72962A625D8eE894Fe2A1DCEFb6B", dex)

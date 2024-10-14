@@ -9,19 +9,18 @@ import pandas as pd
 import pickle
 import networkx as nx
 import time
-from ordered_set import OrderedSet
 
 
 sys.path.append(os.path.join(os.path.dirname(sys.path[0])))
 
 from utils.Utils import  TransactionUtils, Constant
 from data_collection.AccountCollector import TransactionCollector
-from utils.DataLoader import DataLoader, load_pool
+from utils.DataLoader import DataLoader, load_light_pool
 from utils.ProjectPath import ProjectPath
 from entity.blockchain import Transaction
 
-
-dex = 'univ2'
+# dex = 'univ2'
+dex = 'panv2'
 dataloader = DataLoader(dex=dex)
 path = ProjectPath()
 transaction_collector = TransactionCollector()
@@ -46,7 +45,7 @@ def get_first_add_last_remove_lqd_txs(scammer_addr):
         return event.amount0 / 10 ** 18 if use_value == 0 else event.amount1 / 10 ** 18
 
     # t = time.time()
-    scammer_pools = load_pool(scammer_addr, dataloader)
+    scammer_pools = load_light_pool(scammer_addr, dataloader, dex)
     # print(f"Time to load pool {time.time() - t}")
 
     all_add_lqd_trans = {}
@@ -268,7 +267,7 @@ if __name__ == '__main__':
     #                 "0xbbb8915d99377512773887db6b424fe91b50e4f7"]
     # for addr in scammer_addrs:
     #
-    #     start_time = time.time()
+    start_time = time.time()
     #     print(get_first_add_last_remove_lqd_txs(addr))
     #     print(f'Time {time.time() - start_time}')
     #     t = time.time()
