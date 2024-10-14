@@ -119,6 +119,8 @@ def get_valid_funding_txs(all_scammmer_addrs):
     tmp_txs = set()
     # t = time.time()
     for index, scammer_addr in enumerate(all_scammmer_addrs):
+        if index % 100 == 0:
+            print({f"Done till scammer index = {index}"})
         normal_txs, internal_txs = transaction_collector.get_transactions(scammer_addr, dex=dex)
         found_add, first_add_timestamp, funding_value, found_rev, last_remove_timestamp, revenue_value = get_first_add_last_remove_lqd_txs_decoder(normal_txs, internal_txs)
         # if not found_add:
@@ -261,17 +263,8 @@ def find_MSF_clusters(atomic_MSF_groups):
     for cc in connected_components:
         cc = list(cc)
         msf_cluster = copy.deepcopy(cc[0]) # using deep copy
-        # print(f"msf_cluster_0.inputs = {msf_cluster.inputs}")
-        # print(f"msf_cluster_0.outputs = {msf_cluster.outputs}")
         for i in range(1, len(cc)):
-            # print(f"cc{i}.inputs = {cc[i].inputs}")
-            # print(f"cc{i}.outputs = {cc[i].outputs}")
             msf_cluster.merge(cc[i])
-            # print(f"after merge {i}")
-            # print(f"msf_cluster.inputs = {msf_cluster.inputs}")
-            # print(f"msf_cluster.outputs = {msf_cluster.outputs}")
-            # print(f"msf_cluster.V = {msf_cluster.V}")
-
         MSF_clusters.append(msf_cluster)
     return connected_components, MSF_clusters
 
@@ -298,7 +291,7 @@ def test_remove_lqd_detector():
         print(f'Time {time.time() - t}')
 
 if __name__ == '__main__':
-    # # # 1. Test a simple chain example
+    # # 1. Test a simple chain example
     # all_scammer_addrs = pd.read_csv("complex_chain_example.txt", header=None)
     # all_scammer_addrs = [s.lower() for s in all_scammer_addrs.to_numpy().flatten().tolist()]
 
@@ -317,28 +310,28 @@ if __name__ == '__main__':
     # create_atomic_MSF_groups()
     # connected_components, MSF_clusters = find_MSF_clusters(atomic_MSF_groups)
 
-    if not os.path.exists('funding_txs.pkl'):
+    if not os.path.exists(f"funding_txs_{dex}.pkl"):
         get_valid_funding_txs(all_scammer_addrs)
-        with open('funding_txs.pkl', 'wb') as file:
+        with open(f'funding_txs_{dex}.pkl', 'wb') as file:
             pickle.dump((all_funding_txs, all_funding_tx_hashes, F_txs, B_txs), file)
     else:
-        with open('funding_txs.pkl', 'rb') as file:
+        with open(f'funding_txs_{dex}.pkl', 'rb') as file:
             all_funding_txs, all_funding_tx_hashes, F_txs, B_txs = pickle.load(file)
 
-    if not os.path.exists('atomic_groups.pkl'):
+    if not os.path.exists(f'atomic_groups_{dex}.pkl'):
         create_atomic_MSF_groups()
-        with open('atomic_groups.pkl', 'wb') as file:
+        with open(f'atomic_groups_{dex}.pkl', 'wb') as file:
             pickle.dump(atomic_MSF_groups, file)
     else:
-        with open('atomic_groups.pkl', 'rb') as file:
+        with open(f'atomic_groups_{dex}.pkl', 'rb') as file:
             atomic_MSF_groups = pickle.load(file)
 
-    if not os.path.exists('MSF_clusters.pkl'):
+    if not os.path.exists(f'MSF_clusters_{dex}.pkl'):
         connected_components, MSF_clusters = find_MSF_clusters(atomic_MSF_groups)
-        with open('MSF_clusters.pkl', 'wb') as file:
+        with open(f'MSF_clusters_{dex}.pkl', 'wb') as file:
             pickle.dump((connected_components, MSF_clusters), file)
     else:
-        with open('MSF_clusters.pkl', 'rb') as file:
+        with open(f'MSF_clusters_{dex}.pkl', 'rb') as file:
             connected_components, MSF_clusters = pickle.load(file)
 
     # Statistics
@@ -365,4 +358,4 @@ if __name__ == '__main__':
         df.loc[i, 'fund_in'] = sum([tx.get_transaction_amount() for v in cluster.inputs for tx in B_txs[v]])
         df.loc[i, 'fund_out'] = sum([tx.get_transaction_amount() for v in cluster.outputs for tx in F_txs[v]])
 
-    df.to_csv("MSF_clusters_statistics.csv")
+    df.to_csv(f"MSF_clusters_statistics_{dex}.csv")
