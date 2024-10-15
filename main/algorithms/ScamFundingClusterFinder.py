@@ -44,24 +44,27 @@ def get_first_add_last_remove_lqd_txs(scammer_addr):
     def calc_liquidity_amount(event, use_value):
         return event.amount0 / 10 ** 18 if use_value == 0 else event.amount1 / 10 ** 18
 
-    # t = time.time()
+    t = time.time()
     scammer_pools = load_light_pool(scammer_addr, dataloader, dex)
-    # print(f"Time to load pool {time.time() - t}")
+    print(f"Time to load pool {time.time() - t}")
 
     all_add_lqd_trans = {}
     all_remove_lqd_trans = {}
 
-
+    t = time.time()
     for pool_index in range(len(scammer_pools)):
         eth_pos = scammer_pools[pool_index].get_high_value_position()
         add_lqd_trans = scammer_pools[pool_index].mints
+        print("Num mint", len(add_lqd_trans))
         for tx in add_lqd_trans:
             all_add_lqd_trans[tx] = calc_liquidity_amount(tx, eth_pos)
         remove_lqd_trans = scammer_pools[pool_index].burns
+        print("Num burn", len(add_lqd_trans))
         for tx in remove_lqd_trans:
             all_remove_lqd_trans[tx] = calc_liquidity_amount(tx, eth_pos)
-
+    print(f"Time to load add/remove txs {time.time() - t}")
     # get add_lqd_trans with min timestamp (first_add_lqd_tran) and remove_lqd_trans with max timestamp (last_remove_lqd_tran)
+    t = time.time()
     min = 10e14
     for tx in all_add_lqd_trans.keys():
         if int(tx.timeStamp) < min:
@@ -80,7 +83,7 @@ def get_first_add_last_remove_lqd_txs(scammer_addr):
         found_add = True
     if last_remove_timestamp > 0 and last_remove_timestamp > 0:
         found_rev = True
-
+    print(f"Time to find first -last txs {time.time() - t}")
     return found_add, first_add_timestamp, first_add_amount, found_rev, last_remove_timestamp, last_remove_amount
 
 def get_first_add_last_remove_lqd_txs_decoder(normal_txs, internal_txs):

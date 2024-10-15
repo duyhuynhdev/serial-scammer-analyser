@@ -1,6 +1,8 @@
 import pandas as pd
 import os
 
+from web3 import Web3
+
 from data_collection.AccountCollector import CreatorCollector, TransactionCollector
 from data_collection.EventCollector import ContractEventCollector
 from entity.Cluster import ClusterNode
@@ -228,11 +230,13 @@ def load_transaction_by_address(address, dex="univ2"):
 
 def load_light_pool(scammer_address, dataloader, dex="univ2"):
     pool_addresses = dataloader.scammer_pools[scammer_address.lower()]
+    print("Pool address:", pool_addresses)
     pool_event_path = eval("path.{}_pool_events_path".format(dex))
     contract_event_collector = ContractEventCollector()
     creator_collector = CreatorCollector()
     pools = []
     for pool_address in pool_addresses:
+        pool_address =  Web3.to_checksum_address(pool_address)
         burns_list = contract_event_collector.get_event(
             pool_address, "Burn", pool_event_path, dex
         )
@@ -242,21 +246,21 @@ def load_light_pool(scammer_address, dataloader, dex="univ2"):
         )
         mints = [MintEvent().from_dict(e) for e in mint_list]
         pool_info = dataloader.pool_infos[pool_address.lower()]
-        scammers = dataloader.pool_scammers[pool_address.lower()]
-        pool_creation = creator_collector.get_pool_creator(pool_address, dex)
+        # scammers = dataloader.pool_scammers[pool_address.lower()]
+        # pool_creation = creator_collector.get_pool_creator(pool_address, dex)
         token0 = pool_info["token0"]
         token1 = pool_info["token1"]
         pool = Pool(
             pool_address,
             token0,
             token1,
-            scammers,
+            None,
             mints,
             burns,
             None,
             None,
-            pool_creation["contractCreator"],
-            pool_creation["txHash"],
+            None,
+            None,
         )
         pools.append(pool)
     return pools
