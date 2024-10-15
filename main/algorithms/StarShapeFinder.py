@@ -3,6 +3,7 @@ import csv
 import itertools
 import os
 import sys
+
 sys.path.append(os.path.join(os.path.dirname(sys.path[0])))
 from enum import Enum
 
@@ -130,6 +131,7 @@ def find_star_shape_for_scammer(scammer_address, scammer_dict=None, star_to_igno
 
 
 # DEPRECATED
+# @DUSTIN maybe you can reuse this method. This used the burn pools
 def find_liquidity_transactions_in_pool(scammer_address):
     def calc_liquidity_amount(event, use_value):
         return event.amount0 / 10 ** 18 if use_value == 0 else event.amount1 / 10 ** 18
@@ -170,6 +172,7 @@ def get_funder_and_beneficiary(scammer_address):
         if transaction.is_not_error():
             # LOGIC upon passing the first add liquidity, mark down the amount and don't check any more add liquidaties
             if not passed_add_liquidity and ADD_LIQUIDITY_SUBSTRING in str(transaction.functionName):
+                # @DUSTIN - Here this next line is we verify the add liquidity transaction is valid. Update logic here
                 if TransactionUtils.is_scam_add_liq(transaction, dataloader):
                     candidate_add_liquidity_amt = transaction.get_transaction_amount()
                     if candidate_add_liquidity_amt > 0.0:
@@ -177,6 +180,7 @@ def get_funder_and_beneficiary(scammer_address):
                         add_liquidity_amt = candidate_add_liquidity_amt
             # LOGIC upon passing a remove liquidity - current largest_out becomes ineligible
             elif REMOVE_LIQUIDITY_SUBSTRING in str(transaction.functionName):
+                # @DUSTIN - Here this next line is we verify the remove liquidity transaction is valid. Update logic here
                 if TransactionUtils.is_scam_remove_liq(transaction, dataloader):
                     candidate_rmv_amt = TransactionUtils.get_related_amount_from_internal_txs(transaction, internal_txs)
                     if candidate_rmv_amt > 0.0:
@@ -239,7 +243,8 @@ def get_funder_and_beneficiary(scammer_address):
         else:
             # LOGIC for funder, if it didn't perform any out transactions, no duplicate, passed the threshold then add
             if largest_in_transaction:
-                if passed_in_threshold and not duplicate_in_amt and largest_in_transaction.sender not in out_addresses and transaction_collector.ensure_valid_eoa_address(largest_in_transaction.sender):
+                if passed_in_threshold and not duplicate_in_amt and largest_in_transaction.sender not in out_addresses and transaction_collector.ensure_valid_eoa_address(
+                        largest_in_transaction.sender):
                     funder_dict = get_dict_info(largest_in_transaction, largest_in_transaction.sender)
 
             # LOGIC for beneficiary, if it didn't perform any in transactions, no duplicate, and passed the threshold and is not a contract address
@@ -303,7 +308,7 @@ def process_stars_on_all_scammers():
             for line_r in reader_f:
                 scammer_chain = ast.literal_eval(line_r[2])
                 for scammer in scammer_chain:
-                    set_to_remove.remove(scammer[0])
+                    set_to_remove.discard(scammer[0])
 
     in_stars_path = os.path.join(path.panv2_star_shape_path, "in_stars.csv")
     out_stars_path = os.path.join(path.panv2_star_shape_path, "out_stars.csv")
@@ -328,7 +333,7 @@ def process_stars_on_all_scammers():
 
     # start processing the writing
     save_file_freq = 500
-    scammers_to_run = 500_000
+    scammers_to_run = 1_000_000
     scammers_ran = 0
 
     scammer_dict = read_from_in_out_scammer_as_dict()
@@ -336,7 +341,8 @@ def process_stars_on_all_scammers():
 
     while scammers_ran < scammers_to_run and len(in_scammers_remaining) + len(out_scammers_remaining) > 0:
         print("Scammers ran {} and scammers left {}".format(scammers_ran, len(in_scammers_remaining) + len(out_scammers_remaining)))
-        with (open(in_stars_path, "a", newline='') as in_file, open(out_stars_path, "a", newline='') as out_file, open(in_out_stars_path, "a", newline='') as in_out_file, open(no_stars_path, "a", newline='') as no_star_file):
+        with (open(in_stars_path, "a", newline='') as in_file, open(out_stars_path, "a", newline='') as out_file, open(in_out_stars_path, "a", newline='') as in_out_file, open(no_stars_path, "a",
+                                                                                                                                                                                newline='') as no_star_file):
             in_star_writer = csv.writer(in_file, quotechar='"', delimiter='|', quoting=csv.QUOTE_ALL)
             out_star_writer = csv.writer(out_file, quotechar='"', delimiter='|', quoting=csv.QUOTE_ALL)
             in_out_star_writer = csv.writer(in_out_file, quotechar='"', delimiter='|', quoting=csv.QUOTE_ALL)
@@ -358,6 +364,8 @@ def process_stars_on_all_scammers():
                         print('no more scammers remaining')
                         break
 
+                print("Current_scammer={}, scammers_ran={}, in_scammers_left={}, out_scammers_left={}".format(current_scammer_to_run, scammers_ran, len(in_scammers_remaining),
+                                                                                                              len(out_scammers_remaining)))
                 # LOGIC if the removed scammer address doesn't exist in the other set, don't look for that star again
                 star_to_ignore = None
                 if pop_from_in and current_scammer_to_run not in out_scammers_remaining:
