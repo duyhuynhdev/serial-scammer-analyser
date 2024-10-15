@@ -237,7 +237,7 @@ contract_event_collector = ContractEventCollector()
 
 def load_light_pool(scammer_address, dataloader, dex="panv2"):
     pool_addresses = dataloader.scammer_pools[scammer_address.lower()]
-    # print("Pool address:", pool_addresses)
+    print("Loading pool address for scammer={}".format(scammer_address))
     pool_event_path = eval("path.{}_pool_events_path".format(dex))
     pools = []
     for pool_address in pool_addresses:

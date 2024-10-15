@@ -113,12 +113,13 @@ def get_largest_transaction(normal_txs, scammer_address, liquidity_function_name
     passed_liquidity_function = False
     exists_duplicate_amount = False
     largest_transaction = None
+    set_of_valid_liq_trans = return_valid_liquidity_transactions_bool(scammer_address)
 
     for index in range(range_loop_args[0], range_loop_args[1], range_loop_args[2]):
         if liquidity_function_name in str(normal_txs[index].functionName) and not normal_txs[index].isError:
             is_valid_liq_trans = TransactionUtils.is_scam_add_liq(normal_txs[index], dataloader) or TransactionUtils.is_scam_remove_liq(normal_txs[index], dataloader)
             if not is_valid_liq_trans:
-                is_valid_liq_trans = normal_txs[index].hash in return_valid_liquidity_transactions_bool(scammer_address)
+                is_valid_liq_trans = normal_txs[index].hash in set_of_valid_liq_trans
             if is_valid_liq_trans:
                 passed_liquidity_function = True
                 if liquidity_function_name == REMOVE_LIQUIDITY_SUBSTRING:
@@ -236,11 +237,11 @@ def write_chain_stats_on_data():
                     transfer_amount_values.append(chain[1][scammer_index][3])
 
                 # time difference
-                if scammer_index < len(chain[1]) - 2:
-                    time_difference = chain[1][scammer_index + 1][2] - chain[1][scammer_index][2]
+                if scammer_index < len(chain[1]) - 1:
+                    time_difference = chain[1][scammer_index][2]
                     transfer_time_values.append(time_difference)
 
-            transfer_time_mean = statistics.mean(transfer_time_values) if len(transfer_time_values) > 0 else ""
+            transfer_time_mean = max(transfer_time_values) - min(transfer_time_values) if len(transfer_time_values) >= 2 else ""
             csv_writer.writerow([started_address, end_address, chain[0], statistics.mean(scams_performed_values), statistics.mean(transfer_amount_values), transfer_time_mean])
 
 
@@ -265,7 +266,7 @@ def convert_seconds_to_hms_string(time_difference: int) -> str:
 
 
 if __name__ == '__main__':
-    run_chain_on_scammers()
-    # write_chain_stats_on_data()
+    # run_chain_on_scammers()
+    write_chain_stats_on_data()
     # print(*chain_pattern_detection("0x9d143bcbf058553ddd86e13a6ed7c3b38b6c73c1"), sep='\n')
     # print(chain_pattern_detection("0x7edda39fd502cb71aa577452f1cc7e83fda9c5c7"))
