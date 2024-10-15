@@ -1,7 +1,6 @@
 import ast
 import csv
 import itertools
-
 import os
 import sys
 
@@ -9,12 +8,11 @@ sys.path.append(os.path.join(os.path.dirname(sys.path[0])))
 from enum import Enum
 
 from data_collection.AccountCollector import TransactionCollector
-from utils.DataLoader import DataLoader, load_light_pool
+from utils.DataLoader import DataLoader, load_pool
 from utils.ProjectPath import ProjectPath
 from utils.Utils import TransactionUtils
 
-dex = 'panv2'
-dataloader = DataLoader(dex=dex)
+dataloader = DataLoader()
 path = ProjectPath()
 transaction_collector = TransactionCollector()
 
@@ -132,79 +130,8 @@ def find_star_shape_for_scammer(scammer_address, scammer_dict=None, star_to_igno
     return stars
 
 
-def get_first_add_lqd(scammer_addr):
-    first_add_timestamp = 0
-    first_add_amount = 0
-    found_add = False
-
-    def calc_liquidity_amount(event, use_value):
-        return event.amount0 / 10 ** 18 if use_value == 0 else event.amount1 / 10 ** 18
-
-    # t = time.time()
-    scammer_pools = load_light_pool(scammer_addr, dataloader, dex)
-    # print(f"Time to load pool {time.time() - t}")
-
-    all_add_lqd_trans = {}
-
-    for pool_index in range(len(scammer_pools)):
-        eth_pos = scammer_pools[pool_index].get_high_value_position()
-        add_lqd_trans = scammer_pools[pool_index].mints
-        for tx in add_lqd_trans:
-            all_add_lqd_trans[tx] = calc_liquidity_amount(tx, eth_pos)
-        remove_lqd_trans = scammer_pools[pool_index].burns
-        for tx in remove_lqd_trans:
-            all_remove_lqd_trans[tx] = calc_liquidity_amount(tx, eth_pos)
-
-    # get add_lqd_trans with min timestamp (first_add_lqd_tran) and remove_lqd_trans with max timestamp (last_remove_lqd_tran)
-    min = 10e14
-    for tx in all_add_lqd_trans.keys():
-        if int(tx.timeStamp) < min:
-            min = int(tx.timeStamp)
-            first_add_timestamp = tx.timeStamp
-            first_add_amount = all_add_lqd_trans[tx]
-
-    if first_add_timestamp > 0 and first_add_amount > 0:
-        found_add = True
-
-    return found_add, first_add_amount
-
-
-def get_last_remove_lqd(scammer_addr):
-    last_remove_timestamp = 0
-    last_remove_amount = 0
-    found_rev = False
-
-    def calc_liquidity_amount(event, use_value):
-        return event.amount0 / 10 ** 18 if use_value == 0 else event.amount1 / 10 ** 18
-
-    # t = time.time()
-    scammer_pools = load_light_pool(scammer_addr, dataloader, dex)
-    # print(f"Time to load pool {time.time() - t}")
-
-    all_remove_lqd_trans = {}
-
-    for pool_index in range(len(scammer_pools)):
-        eth_pos = scammer_pools[pool_index].get_high_value_position()
-        add_lqd_trans = scammer_pools[pool_index].mints
-        for tx in add_lqd_trans:
-            all_add_lqd_trans[tx] = calc_liquidity_amount(tx, eth_pos)
-        remove_lqd_trans = scammer_pools[pool_index].burns
-        for tx in remove_lqd_trans:
-            all_remove_lqd_trans[tx] = calc_liquidity_amount(tx, eth_pos)
-
-    max = 0
-    for tx in all_remove_lqd_trans.keys():
-        if int(tx.timeStamp) > max:
-            max = int(tx.timeStamp)
-            last_remove_timestamp = tx.timeStamp
-            last_remove_amount = all_remove_lqd_trans[tx]
-
-    if last_remove_timestamp > 0 and last_remove_timestamp > 0:
-        found_rev = True
-
-    return found_rev, last_remove_amount
-
-
+# DEPRECATED
+# @DUSTIN maybe you can reuse this method. This used the burn pools
 def find_liquidity_transactions_in_pool(scammer_address):
     def calc_liquidity_amount(event, use_value):
         return event.amount0 / 10 ** 18 if use_value == 0 else event.amount1 / 10 ** 18
@@ -212,7 +139,7 @@ def find_liquidity_transactions_in_pool(scammer_address):
     # key: transaction hash
     # value: liquidity added/removed
     liquidity_transactions_pool = {}
-    scammer_pool = load_light_pool(scammer_address, dataloader)
+    scammer_pool = load_pool(scammer_address, dataloader)
     for pool_index in range(len(scammer_pool)):
         eth_pos = scammer_pool[pool_index].get_high_value_position()
         for liquidity_trans in itertools.chain(scammer_pool[pool_index].mints, scammer_pool[pool_index].burns):
@@ -220,6 +147,7 @@ def find_liquidity_transactions_in_pool(scammer_address):
             liquidity_transactions_pool[liquidity_trans.transactionHash] = liquidity_amount
 
     return liquidity_transactions_pool
+
 
 # A funder cannot also be sent money back from the center except if it's an IN/OUT star
 # A beneficiary cannot also fund the money to the satellite except if it's an IN/OUT star
@@ -239,33 +167,22 @@ def get_funder_and_beneficiary(scammer_address):
     passed_add_liquidity = passed_remove_liquidity = False
     duplicate_in_amt = duplicate_out_amt = False
     normal_txs, internal_txs = transaction_collector.get_transactions_including_internal(scammer_address)
-    liq_trans_dict = find_liquidity_transactions_in_pool(scammer_address)
 
     for transaction in normal_txs:
         if transaction.is_not_error():
             # LOGIC upon passing the first add liquidity, mark down the amount and don't check any more add liquidaties
             if not passed_add_liquidity and ADD_LIQUIDITY_SUBSTRING in str(transaction.functionName):
-                decode_valid_add = TransactionUtils.is_scam_add_liq(transaction, dataloader)
-                if decode_valid_add:
+                # @DUSTIN - Here this next line is we verify the add liquidity transaction is valid. Update logic here
+                if TransactionUtils.is_scam_add_liq(transaction, dataloader):
                     candidate_add_liquidity_amt = transaction.get_transaction_amount()
-                else:
-                    candidate_add_liquidity_amt = liq_trans_dict.get(transaction.hash)
-                    if candidate_add_liquidity_amt:
-                        decode_valid_add = True
-                if decode_valid_add:
                     if candidate_add_liquidity_amt > 0.0:
                         passed_add_liquidity = True
                         add_liquidity_amt = candidate_add_liquidity_amt
             # LOGIC upon passing a remove liquidity - current largest_out becomes ineligible
             elif REMOVE_LIQUIDITY_SUBSTRING in str(transaction.functionName):
-                decode_valid_remove = TransactionUtils.is_scam_remove_liq(transaction, dataloader)
-                if decode_valid_remove:
-                    candidate_rmv_amt = transaction.get_transaction_amount()
-                else:
-                    candidate_rmv_amt = liq_trans_dict.get(transaction.hash)
-                    if candidate_rmv_amt:
-                        decode_valid_remove = True
-                if decode_valid_remove:
+                # @DUSTIN - Here this next line is we verify the remove liquidity transaction is valid. Update logic here
+                if TransactionUtils.is_scam_remove_liq(transaction, dataloader):
+                    candidate_rmv_amt = TransactionUtils.get_related_amount_from_internal_txs(transaction, internal_txs)
                     if candidate_rmv_amt > 0.0:
                         passed_remove_liquidity = True
                         largest_out_transaction = None

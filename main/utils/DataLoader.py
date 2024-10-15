@@ -233,6 +233,41 @@ def load_transaction_by_address(address, dex='panv2'):
 creator_collector = CreatorCollector()
 
 
+def load_light_pool(scammer_address, dataloader, dex="univ2"):
+    pool_addresses = dataloader.scammer_pools[scammer_address.lower()]
+    pool_event_path = eval("path.{}_pool_events_path".format(dex))
+    contract_event_collector = ContractEventCollector()
+    pools = []
+    for pool_address in pool_addresses:
+        burns_list = contract_event_collector.get_event(
+            pool_address, "Burn", pool_event_path, dex
+        )
+        burns = [BurnEvent().from_dict(e) for e in burns_list]
+        mint_list = contract_event_collector.get_event(
+            pool_address, "Mint", pool_event_path, dex
+        )
+        mints = [MintEvent().from_dict(e) for e in mint_list]
+        pool_info = dataloader.pool_infos[pool_address.lower()]
+        scammers = dataloader.pool_scammers[pool_address.lower()]
+        pool_creation = creator_collector.get_pool_creator(pool_address, dex)
+        token0 = pool_info["token0"]
+        token1 = pool_info["token1"]
+        pool = Pool(
+            pool_address,
+            token0,
+            token1,
+            scammers,
+            mints,
+            burns,
+            None,
+            None,
+            pool_creation["contractCreator"],
+            pool_creation["txHash"],
+        )
+        pools.append(pool)
+    return pools
+
+
 def load_pool(scammer_address, dataloader, dex='panv2'):
     pool_addresses = dataloader.scammer_pools[scammer_address.lower()]
     pool_event_path = eval("path.{}_pool_events_path".format(dex))
