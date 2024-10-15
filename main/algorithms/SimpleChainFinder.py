@@ -74,6 +74,8 @@ def chain_pattern_detection(starter_address):
     return complete_chain if len(complete_chain) >= MIN_CHAIN_LENGTH else []
 
 
+# @DUSTIN counts the number of remove liquidity calls this needs to be updated
+# This just goes through the list of transactions for one scammer and returns the number of remove liquidity calls
 def count_number_of_remove_liquidity_calls(scammer_address, normal_txs=None):
     num_remove_liquidity_calls = 0
     if normal_txs is None:
@@ -98,7 +100,7 @@ def get_largest_in_before_add_liquidity(scammer_address: str, normal_txs=None):
     return get_largest_transaction(normal_txs, scammer_address, ADD_LIQUIDITY_SUBSTRING, False, 0, len(normal_txs), 1)
 
 
-# REFERENCE UNUSED
+# This is UNUSED at the moment. Previously used to load all the valid remove liqudities
 def return_valid_remove_liquidity_transactions(scammer_address):
     valid_remove_liquidities = set()
     scammer_pool = load_pool(scammer_address, dataloader)
@@ -117,6 +119,7 @@ def get_largest_transaction(normal_txs, scammer_address, liquidity_function_name
 
     for index in range(range_loop_args[0], range_loop_args[1], range_loop_args[2]):
         if liquidity_function_name in str(normal_txs[index].functionName) and not normal_txs[index].isError:
+            # @DUSTIN change this IF statement. This checks if the transaction is either a valid ADD or REMOVE Liquidity
             if TransactionUtils.is_scam_add_liq(normal_txs[index], dataloader) or TransactionUtils.is_scam_remove_liq(normal_txs[index], dataloader):
                 passed_liquidity_function = True
                 if liquidity_function_name == REMOVE_LIQUIDITY_SUBSTRING:
@@ -255,7 +258,7 @@ def convert_seconds_to_hms_string(time_difference: int) -> str:
 
 
 if __name__ == '__main__':
-    write_chain_stats_on_data()
-    # run_chain_on_scammers()
+    run_chain_on_scammers()
+    # write_chain_stats_on_data()
     # print(*chain_pattern_detection("0x9d143bcbf058553ddd86e13a6ed7c3b38b6c73c1"), sep='\n')
     # print(chain_pattern_detection("0x7edda39fd502cb71aa577452f1cc7e83fda9c5c7"))
