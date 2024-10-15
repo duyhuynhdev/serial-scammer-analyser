@@ -155,7 +155,7 @@ def run_chain_on_scammers():
         reader = csv.reader(file, quotechar='"', delimiter='|', quoting=csv.QUOTE_ALL)
         next(reader)
         for line in reader:
-            scammers_remaining.remove(line[0])
+            scammers_remaining.discard(line[0])
 
     # remove scammers already processed in the chain
     with open(simple_chain_path, 'r') as file:
@@ -164,12 +164,12 @@ def run_chain_on_scammers():
         for line in reader:
             scammer_chain = ast.literal_eval(line[1])
             for scammer in scammer_chain:
-                scammers_remaining.remove(scammer[0])
+                scammers_remaining.discard(scammer[0])
 
     # lower means will write to file more frequently, but lower performance
     # higher means less file writes, but better performance
     save_file_freq = 2_500
-    num_scammers_to_run = 200_000
+    num_scammers_to_run = 1_000_000
     overall_scammers_written = 0
 
     # save to file
