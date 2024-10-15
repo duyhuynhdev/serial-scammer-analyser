@@ -76,7 +76,7 @@ def is_slave_PA(suspected_node, target_node):
 
 def explore_scammer_network(group_id, scammers, node_factory, dex='univ2'):
     cluster_path = eval('path.{}_cluster_path'.format(dex))
-    scammers = [s for s in scammers if not collector.is_contract_address(s)]
+    # scammers = [s for s in scammers if not collector.is_contract_address(s)]
     if len(scammers) == 0:
         return None, list(), 0
     scammer_address = scammers[0]

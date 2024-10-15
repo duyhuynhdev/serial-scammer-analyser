@@ -1,3 +1,4 @@
+import shutil
 import sys
 import os
 from collections import Counter
@@ -131,8 +132,34 @@ def filter_non_scammer_addresses(dex='univ2'):
     print("AFTER", len(rp_scammer_df))
     rp_scammer_df.to_csv(os.path.join(eval("path.{}_processed_path".format(dex)), "filtered_simple_rp_scammers.csv"), index=False)
 
+def extract_events_pools_for_pancake():
+    pool = os.path.join(path.panv2_processed_path, "filtered_simple_rp_pool.csv")
+    df =pd.read_csv(pool)
+    pools = df.pool.values
+    old_path = os.path.join(path.panv2_pool_path,"old_events")
+    new_path = path.panv2_pool_events_path
+    print(len(pools))
+    for pool in tqdm(pools):
+        old_mint_event_logs_file = os.path.join(old_path, "Mint", pool + ".json")
+        old_burn_event_logs_file = os.path.join(old_path, "Burn", pool + ".json")
+        old_swap_event_logs_file = os.path.join(old_path, "Swap", pool + ".json")
+        old_transfer_event_logs_file = os.path.join(old_path, "Transfer", pool + ".json")
+        new_mint_event_logs_file = os.path.join(new_path, "Mint", pool + ".json")
+        new_burn_event_logs_file = os.path.join(new_path, "Burn", pool + ".json")
+        new_swap_event_logs_file = os.path.join(new_path, "Swap", pool + ".json")
+        new_transfer_event_logs_file = os.path.join(new_path, "Transfer", pool + ".json")
+        if os.path.exists(old_mint_event_logs_file):
+            shutil.copyfile(old_mint_event_logs_file, new_mint_event_logs_file)
+        if os.path.exists(old_burn_event_logs_file):
+            shutil.copyfile(old_burn_event_logs_file, new_burn_event_logs_file)
+        if os.path.exists(old_swap_event_logs_file):
+            shutil.copyfile(old_swap_event_logs_file, new_swap_event_logs_file)
+        if os.path.exists(old_transfer_event_logs_file):
+            shutil.copyfile(old_transfer_event_logs_file, new_transfer_event_logs_file)
+
 
 if __name__ == '__main__':
-    dex="panv2"
-    extract_simple_rp(dex=dex)
-    filter_non_scammer_addresses(dex=dex)
+    # dex="panv2"
+    # extract_simple_rp(dex=dex)
+    # filter_non_scammer_addresses(dex=dex)
+    extract_events_pools_for_pancake()
