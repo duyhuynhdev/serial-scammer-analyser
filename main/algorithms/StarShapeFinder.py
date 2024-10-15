@@ -260,7 +260,7 @@ def get_funder_and_beneficiary(scammer_address):
             elif REMOVE_LIQUIDITY_SUBSTRING in str(transaction.functionName):
                 decode_valid_remove = TransactionUtils.is_scam_remove_liq(transaction, dataloader)
                 if decode_valid_remove:
-                    candidate_rmv_amt = transaction.get_transaction_amount()
+                    candidate_rmv_amt = TransactionUtils.get_related_amount_from_internal_txs(transaction, internal_txs)
                 else:
                     candidate_rmv_amt = liq_trans_dict.get(transaction.hash)
                     if candidate_rmv_amt:
@@ -490,7 +490,7 @@ def process_stars_on_all_scammers():
 
 
 if __name__ == '__main__':
-    process_stars_on_all_scammers()
+    # process_stars_on_all_scammers()
     # THIS address SHOULD NOW NOT RETURN ANYTHING
-    # result = get_funder_and_beneficiary('0xceb3fd461abd8df52052d50d100f7f9ae839c266')
-    # print(result)
+    result = get_funder_and_beneficiary('0xab29739e0554999d29422da632e9a0e3c0971e77')
+    print(result)

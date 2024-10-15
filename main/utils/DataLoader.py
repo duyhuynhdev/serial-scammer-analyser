@@ -233,7 +233,7 @@ def load_transaction_by_address(address, dex='panv2'):
 creator_collector = CreatorCollector()
 
 
-def load_light_pool(scammer_address, dataloader, dex="univ2"):
+def load_light_pool(scammer_address, dataloader, dex="panv2"):
     pool_addresses = dataloader.scammer_pools[scammer_address.lower()]
     pool_event_path = eval("path.{}_pool_events_path".format(dex))
     contract_event_collector = ContractEventCollector()

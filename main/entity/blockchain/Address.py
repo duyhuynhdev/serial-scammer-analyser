@@ -1,4 +1,4 @@
-from typing import Set, Tuple
+from typing import Set, Tuple, Optional
 
 from enum import Enum
 from entity.blockchain.Transaction import InternalTransaction, NormalTransaction
@@ -51,26 +51,50 @@ class ERC20(Contract):
 
 
 class Pool(ERC20):
-    def __init__(self, address=None, token0=None, token1=None, scammers=None, mints=None, burns=None, swaps=None, transfers=None, creator=None, creation_tx=None):
-        super().__init__(address, "Uniswap V2", "UNI-V2", None, 18, transfers, creator, creation_tx)
-        self.token0: Token = token0
-        self.token1: Token = token1
+    def __init__(
+            self,
+            address=None,
+            token0=None,
+            token1=None,
+            scammers=None,
+            mints=None,
+            burns=None,
+            swaps=None,
+            transfers=None,
+            creator=None,
+            creation_tx=None,
+    ):
+        super().__init__(
+            address, "Uniswap V2", "UNI-V2", None, 18, transfers, creator, creation_tx
+        )
+        self.token0: str = token0
+        self.token1: str = token1
         self.scammers = scammers if scammers is not None else []
         self.mints = mints if mints is not None else []
         self.burns = burns if burns is not None else []
         self.swaps = swaps if swaps is not None else []
-        self.high_value_token_position = self.get_high_value_position()
-        self.scam_token_position = 1 - self.high_value_token_position
+        # self.high_value_token_position = self.get_high_value_position()
+        # self.scam_token_position = 1 - self.high_value_token_position
+        self.x: Optional[float] = None
+        self.y: Optional[float] = None
+        self.z: Optional[float] = None
+        self.profit: Optional[float] = None
 
     def get_scam_token(self):
         return eval(f"self.token{self.scam_token_position}")
 
-    def get_high_value_position(self):
-        if self.token0 is not None and (self.token0.address.lower() in Constant.HIGH_VALUE_TOKENS):
+    def get_high_value_position(self) -> int:
+        if self.token0 is not None and (
+                self.token0.lower() in Constant.HIGH_VALUE_TOKENS
+        ):
             return 0
-        if self.token1 is not None and (self.token1.address.lower() in Constant.HIGH_VALUE_TOKENS):
+        if self.token1 is not None and (
+                self.token1.lower() in Constant.HIGH_VALUE_TOKENS
+        ):
             return 1
-        raise HighValueTokenNotFound("Neither token0 nor token1 are in HIGH_VALUE_TOKENS.")
+        raise HighValueTokenNotFound(
+            "Neither token0 nor token1 are in HIGH_VALUE_TOKENS."
+        )
 
     def calculate_total_value_and_fees(self, items, amount_attr: str) -> Tuple[float, float]:
         """
