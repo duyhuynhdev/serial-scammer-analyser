@@ -1,14 +1,15 @@
 import ast
 import csv
 import itertools
+import json
 import os
 import statistics
+import sys
 
 from algorithms.ScammerNetworkBuilder import dataloader
 from data_collection.AccountCollector import TransactionCollector
-from utils.DataLoader import DataLoader, load_pool, load_light_pool
+from utils.DataLoader import DataLoader, load_pool
 from utils.ProjectPath import ProjectPath
-from utils.Utils import TransactionUtils
 
 dataloader = DataLoader()
 path = ProjectPath()
@@ -73,14 +74,14 @@ def chain_pattern_detection(starter_address):
 
 
 def count_number_of_remove_liquidity_calls(scammer_address, normal_txs=None):
+    valid_rmv_liquidity_calls = return_valid_remove_liquidity_transactions(scammer_address)
     num_remove_liquidity_calls = 0
-    valid_liquidity_set = return_valid_liquidity_transactions_bool(scammer_address)
     if normal_txs is None:
-        normal_txs = transaction_collector.get_transactions_including_internal(scammer_address)
+        normal_txs = transaction_collector.get_transactions(scammer_address)
 
     for transaction in normal_txs:
         if REMOVE_LIQUIDITY_SUBSTRING in str(transaction.functionName) and not transaction.isError:
-            if TransactionUtils.is_scam_remove_liq(transaction, dataloader) or transaction.hash in valid_liquidity_set:
+            if transaction.hash in valid_rmv_liquidity_calls:
                 num_remove_liquidity_calls += 1
 
     return num_remove_liquidity_calls
@@ -98,14 +99,14 @@ def get_largest_in_before_add_liquidity(scammer_address: str, normal_txs=None):
     return get_largest_transaction(normal_txs, scammer_address, ADD_LIQUIDITY_SUBSTRING, False, 0, len(normal_txs), 1)
 
 
-def return_valid_liquidity_transactions_bool(scammer_address):
-    valid_liquidity_transactions = set()
-    scammer_pool = load_light_pool(scammer_address, dataloader)
+def return_valid_remove_liquidity_transactions(scammer_address):
+    valid_remove_liquidities = set()
+    scammer_pool = load_pool(scammer_address, dataloader)
     for pool in scammer_pool:
-        for liq_trans in itertools.chain(pool.burns, pool.mints):
-            valid_liquidity_transactions.add(liq_trans.transactionHash)
+        for rmv_liq_trans in itertools.chain(pool.burns, pool.mints):
+            valid_remove_liquidities.add(rmv_liq_trans.transactionHash)
 
-    return valid_liquidity_transactions
+    return valid_remove_liquidities
 
 
 def get_largest_transaction(normal_txs, scammer_address, liquidity_function_name: str, is_out, *range_loop_args):
@@ -113,13 +114,11 @@ def get_largest_transaction(normal_txs, scammer_address, liquidity_function_name
     passed_liquidity_function = False
     exists_duplicate_amount = False
     largest_transaction = None
+    valid_liquidities = return_valid_remove_liquidity_transactions(scammer_address)
 
     for index in range(range_loop_args[0], range_loop_args[1], range_loop_args[2]):
         if liquidity_function_name in str(normal_txs[index].functionName) and not normal_txs[index].isError:
-            is_valid_liq_trans = TransactionUtils.is_scam_add_liq(normal_txs[index], dataloader) or TransactionUtils.is_scam_remove_liq(normal_txs[index], dataloader)
-            if not is_valid_liq_trans:
-                is_valid_liq_trans = normal_txs[index].hash in return_valid_liquidity_transactions_bool(scammer_address)
-            if is_valid_liq_trans:
+            if normal_txs[index].hash in valid_liquidities:
                 passed_liquidity_function = True
                 if liquidity_function_name == REMOVE_LIQUIDITY_SUBSTRING:
                     num_remove_liquidities_found += 1
@@ -154,7 +153,7 @@ def run_chain_on_scammers():
         reader = csv.reader(file, quotechar='"', delimiter='|', quoting=csv.QUOTE_ALL)
         next(reader)
         for line in reader:
-            scammers_remaining.discard(line[0])
+            scammers_remaining.remove(line[0])
 
     # remove scammers already processed in the chain
     with open(simple_chain_path, 'r') as file:
@@ -163,12 +162,12 @@ def run_chain_on_scammers():
         for line in reader:
             scammer_chain = ast.literal_eval(line[1])
             for scammer in scammer_chain:
-                scammers_remaining.discard(scammer[0])
+                scammers_remaining.remove(scammer[0])
 
     # lower means will write to file more frequently, but lower performance
     # higher means less file writes, but better performance
     save_file_freq = 2_500
-    num_scammers_to_run = 1_000_000
+    num_scammers_to_run = 200_000
     overall_scammers_written = 0
 
     # save to file
@@ -204,8 +203,7 @@ def write_chain_stats_on_data():
         reader = csv.reader(file, quotechar='"', delimiter='|', quoting=csv.QUOTE_ALL)
         next(reader)
         for line in reader:
-            chain_array = ast.literal_eval(line[1])
-            all_chains.append([len(chain_array), chain_array])
+            all_chains.append([int(line[0]), ast.literal_eval(line[1])])
 
     chain_stats_path = os.path.join(path.panv2_scammer_chain_path, "chain_stats.csv")
     chain_stats_headers = ["start_address", "end_address", "chain_length", "num_scams_avg", "trans_amt_avg", "trans_time_diff_avg"]
@@ -257,7 +255,7 @@ def convert_seconds_to_hms_string(time_difference: int) -> str:
 
 
 if __name__ == '__main__':
-    run_chain_on_scammers()
     # write_chain_stats_on_data()
+    run_chain_on_scammers()
     # print(*chain_pattern_detection("0x9d143bcbf058553ddd86e13a6ed7c3b38b6c73c1"), sep='\n')
     # print(chain_pattern_detection("0x7edda39fd502cb71aa577452f1cc7e83fda9c5c7"))

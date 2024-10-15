@@ -132,78 +132,6 @@ def find_star_shape_for_scammer(scammer_address, scammer_dict=None, star_to_igno
     return stars
 
 
-def get_first_add_lqd(scammer_addr):
-    first_add_timestamp = 0
-    first_add_amount = 0
-    found_add = False
-
-    def calc_liquidity_amount(event, use_value):
-        return event.amount0 / 10 ** 18 if use_value == 0 else event.amount1 / 10 ** 18
-
-    # t = time.time()
-    scammer_pools = load_light_pool(scammer_addr, dataloader, dex)
-    # print(f"Time to load pool {time.time() - t}")
-
-    all_add_lqd_trans = {}
-
-    for pool_index in range(len(scammer_pools)):
-        eth_pos = scammer_pools[pool_index].get_high_value_position()
-        add_lqd_trans = scammer_pools[pool_index].mints
-        for tx in add_lqd_trans:
-            all_add_lqd_trans[tx] = calc_liquidity_amount(tx, eth_pos)
-        remove_lqd_trans = scammer_pools[pool_index].burns
-        for tx in remove_lqd_trans:
-            all_remove_lqd_trans[tx] = calc_liquidity_amount(tx, eth_pos)
-
-    # get add_lqd_trans with min timestamp (first_add_lqd_tran) and remove_lqd_trans with max timestamp (last_remove_lqd_tran)
-    min = 10e14
-    for tx in all_add_lqd_trans.keys():
-        if int(tx.timeStamp) < min:
-            min = int(tx.timeStamp)
-            first_add_timestamp = tx.timeStamp
-            first_add_amount = all_add_lqd_trans[tx]
-
-    if first_add_timestamp > 0 and first_add_amount > 0:
-        found_add = True
-
-    return found_add, first_add_amount
-
-
-def get_last_remove_lqd(scammer_addr):
-    last_remove_timestamp = 0
-    last_remove_amount = 0
-    found_rev = False
-
-    def calc_liquidity_amount(event, use_value):
-        return event.amount0 / 10 ** 18 if use_value == 0 else event.amount1 / 10 ** 18
-
-    # t = time.time()
-    scammer_pools = load_light_pool(scammer_addr, dataloader, dex)
-    # print(f"Time to load pool {time.time() - t}")
-
-    all_remove_lqd_trans = {}
-
-    for pool_index in range(len(scammer_pools)):
-        eth_pos = scammer_pools[pool_index].get_high_value_position()
-        add_lqd_trans = scammer_pools[pool_index].mints
-        for tx in add_lqd_trans:
-            all_add_lqd_trans[tx] = calc_liquidity_amount(tx, eth_pos)
-        remove_lqd_trans = scammer_pools[pool_index].burns
-        for tx in remove_lqd_trans:
-            all_remove_lqd_trans[tx] = calc_liquidity_amount(tx, eth_pos)
-
-    max = 0
-    for tx in all_remove_lqd_trans.keys():
-        if int(tx.timeStamp) > max:
-            max = int(tx.timeStamp)
-            last_remove_timestamp = tx.timeStamp
-            last_remove_amount = all_remove_lqd_trans[tx]
-
-    if last_remove_timestamp > 0 and last_remove_timestamp > 0:
-        found_rev = True
-
-    return found_rev, last_remove_amount
-
 
 def find_liquidity_transactions_in_pool(scammer_address):
     def calc_liquidity_amount(event, use_value):
@@ -490,7 +418,7 @@ def process_stars_on_all_scammers():
 
 
 if __name__ == '__main__':
-    # process_stars_on_all_scammers()
+    process_stars_on_all_scammers()
     # THIS address SHOULD NOW NOT RETURN ANYTHING
-    result = get_funder_and_beneficiary('0xab29739e0554999d29422da632e9a0e3c0971e77')
-    print(result)
+    # result = get_funder_and_beneficiary('0xab29739e0554999d29422da632e9a0e3c0971e77')
+    # print(result)
