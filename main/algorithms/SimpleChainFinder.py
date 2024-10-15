@@ -141,7 +141,16 @@ def get_largest_transaction(normal_txs, scammer_address, liquidity_function_name
                     exists_duplicate_amount = False
                     largest_transaction = normal_txs[index]
 
-    return largest_transaction if not exists_duplicate_amount and passed_liquidity_function else None, normal_txs, num_remove_liquidities_found
+    valid_to_return = not exists_duplicate_amount and passed_liquidity_function
+    if valid_to_return and largest_transaction:
+        valid_to_return = False
+        # needs to pass one of these
+        if is_out and largest_transaction.to in dataloader.scammers:
+            valid_to_return = transaction_collector.ensure_valid_eoa_address(largest_transaction.to)
+        elif not is_out and largest_transaction.sender in dataloader.scammers:
+            valid_to_return = transaction_collector.ensure_valid_eoa_address(largest_transaction.sender)
+
+    return largest_transaction if valid_to_return else None, normal_txs, num_remove_liquidities_found
 
 
 def run_chain_on_scammers():
@@ -167,7 +176,7 @@ def run_chain_on_scammers():
 
     # lower means will write to file more frequently, but lower performance
     # higher means less file writes, but better performance
-    save_file_freq = 2_500
+    save_file_freq = 125
     num_scammers_to_run = 1_000_000
     overall_scammers_written = 0
 
@@ -176,10 +185,9 @@ def run_chain_on_scammers():
         with open(simple_chain_path, "a", newline='') as chain_file, open(no_chain_path, "a", newline='') as no_chain_file:
             chain_writer = csv.writer(chain_file, quotechar='"', delimiter='|', quoting=csv.QUOTE_ALL)
             no_chain_writer = csv.writer(no_chain_file, quotechar='"', delimiter='|', quoting=csv.QUOTE_ALL)
-            print('Scammers processed={} scammers left={}'.format(overall_scammers_written, len(scammers_remaining)))
             for _ in range(save_file_freq):
                 current_address = scammers_remaining.pop()
-                print("Processing scammer {}...".format(current_address))
+                print('Scammers processed={} scammers left={}'.format(overall_scammers_written, len(scammers_remaining)))
                 chain = chain_pattern_detection(current_address)
                 if len(chain) == 0:
                     no_chain_writer.writerow([current_address])
