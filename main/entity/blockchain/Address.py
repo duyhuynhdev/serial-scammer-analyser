@@ -2,6 +2,7 @@ from functools import cached_property
 from typing import Set, Tuple, List, Optional
 
 from enum import Enum
+
 from entity.blockchain.Event import Event, SwapEvent
 from entity.blockchain.Transaction import InternalTransaction, NormalTransaction
 from entity.blockchain.DTO import DTO
@@ -92,6 +93,8 @@ class Token(ERC20):
 
 
 class Pool(ERC20):
+    POOL_DECIMALS = 18
+
     def __init__(
         self,
         address=None,
@@ -114,8 +117,6 @@ class Pool(ERC20):
         self.mints = mints if mints is not None else []
         self.burns = burns if burns is not None else []
         self.swaps = swaps if swaps is not None else []
-        # self.high_value_token_position = self.get_high_value_position()
-        # self.scam_token_position = 1 - self.high_value_token_position
         self.x: Optional[float] = None
         self.y: Optional[float] = None
         self.z: Optional[float] = None
@@ -133,6 +134,14 @@ class Pool(ERC20):
         raise HighValueTokenNotFound(
             "Neither token0 nor token1 are in HIGH_VALUE_TOKENS."
         )
+
+    @cached_property
+    def high_value_token_position(self) -> int:
+        return self.get_high_value_position()
+
+    @cached_property
+    def scam_token_position(self) -> int:
+        return 1 - self.high_value_token_position
 
     @cached_property
     def investing_node_addresses(self) -> Set[str]:
@@ -178,12 +187,12 @@ class Pool(ERC20):
         return f"amount{self.high_value_token_position}{SwapDirection.OUT.value}"
 
     @cached_property
-    def scam_token(self) -> Token:
-        return eval(f"self.token{self.scam_token_position}")
+    def scam_token_address(self) -> str:
+        return eval(f"self.token{self.scam_token_position}").lower()
 
     @cached_property
-    def high_value_token(self) -> Token:
-        return eval(f"self.token{self.high_value_token_position}")
+    def high_value_token_address(self) -> str:
+        return eval(f"self.token{self.high_value_token_position}").lower()
 
     def calculate_total_value_and_fees(
         self, items: List[Event], amount_attr: str
@@ -197,9 +206,7 @@ class Pool(ERC20):
         total_value, total_fees = 0, 0
 
         for item in items:
-            total_value += float(getattr(item, amount_attr)) / 10 ** int(
-                self.high_value_token.decimals
-            )
+            total_value += float(getattr(item, amount_attr)) / 10**self.POOL_DECIMALS
             total_fees += (
                 float(item.gasUsed)
                 * float(item.gasPrice)
