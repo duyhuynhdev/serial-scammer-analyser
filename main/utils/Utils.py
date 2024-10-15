@@ -26,11 +26,19 @@ class TransactionUtils:
             return False
         if "token" in parsed_result:
             token = str(parsed_result["token"]).lower()
-            return token in dataloader.scam_token_pool.keys()
+            is_scam =  token in dataloader.scam_token_pool.keys()
+            # print("\tFOUND TOKEN", token, " - is scam? :", is_scam)
+            if not is_scam:
+                print("\tFOUND TOKEN IS NOT SCAM ", token)
+            return is_scam
         if "tokenA" in parsed_result or "tokenB" in parsed_result:
             tokenA = str(parsed_result["tokenA"]).lower()
             tokenB = str(parsed_result["tokenB"]).lower()
-            return tokenA in dataloader.scam_token_pool.keys() or tokenB in dataloader.scam_token_pool.keys()
+            is_scam = tokenA in dataloader.scam_token_pool.keys() or tokenB in dataloader.scam_token_pool.keys()
+            # print("\tFOUND TOKEN_A", tokenA, " TOKEN_B", tokenB, " - is scam? :", is_scam)
+            if not is_scam:
+                print("\tBOTH TOKENS ARE NOT SCAM ", tokenA, tokenB)
+            return is_scam
         return False
 
     @staticmethod
@@ -42,6 +50,7 @@ class TransactionUtils:
                 return True
             function_decoder = FunctionInputDecoder()
             result = function_decoder.decode_add_liq_function_input(txs.input)
+            # print("\tDECODED LIQ ADDING DATA", result)
             return TransactionUtils.is_scam_token(result, dataloader)
         return False
 
@@ -52,6 +61,9 @@ class TransactionUtils:
         if "removeLiquidity" in str(txs.functionName):
             function_decoder = FunctionInputDecoder()
             result = function_decoder.decode_remove_liq_function_input(txs.input)
+            # print("\tDECODED LIQ REMOVING DATA", result)
+            if result is None:
+                print("\tCANNOT DECODE FUNCTION ", txs.functionName, "(",txs.methodId,")")
             return TransactionUtils.is_scam_token(result, dataloader)
         return False
 
