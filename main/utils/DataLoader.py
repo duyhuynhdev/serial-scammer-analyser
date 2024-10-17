@@ -1,5 +1,9 @@
+from cmath import polar
+
 import pandas as pd
 import os
+
+from web3 import Web3
 
 from data_collection.AccountCollector import CreatorCollector, TransactionCollector
 from data_collection.EventCollector import ContractEventCollector
@@ -233,6 +237,7 @@ def load_light_pool(scammer_address, dataloader, dex="univ2"):
     creator_collector = CreatorCollector()
     pools = []
     for pool_address in pool_addresses:
+        pool_address = Web3.to_checksum_address(pool_address)
         burns_list = contract_event_collector.get_event(
             pool_address, "Burn", pool_event_path, dex
         )
@@ -356,4 +361,8 @@ if __name__ == "__main__":
     # print(pool.get_total_burn_value(pos))
     # print(len(load_full_end_nodes('univ2')))
     # print(len(load_full_end_nodes('panv2')))
-    load_pool("0x173c79f6f9e6c090a6055d07778a25c0009ea30a", dataloader, dex='panv2')
+    pools = load_light_pool("0xad08da4f51a764c66e6f4b2bfd3bfd04bf73653e", dataloader, dex='panv2')
+    for pool in pools:
+        print(f"pool address {pool.address} - mints: {len(pool.mints)} burn:{len(pool.burns)}")
+        print("Mint.amount0", pool.mints[0].amount0, ".amount1", pool.mints[0].amount1)
+        print("Mint.amount0", pool.burns[0].amount0, ".amount1", pool.burns[0].amount1)

@@ -200,7 +200,7 @@ class TokenInfoCollector:
         node_url = infura_api[dex]["node_url"]
         token_abi = infura_api[dex]["token_abi"]
         node_web3 = Web3(Web3.HTTPProvider(node_url + key))
-        pool_info_path = os.path.join(eval('path.{}_pool_path'.format(dex)), "pool_info.csv")
+        pool_info_path = os.path.join(eval('path.{}_processed_path'.format(dex)), "pool_info.csv")
         token_addresses = []
         if os.path.isfile(pool_info_path):
             df = pd.read_csv(pool_info_path)
@@ -400,10 +400,11 @@ if __name__ == '__main__':
     # collector.merge_all_pools(pancake_chunks, "panv2")
     # collector.merge_all_pool_infos(uni_chunks, dex="univ2")
     ###########################################
-    # collector = TokenInfoCollector()
-    # collector.download_tokens_info(6)
+    job = 0
+    collector = TokenInfoCollector()
+    collector.download_tokens_info(job, dex="panv2")
     ###############################################
-    job = 24
-    download_token_contract(job, dex="panv2")
+    # job = 24
+    # download_token_contract(job, dex="panv2")
     # collector = ContractSourceCodeCollector(dex="univ2")
     # print(collector.is_contract_address("0xCFA6785Cd136d2Cdc37fE5835Cc4513E0E33f6C2"))
