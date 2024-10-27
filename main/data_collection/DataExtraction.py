@@ -63,8 +63,8 @@ zero_txs_addresses = ["0x00c8357eebba2021ee4d8cbd2946145bcc7aa2fb",
 
 
 def extract_simple_rp(dex='univ2'):
-    scammer_df = pd.read_csv(os.path.join(eval("path.{}_processed_path".format(dex)), "simple_rp_scammers.csv"))
-    rp_pools = pd.read_csv(os.path.join(eval("path.{}_processed_path".format(dex)), "simple_rp_pool_labels.csv"))
+    scammer_df = pd.read_csv(os.path.join(eval("path.{}_processed_path".format(dex)), "1_pair_scammers.csv"))
+    rp_pools = pd.read_csv(os.path.join(eval("path.{}_processed_path".format(dex)), "1_pair_pool_labels.csv"))
     rp_pools.fillna("", inplace=True)
     print("All pool:", len(rp_pools))
     print("All scammer:", len(scammer_df["scammer"].unique()))
@@ -159,7 +159,7 @@ def extract_events_pools_for_pancake():
 
 
 if __name__ == '__main__':
-    # dex="panv2"
-    # extract_simple_rp(dex=dex)
-    # filter_non_scammer_addresses(dex=dex)
-    extract_events_pools_for_pancake()
+    dex="panv2"
+    extract_simple_rp(dex=dex)
+    filter_non_scammer_addresses(dex=dex)
+    # extract_events_pools_for_pancake()

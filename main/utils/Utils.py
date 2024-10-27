@@ -268,7 +268,7 @@ def write_file_from_string(file_path, content):
 def save_or_append_if_exist(data, output_path):
     save_df = pd.DataFrame.from_records(data)
     if os.path.isfile(output_path):
-        # print("APPEND ", len(data), "RECORDS")
+        print(data)
         save_df.to_csv(output_path, mode="a", header=False, index=False)
     else:
         # print("SAVE", len(data), "RECORDS")

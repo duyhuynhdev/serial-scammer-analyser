@@ -158,10 +158,14 @@ def explore_with_max_iter(job, max_iter=100, size=20000, dex='univ2'):
     file_path = os.path.join(eval(f'path.{dex}_processed_path'), "max_iter_cluster_results.csv")
     config["is_max_iter"] = True
     config["max_iter"] = max_iter
-    processed_gids = []
+    processed_gids = set()
     if os.path.exists(file_path):
         df = pd.read_csv(file_path)
-        processed_gids = df["start_gid"].values.tolist()
+        processed_gids = set(df["gid"].values.tolist())
+        groups = df["groups"].values
+        for g in groups:
+            processed_gids.update(g.split("-"))
+    print(len(processed_gids))
     groups = list(dataloader.group_scammers.keys())
     chunks = ut.partitioning(0, len(groups), size)
     print("NUM CHUNKS", len(chunks), "JOB", job)
@@ -169,16 +173,18 @@ def explore_with_max_iter(job, max_iter=100, size=20000, dex='univ2'):
     chunk_groups = groups[chunk["from"]:(chunk["to"] + 1)]
     print(f'START EXPLORING NETWORK (JOB {job}/ {len(chunks)}):{chunk["from"]}_{chunk["to"]} (size: {len(chunk_groups)})')
     for gid in tqdm(chunk_groups):
-        if gid in processed_gids:
+        if gid in processed_gids or str(gid) in processed_gids:
             continue
         cluster, queue, it = run_clustering(gid, dex)
+        links =  [str(g) for g in cluster.groups]
         record = {
             "gid": gid,
             "cluster_size": len(cluster.nodes),
             "queue_size": queue.qsize(),
-            "groups": "-".join([str(g) for g in cluster.groups]),
+            "groups": "-".join(links),
             "num_iter": it
         }
+        processed_gids.update(links)
         ut.save_or_append_if_exist([record], file_path)
 
 
@@ -207,12 +213,12 @@ def find_complete_group(dex):
 
 
 if __name__ == '__main__':
-    dex = "univ2"
+    dex = "panv2"
     dataloader = DataLoader(dex)
     collector = ContractSourceCodeCollector(dex)
     # finish groups: 2, 150
     # Note: 1402 - 0xcc7cf327b3965dbce9a450a358c357e36c0a99bb -> big connector who transfer money to many WT
-    # job = 0
-    # explore_with_max_iter(job, 100, 5000)
-    # run_clustering(126, dex)
+    # job = 23
+    # explore_with_max_iter(job, 200, 500, dex)
+    run_clustering(9508, dex)
     # find_complete_group(dex)

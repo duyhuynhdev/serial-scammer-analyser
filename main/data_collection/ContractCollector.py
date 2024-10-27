@@ -400,7 +400,7 @@ if __name__ == '__main__':
     # collector.merge_all_pools(pancake_chunks, "panv2")
     # collector.merge_all_pool_infos(uni_chunks, dex="univ2")
     ###########################################
-    job = 0
+    job = 14
     collector = TokenInfoCollector()
     collector.download_tokens_info(job, dex="panv2")
     ###############################################

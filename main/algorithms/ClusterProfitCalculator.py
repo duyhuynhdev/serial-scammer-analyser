@@ -1,7 +1,8 @@
 import functools
+import os.path
 from functools import cached_property
 from collections import namedtuple
-
+import sys
 from data_collection.AccountCollector import TransactionCollector, CreatorCollector
 from entity.Cluster import ClusterNode
 from entity.Node import NodeLabel
@@ -255,9 +256,9 @@ class ClusterProfitCalculator:
             normal_txs, scam_token_creator_info["txHash"]
         )
 
-        self._validate_transaction_amount_is_zero(token_creation_tx, pool)
+        # self._validate_transaction_amount_is_zero(token_creation_tx, pool)
 
-        token_creation_fee += token_creation_tx.get_transaction_fee()
+        token_creation_fee += token_creation_tx.get_transaction_fee() + token_creation_tx.get_transaction_amount()
 
         return token_creation_fee
 
@@ -330,7 +331,44 @@ class ClusterProfitCalculator:
 
 
 if __name__ == "__main__":
-    uni_dex = "univ2"
+    # uni_accepted_cluster = [6105, 8585, 1583, 6074, 4550, 4575, 5578, 3017, 6200, 2288, 5742, 3040, 3247, 126, 1214, 2201, 53, 1528, 38
+    #     , 1519
+    #     , 1647
+    #     , 8728
+    #     , 3628
+    #     , 8653
+    #     , 7004
+    #     , 8739
+    #     , 5777
+    #     , 6615
+    #     , 6717
+    #     , 3605
+    #     , 6696
+    #     , 262
+    #     , 3771
+    #     , 3634
+    #     , 2029
+    #     , 7585]
+    pan_accepted_cluster = [2002,
+                            5009,
+                            6010,
+                            1008,
+                            8004,
+                            2005,
+                            11007,
+                            11516,
+                            4004,
+                            8504,
+                            503,
+                            10504]
+    # uni_dex = "univ2"
     pancake_dex = "panv2"
-    calculator = ClusterProfitCalculator(dex=uni_dex)
-    calculator.calculate("cluster_126")
+    for cid in pan_accepted_cluster:
+        if os.path.exists(f"cluster_{cid}.txt"):
+            print("SKIP", f"cluster_{cid}")
+            continue
+        orignal_std_out = sys.stdout
+        calculator = ClusterProfitCalculator(dex=pancake_dex)
+        sys.stdout = open(f"cluster_{cid}.txt", "w")
+        calculator.calculate(f"cluster_{cid}")
+        sys.stdout = orignal_std_out
