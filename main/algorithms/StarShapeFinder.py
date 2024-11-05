@@ -12,7 +12,6 @@ from enum import Enum
 from data_collection.AccountCollector import TransactionCollector
 from utils.DataLoader import DataLoader, load_light_pool
 from utils.ProjectPath import ProjectPath
-from utils.Utils import TransactionUtils
 
 dex = 'panv2'
 dataloader = DataLoader(dex=dex)
@@ -478,9 +477,6 @@ def write_chain_stats_on_data():
 
 
 if __name__ == '__main__':
-    write_chain_stats_on_data()
-    get_and_save_f_and_b()
-    # process_stars_on_all_scammers()
-    # THIS address SHOULD NOW NOT RETURN ANYTHING
-    # result = get_funder_and_beneficiary('0xab29739e0554999d29422da632e9a0e3c0971e77')
-    # print(result)
+    process_stars_on_all_scammers()
+    # write_chain_stats_on_data()
+    # get_and_save_f_and_b()
