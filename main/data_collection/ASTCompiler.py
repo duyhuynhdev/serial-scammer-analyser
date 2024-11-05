@@ -44,7 +44,7 @@ def tokenize_contracts(addresses, dex='univ2'):
 def load_scam_token_address(dex='univ2'):
     rp_pools = pd.read_csv(
         os.path.join(
-            eval("path.{}_processed_path".format(dex)), "1_pair_pool_labels.csv"
+            eval("path.{}_processed_path".format(dex)), "filtered_simple_rp_pool.csv"
         )
     )
     rp_pools.fillna("", inplace=True)
@@ -118,5 +118,5 @@ def generate_ast_from_contract(source_codes, compiler_version):
 
 if __name__ == '__main__':
     job = 20
-    generate_ast_for_scam_tokens(job, dex='panv2')
-    # tokenize_ast_for_scam_tokens(job)
+    # generate_ast_for_scam_tokens(job, dex='panv2')
+    tokenize_ast_for_scam_tokens(job, dex='panv2')

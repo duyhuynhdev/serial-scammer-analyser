@@ -200,7 +200,7 @@ class TokenInfoCollector:
         node_url = infura_api[dex]["node_url"]
         token_abi = infura_api[dex]["token_abi"]
         node_web3 = Web3(Web3.HTTPProvider(node_url + key))
-        pool_info_path = os.path.join(eval('path.{}_pool_path'.format(dex)), "pool_info.csv")
+        pool_info_path = os.path.join(eval('path.{}_processed_path'.format(dex)), "pool_info.csv")
         token_addresses = []
         if os.path.isfile(pool_info_path):
             df = pd.read_csv(pool_info_path)
@@ -302,27 +302,26 @@ class ContractSourceCodeCollector:
     def __init__(self, dex=None):
         self.dex = dex
         if self.dex is not None:
-            bytecode_path = os.path.join(eval(f"path.{dex}_token_path"), "bytecode.csv")
-            self.bytecode = dict()
-            if os.path.exists(bytecode_path):
-                df = pd.read_csv(bytecode_path)
-                self.bytecode = dict(zip(df["address"], df["code"]))
+            is_contract_file = os.path.join(eval(f"path.{dex}_token_path"), "is_contract.csv")
+            self.is_contracts = dict()
+            if os.path.exists(is_contract_file):
+                df = pd.read_csv(is_contract_file)
+                self.is_contracts = dict(zip(df["address"], df["is_contract"]))
 
     def is_contract_address(self, address, key_idx=0):
         node_url = infura_api[self.dex]["node_url"]
         if self.dex is None:
             raise Exception("Please setup an instance first")
-        bytecode_path = os.path.join(eval(f"path.{self.dex}_token_path"), "bytecode.csv")
+        is_contract_path = os.path.join(eval(f"path.{self.dex}_token_path"), "is_contract.csv")
         if address is None or address == "":
             return False
-        if address.lower() in self.bytecode:
-            code = HexBytes(self.bytecode[address.lower()])
-            return len(code) > 0
+        if address.lower() in self.is_contracts:
+            return self.is_contracts[address.lower()]
         key_idx = key_idx % len(setting.INFURA_API_KEYS)
         web3 = Web3(Web3.HTTPProvider(node_url + setting.INFURA_API_KEYS[key_idx]))
         code = web3.eth.get_code(Web3.to_checksum_address(address))
-        data = [{"address": address.lower(), "code": code.hex()}]
-        ut.save_or_append_if_exist(data, bytecode_path)
+        data = [{"address": address.lower(), "is_contract": len(code) > 0}]
+        ut.save_or_append_if_exist(data, is_contract_path)
         return len(code) > 0
 
     def download_source_codes(self, job, addresses, dex="univ2"):
@@ -401,10 +400,11 @@ if __name__ == '__main__':
     # collector.merge_all_pools(pancake_chunks, "panv2")
     # collector.merge_all_pool_infos(uni_chunks, dex="univ2")
     ###########################################
-    # collector = TokenInfoCollector()
-    # collector.download_tokens_info(6)
+    job = 14
+    collector = TokenInfoCollector()
+    collector.download_tokens_info(job, dex="panv2")
     ###############################################
-    job = 24
-    download_token_contract(job, dex="panv2")
+    # job = 24
+    # download_token_contract(job, dex="panv2")
     # collector = ContractSourceCodeCollector(dex="univ2")
     # print(collector.is_contract_address("0xCFA6785Cd136d2Cdc37fE5835Cc4513E0E33f6C2"))

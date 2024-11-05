@@ -6,7 +6,8 @@ from pycparser.c_ast import Constant
 from tqdm import tqdm
 
 from data_collection.ContractCollector import ContractSourceCodeCollector
-
+import sys
+import os
 sys.path.append(os.path.join(os.path.dirname(sys.path[0])))
 
 from entity.LightCluster import LightCluster
@@ -22,8 +23,8 @@ from utils import Constant
 
 path = ProjectPath()
 setting = Setting()
-dataloader = DataLoader()
-collector = ContractSourceCodeCollector("univ2")
+dataloader = None
+collector = None
 
 config = {
     "is_sync_s3": False,
@@ -75,7 +76,7 @@ def is_slave_PA(suspected_node, target_node):
 
 def explore_scammer_network(group_id, scammers, node_factory, dex='univ2'):
     cluster_path = eval('path.{}_cluster_path'.format(dex))
-    scammers = [s for s in scammers if not collector.is_contract_address(s)]
+    # scammers = [s for s in scammers if not collector.is_contract_address(s)]
     if len(scammers) == 0:
         return None, list(), 0
     scammer_address = scammers[0]
@@ -149,26 +150,57 @@ def run_clustering(group_id, dex='univ2'):
         print("*" * 100)
     if config["is_sync_s3"]:
         s3_file_manager.sync()
-    return cluster,queue, it
+    return cluster, queue, it
 
-def explore_with_max_iter(job, max_iter = 100, size = 20000, dex='univ2'):
+
+def explore_with_max_iter(job, max_iter=100, size=20000, dex='univ2'):
     global config
-    file_path =  os.path.join(eval(f'path.{dex}_processed_path'), "max_iter_cluster_results.csv")
+    file_path = os.path.join(eval(f'path.{dex}_processed_path'), "max_iter_cluster_results.csv")
     config["is_max_iter"] = True
     config["max_iter"] = max_iter
-    processed_gids = []
+    processed_gids = set()
     if os.path.exists(file_path):
         df = pd.read_csv(file_path)
-        processed_gids = df["start_gid"].values.tolist()
-    groups =  list(dataloader.group_scammers.keys())
+        processed_gids = set(df["gid"].values.tolist())
+        groups = df["groups"].values
+        for g in groups:
+            processed_gids.update(g.split("-"))
+    print(len(processed_gids))
+    groups = list(dataloader.group_scammers.keys())
     chunks = ut.partitioning(0, len(groups), size)
     print("NUM CHUNKS", len(chunks), "JOB", job)
     chunk = chunks[job]
     chunk_groups = groups[chunk["from"]:(chunk["to"] + 1)]
     print(f'START EXPLORING NETWORK (JOB {job}/ {len(chunks)}):{chunk["from"]}_{chunk["to"]} (size: {len(chunk_groups)})')
     for gid in tqdm(chunk_groups):
-        if gid in processed_gids:
+        if gid in processed_gids or str(gid) in processed_gids:
             continue
+        cluster, queue, it = run_clustering(gid, dex)
+        links =  [str(g) for g in cluster.groups]
+        record = {
+            "gid": gid,
+            "cluster_size": len(cluster.nodes),
+            "queue_size": queue.qsize(),
+            "groups": "-".join(links),
+            "num_iter": it
+        }
+        processed_gids.update(links)
+        ut.save_or_append_if_exist([record], file_path)
+
+
+def find_complete_group(dex):
+    groups = [2889
+        , 760
+        , 788
+        , 1697
+        , 2526
+        , 363
+        , 1327
+              ]
+    config["is_max_iter"] = True
+    config["max_iter"] = 300
+    file_path = os.path.join(eval(f'path.{dex}_processed_path'), "max_iter_cluster_results.csv")
+    for gid in tqdm(groups):
         cluster, queue, it = run_clustering(gid, dex)
         record = {
             "gid": gid,
@@ -181,6 +213,12 @@ def explore_with_max_iter(job, max_iter = 100, size = 20000, dex='univ2'):
 
 
 if __name__ == '__main__':
-    # job = 1
-    # explore_with_max_iter(job, 500, 5000)
-    run_clustering(1)
+    dex = "panv2"
+    dataloader = DataLoader(dex)
+    collector = ContractSourceCodeCollector(dex)
+    # finish groups: 2, 150
+    # Note: 1402 - 0xcc7cf327b3965dbce9a450a358c357e36c0a99bb -> big connector who transfer money to many WT
+    # job = 23
+    # explore_with_max_iter(job, 200, 500, dex)
+    run_clustering(9508, dex)
+    # find_complete_group(dex)

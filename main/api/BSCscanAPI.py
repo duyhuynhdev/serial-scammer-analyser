@@ -64,6 +64,13 @@ def call_api(module, action, params, apikey=setting.BSCSCAN_API_KEY):
     assert (response_data is not None) and (response_data["status"] == "1" or isinstance(response_data["result"], list) or response_data["message"] == 'No data found')
     return response_data["result"] if response_data["result"] is not None else []
 
+def geth_api(module, action, params, apikey=setting.ETHERSCAN_API_KEY):
+    api_url = build_url(module, action, params, apikey)
+    print(api_url)
+    response = requests.get(api_url, headers={"Content-Type": "application/json"})
+    response_data = response.json()
+    return response_data["result"]
+
 
 def get_contract_creation_info(address_list, apikey=setting.BSCSCAN_API_KEY):
     addresses = ",".join(address_list)
@@ -90,3 +97,9 @@ def get_event_logs(address, fromBlock, toBlock, topic, page=1, offset=1000, apik
               "page": str(page),
               "offset": str(offset)}
     return call_api(module, action, params, apikey)
+
+def get_tx_by_hash(txhash, apikey=setting.BSCSCAN_API_KEY):
+    module = "proxy"
+    action = "eth_getTransactionByHash"
+    params = {"txhash": txhash}
+    return geth_api(module, action, params, apikey)

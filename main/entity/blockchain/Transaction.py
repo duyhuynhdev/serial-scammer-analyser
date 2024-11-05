@@ -2,14 +2,27 @@ import math
 
 from web3 import Web3
 
+from data_collection.DataDecoder import FunctionInputDecoder
 from entity.blockchain.DTO import DTO
-import numpy as np
 
 from utils import Constant
 
 
 class Transaction(DTO):
-    def __init__(self, blockNumber=None, timeStamp=None, hash=None, sender=None, to=None, value=None, gas=None, gasUsed=None, contractAddress=None, input=None, isError=None):
+    def __init__(
+        self,
+        blockNumber=None,
+        timeStamp=None,
+        hash=None,
+        sender=None,
+        to=None,
+        value=None,
+        gas=None,
+        gasUsed=None,
+        contractAddress=None,
+        input=None,
+        isError=None,
+    ):
         super().__init__()
         self.input = input
         self.hash = hash
@@ -28,9 +41,9 @@ class Transaction(DTO):
             setattr(self, name, value)
 
     def get_transaction_amount(self):
-        if (self.isError == 1) or (self.isError == '1'):
+        if (self.isError == 1) or (self.isError == "1"):
             return 0
-        return int(self.value) / 10 ** Constant.WETH_BNB_DECIMALS
+        return float(self.value) / 10**Constant.WETH_BNB_DECIMALS
 
     def is_error(self):
         return self.isError == 1 or self.isError == '1'
@@ -66,16 +79,54 @@ class Transaction(DTO):
 
 
 class NormalTransaction(Transaction):
-    def __init__(self, blockNumber=None, timeStamp=None, hash=None, sender=None, to=None, value=None, gas=None, gasUsed=None, contractAddress=None, input=None, isError=None, gasPrice=None,
-                 methodId=None, functionName=None, cumulativeGasUsed=None):
-        super().__init__(blockNumber, timeStamp, hash, sender, to, value, gas, gasUsed, contractAddress, input, isError)
+    def __init__(
+        self,
+        blockNumber=None,
+        timeStamp=None,
+        hash=None,
+        sender=None,
+        to=None,
+        value=None,
+        gas=None,
+        gasUsed=None,
+        contractAddress=None,
+        input=None,
+        isError=None,
+        gasPrice=None,
+        methodId=None,
+        functionName=None,
+        cumulativeGasUsed=None,
+    ):
+        super().__init__(
+            blockNumber,
+            timeStamp,
+            hash,
+            sender,
+            to,
+            value,
+            gas,
+            gasUsed,
+            contractAddress,
+            input,
+            isError,
+        )
         self.functionName = functionName
         self.methodId = methodId
         self.gasPrice = gasPrice
         self.cumulativeGasUsed = cumulativeGasUsed
 
+    def __eq__(self, other):
+        if not isinstance(other, NormalTransaction):
+            return False
+        return self.hash == other.hash
+
+    def __hash__(self):
+        return hash(self.hash.lower())
+
     def is_function_empty(self):
-        return (isinstance(self.functionName, float) and math.isnan(self.functionName)) or not self.functionName
+        return (
+            isinstance(self.functionName, float) and math.isnan(self.functionName)
+        ) or not self.functionName
 
     def is_transfer_tx(self):
         return self.is_function_empty() and not self.is_to_empty()
@@ -84,15 +135,25 @@ class NormalTransaction(Transaction):
         return not self.is_transfer_tx()
 
     def is_to_eoa(self, owner):
-        return self.is_out_tx(owner) and self.is_function_empty() and not self.is_to_empty()
+        return (
+            self.is_out_tx(owner)
+            and self.is_function_empty()
+            and not self.is_to_empty()
+        )
 
     def is_to_contract(self, owner):
-        return self.is_out_tx(owner) and not self.is_function_empty() and not self.is_to_empty()
+        return (
+            self.is_out_tx(owner)
+            and not self.is_function_empty()
+            and not self.is_to_empty()
+        )
 
     def get_transaction_fee(self):
-        if (self.isError == 1) or (self.isError == '1'):
+        if (self.isError == 1) or (self.isError == "1"):
             return 0
-        return float(self.gasPrice) * float(self.gasUsed) / 10 ** Constant.WETH_BNB_DECIMALS
+        return (
+            float(self.gasPrice) * float(self.gasUsed) / 10**Constant.WETH_BNB_DECIMALS
+        )
 
     def get_transaction_amount_and_fee(self):
         return self.get_transaction_amount() + self.get_transaction_fee()
@@ -106,7 +167,34 @@ class NormalTransaction(Transaction):
 
 
 class InternalTransaction(Transaction):
-    def __init__(self, blockNumber=None, timeStamp=None, hash=None, sender=None, to=None, value=None, gas=None, gasUsed=None, contractAddress=None, input=None, isError=None, type=None, errCode=None):
-        super().__init__(blockNumber, timeStamp, hash, sender, to, value, gas, gasUsed, contractAddress, input, isError)
+    def __init__(
+        self,
+        blockNumber=None,
+        timeStamp=None,
+        hash=None,
+        sender=None,
+        to=None,
+        value=None,
+        gas=None,
+        gasUsed=None,
+        contractAddress=None,
+        input=None,
+        isError=None,
+        type=None,
+        errCode=None,
+    ):
+        super().__init__(
+            blockNumber,
+            timeStamp,
+            hash,
+            sender,
+            to,
+            value,
+            gas,
+            gasUsed,
+            contractAddress,
+            input,
+            isError,
+        )
         self.type = type
         self.errCode = errCode
