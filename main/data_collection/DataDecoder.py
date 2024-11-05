@@ -194,7 +194,7 @@ class FunctionInputDecoder:
         is_swap = False
         for dec in command_bytes:
             command_dex = '0x{0:0{1}x}'.format(dec, 2)
-            if command_dex in ["0x00", "0x08"]:  # swap in
+            if command_dex in ["0x00", "0x08"]: # swap in
                 is_swap = True
             if command_dex in ["0x08", "0x09"]:
                 command_info = self.v3_router_commands[command_dex]

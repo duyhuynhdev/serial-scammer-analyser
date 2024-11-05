@@ -45,6 +45,12 @@ class Transaction(DTO):
             return 0
         return float(self.value) / 10**Constant.WETH_BNB_DECIMALS
 
+    def is_error(self):
+        return self.isError == 1 or self.isError == '1'
+
+    def is_not_error(self):
+        return not self.is_error()
+
     def is_to_empty(self):
         return not self.to or (isinstance(self.to, float) and math.isnan(self.to))
 
@@ -148,6 +154,9 @@ class NormalTransaction(Transaction):
         return (
             float(self.gasPrice) * float(self.gasUsed) / 10**Constant.WETH_BNB_DECIMALS
         )
+
+    def get_transaction_amount_and_fee(self):
+        return self.get_transaction_amount() + self.get_transaction_fee()
 
     def get_true_transfer_amount(self, address):
         if self.is_in_tx(address):

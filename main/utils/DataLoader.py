@@ -230,11 +230,13 @@ def load_transaction_by_address(address, dex="univ2"):
     normal_txs, internal_txs = transaction_collector.get_transactions(address, dex)
     return normal_txs, internal_txs
 
+
+contract_event_collector = ContractEventCollector()
+creator_collector = CreatorCollector()
+
 def load_light_pool(scammer_address, dataloader, dex="univ2"):
     pool_addresses = dataloader.scammer_pools[scammer_address.lower()]
     pool_event_path = eval("path.{}_pool_events_path".format(dex))
-    contract_event_collector = ContractEventCollector()
-    creator_collector = CreatorCollector()
     pools = []
     for pool_address in pool_addresses:
         pool_address = Web3.to_checksum_address(pool_address)

@@ -1,20 +1,18 @@
 import ast
 import csv
 import itertools
-
 import os
-import statistics
 import sys
 
 sys.path.append(os.path.join(os.path.dirname(sys.path[0])))
 from enum import Enum
 
 from data_collection.AccountCollector import TransactionCollector
-from utils.DataLoader import DataLoader, load_light_pool
+from utils.DataLoader import DataLoader, load_pool
 from utils.ProjectPath import ProjectPath
+from utils.Utils import TransactionUtils
 
-dex = 'panv2'
-dataloader = DataLoader(dex=dex)
+dataloader = DataLoader()
 path = ProjectPath()
 transaction_collector = TransactionCollector()
 
@@ -132,6 +130,8 @@ def find_star_shape_for_scammer(scammer_address, scammer_dict=None, star_to_igno
     return stars
 
 
+# DEPRECATED
+# @DUSTIN maybe you can reuse this method. This used the burn pools
 def find_liquidity_transactions_in_pool(scammer_address):
     def calc_liquidity_amount(event, use_value):
         return event.amount0 / 10 ** 18 if use_value == 0 else event.amount1 / 10 ** 18
@@ -139,7 +139,7 @@ def find_liquidity_transactions_in_pool(scammer_address):
     # key: transaction hash
     # value: liquidity added/removed
     liquidity_transactions_pool = {}
-    scammer_pool = load_light_pool(scammer_address, dataloader)
+    scammer_pool = load_pool(scammer_address, dataloader)
     for pool_index in range(len(scammer_pool)):
         eth_pos = scammer_pool[pool_index].get_high_value_position()
         for liquidity_trans in itertools.chain(scammer_pool[pool_index].mints, scammer_pool[pool_index].burns):
@@ -167,27 +167,22 @@ def get_funder_and_beneficiary(scammer_address):
     passed_add_liquidity = passed_remove_liquidity = False
     duplicate_in_amt = duplicate_out_amt = False
     normal_txs, internal_txs = transaction_collector.get_transactions_including_internal(scammer_address)
-    liq_trans_dict = find_liquidity_transactions_in_pool(scammer_address)
 
     for transaction in normal_txs:
         if transaction.is_not_error():
             # LOGIC upon passing the first add liquidity, mark down the amount and don't check any more add liquidaties
             if not passed_add_liquidity and ADD_LIQUIDITY_SUBSTRING in str(transaction.functionName):
-                decode_valid_add = False
-                candidate_add_liquidity_amt = liq_trans_dict.get(transaction.hash)
-                if candidate_add_liquidity_amt:
-                    decode_valid_add = True
-                if decode_valid_add:
+                # @DUSTIN - Here this next line is we verify the add liquidity transaction is valid. Update logic here
+                if TransactionUtils.is_scam_add_liq(transaction, dataloader):
+                    candidate_add_liquidity_amt = transaction.get_transaction_amount()
                     if candidate_add_liquidity_amt > 0.0:
                         passed_add_liquidity = True
                         add_liquidity_amt = candidate_add_liquidity_amt
             # LOGIC upon passing a remove liquidity - current largest_out becomes ineligible
             elif REMOVE_LIQUIDITY_SUBSTRING in str(transaction.functionName):
-                decode_valid_remove = False
-                candidate_rmv_amt = liq_trans_dict.get(transaction.hash)
-                if candidate_rmv_amt:
-                    decode_valid_remove = True
-                if decode_valid_remove:
+                # @DUSTIN - Here this next line is we verify the remove liquidity transaction is valid. Update logic here
+                if TransactionUtils.is_scam_remove_liq(transaction, dataloader):
+                    candidate_rmv_amt = TransactionUtils.get_related_amount_from_internal_txs(transaction, internal_txs)
                     if candidate_rmv_amt > 0.0:
                         passed_remove_liquidity = True
                         largest_out_transaction = None
@@ -411,72 +406,8 @@ def process_stars_on_all_scammers():
                 scammers_ran += 1
 
 
-def write_chain_stats_on_data():
-    in_stars_path = os.path.join(path.panv2_star_shape_path, "in_stars.csv")
-    out_stars_path = os.path.join(path.panv2_star_shape_path, "out_stars.csv")
-    in_out_stars_path = os.path.join(path.panv2_star_shape_path, "in_out_stars.csv")
-
-    def create_reader_and_skip(file):
-        reader = csv.reader(file, quotechar='"', delimiter='|', quoting=csv.QUOTE_ALL)
-        next(reader)
-        return reader
-
-    all_stars = []
-
-    with open(in_stars_path, 'r', newline='') as in_file, open(out_stars_path, 'r', newline='') as out_file, open(in_out_stars_path, 'r', newline='') as in_out_file:
-        in_reader = create_reader_and_skip(in_file)
-        out_reader = create_reader_and_skip(out_file)
-        in_out_reader = create_reader_and_skip(in_out_file)
-
-        # LOGIC Read in data
-        for line in in_reader:
-            all_stars.append([StarShape.IN, line[0], line[1], ast.literal_eval(line[2])])
-        for line in out_reader:
-            all_stars.append([StarShape.OUT, line[0], line[1], ast.literal_eval(line[2])])
-        for line in in_out_reader:
-            all_stars.append([StarShape.IN_OUT, line[0], line[1], ast.literal_eval(line[2])])
-
-    scammer_f_b_dict = read_from_in_out_scammer_as_dict()
-    star_stats_path = os.path.join(path.panv2_star_shape_path, "star_stats.csv")
-    star_stats_header = ["star_type", "center_address", "star_size", "funds_in_to_center_avg", "funds_in_to_center_total", "funds_out_from_center_avg", "funds_out_from_center_total", "scam_duration",
-                         "num_scams_total"]
-    with open(star_stats_path, "w", newline='') as star_stats_file:
-        csv_writer = csv.writer(star_stats_file, quotechar='"', delimiter='|', quoting=csv.QUOTE_ALL)
-        csv_writer.writerow(star_stats_header)
-        # LOGIC for all stars
-        for star in all_stars:
-            funds_in = []
-            funds_out = []
-            num_scams_total = []
-            transfer_timestamps = []
-            for satellite in star[3]:
-                num_scams_total.append(satellite[1])
-                transfer_timestamps.append(satellite[2])
-                if star[0] == StarShape.IN:
-                    funds_in.append(satellite[3])
-                elif star[0] == StarShape.OUT:
-                    funds_out.append(satellite[3])
-                elif star[0] == StarShape.IN_OUT:
-                    funds_in.append(satellite[3])
-                    # funder_from_dict = scammer_f_b_dict[satellite[0]]['funder']
-                    # funds_out.append(funder_from_dict['amount'])
-                    # transfer_timestamps.append(funder_from_dict['timestamp'])
-
-            funds_in_avg = ''
-            funds_in_total = ''
-            if len(funds_in) > 0:
-                funds_in_avg = statistics.mean(funds_in)
-                funds_in_total = sum(funds_in)
-            funds_out_avg = ''
-            funds_out_total = ''
-            if len(funds_out) > 0:
-                funds_out_avg = statistics.mean(funds_out)
-                funds_out_total = sum(funds_out)
-            scam_duration = max(transfer_timestamps) - min(transfer_timestamps)
-            csv_writer.writerow([star[0].name, star[1], star[2], funds_in_avg, funds_in_total, funds_out_avg, funds_out_total, scam_duration, sum(num_scams_total)])
-
-
 if __name__ == '__main__':
     process_stars_on_all_scammers()
-    # write_chain_stats_on_data()
-    # get_and_save_f_and_b()
+    # THIS address SHOULD NOW NOT RETURN ANYTHING
+    # result = get_funder_and_beneficiary('0xceb3fd461abd8df52052d50d100f7f9ae839c266')
+    # print(result)
