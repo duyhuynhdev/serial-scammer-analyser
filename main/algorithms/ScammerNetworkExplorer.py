@@ -1,14 +1,11 @@
 import sys
 import os
+sys.path.append(os.path.join(os.path.dirname(sys.path[0])))
 
 import pandas as pd
-from pycparser.c_ast import Constant
 from tqdm import tqdm
 
 from data_collection.ContractCollector import ContractSourceCodeCollector
-import sys
-import os
-sys.path.append(os.path.join(os.path.dirname(sys.path[0])))
 
 from entity.LightCluster import LightCluster
 from entity.LightNode import LightNodeFactory, LightNode, LightNodeLabel
@@ -213,12 +210,12 @@ def find_complete_group(dex):
 
 
 if __name__ == '__main__':
-    dex = "panv2"
+    dex = "univ2"
     dataloader = DataLoader(dex)
     collector = ContractSourceCodeCollector(dex)
     # finish groups: 2, 150
     # Note: 1402 - 0xcc7cf327b3965dbce9a450a358c357e36c0a99bb -> big connector who transfer money to many WT
     # job = 23
     # explore_with_max_iter(job, 200, 500, dex)
-    run_clustering(9508, dex)
+    run_clustering(4000, dex)
     # find_complete_group(dex)
