@@ -121,7 +121,8 @@ class Pool(ERC20):
         self.x: Optional[float] = None
         self.y: Optional[float] = None
         self.z: Optional[float] = None
-        self.profit: Optional[float] = None
+        self.true_profit: Optional[float] = None
+        self.untrue_profit: Optional[float] = None
 
     def get_high_value_position(self) -> int:
         if self.token0 is not None and (
