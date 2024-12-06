@@ -103,7 +103,7 @@ def find_star_shape_for_scammer(scammer_address, scammer_dict=None, star_to_igno
         else:
             raise Exception("There was no star detected in the possible_star_shapes")
 
-        normal_txs = transaction_collector.get_transactions(center_address)
+        normal_txs, _ = transaction_collector.get_transactions(center_address, dex)
         for transaction in normal_txs:
             if is_valid_address(is_out, transaction, center_address):
                 scammer_address_dest = transaction.to if is_out else transaction.sender
@@ -139,7 +139,7 @@ def find_liquidity_transactions_in_pool(scammer_address):
     # key: transaction hash
     # value: liquidity added/removed
     liquidity_transactions_pool = {}
-    scammer_pool = load_light_pool(scammer_address, dataloader)
+    scammer_pool = load_light_pool(scammer_address, dataloader, dex=dex)
     for pool_index in range(len(scammer_pool)):
         eth_pos = scammer_pool[pool_index].get_high_value_position()
         for liquidity_trans in itertools.chain(scammer_pool[pool_index].mints, scammer_pool[pool_index].burns):
@@ -166,7 +166,7 @@ def get_funder_and_beneficiary(scammer_address):
     num_remove_liquidities = 0
     passed_add_liquidity = passed_remove_liquidity = False
     duplicate_in_amt = duplicate_out_amt = False
-    normal_txs, internal_txs = transaction_collector.get_transactions_including_internal(scammer_address)
+    normal_txs, internal_txs = transaction_collector.get_transactions(scammer_address, dex)
     liq_trans_dict = find_liquidity_transactions_in_pool(scammer_address)
 
     for transaction in normal_txs:
@@ -239,7 +239,7 @@ def get_funder_and_beneficiary(scammer_address):
             passed_in_threshold = largest_in_transaction.get_transaction_amount_and_fee() / add_liquidity_amt >= IN_PERCENTAGE_THRESHOLD
         if largest_out_transaction:
             passed_out_threshold = largest_out_transaction.get_transaction_amount_and_fee() / remove_liquidity_amt >= OUT_PERCENTAGE_THRESHOLD
-            valid_out_address = transaction_collector.ensure_valid_eoa_address(largest_out_transaction.to)
+            valid_out_address = transaction_collector.ensure_valid_eoa_address(largest_out_transaction.to, dex)
 
         # LOGIC case where the in sender and out receiver are the same for IN_OUT star
         if valid_out_address and passed_in_threshold and passed_out_threshold and largest_in_transaction and largest_out_transaction and not duplicate_out_amt and not duplicate_in_amt and largest_in_transaction.sender == largest_out_transaction.to:
@@ -249,7 +249,7 @@ def get_funder_and_beneficiary(scammer_address):
             # LOGIC for funder, if it didn't perform any out transactions, no duplicate, passed the threshold then add
             if largest_in_transaction:
                 if passed_in_threshold and not duplicate_in_amt and largest_in_transaction.sender not in out_addresses and transaction_collector.ensure_valid_eoa_address(
-                        largest_in_transaction.sender):
+                        largest_in_transaction.sender, dex):
                     funder_dict = get_dict_info(largest_in_transaction, largest_in_transaction.sender)
 
             # LOGIC for beneficiary, if it didn't perform any in transactions, no duplicate, and passed the threshold and is not a contract address
@@ -441,7 +441,7 @@ def write_chain_stats_on_data():
     star_stats_header = ["star_type", "center_address", "star_size", "funds_in_to_center_avg", "funds_in_to_center_total", "funds_out_from_center_avg", "funds_out_from_center_total", "scam_duration",
                          "num_scams_total"]
     with open(star_stats_path, "w", newline='') as star_stats_file:
-        csv_writer = csv.writer(star_stats_file, quotechar='"', delimiter='|', quoting=csv.QUOTE_ALL)
+        csv_writer = csv.writer(star_stats_file, quotechar='"', delimiter=',', quoting=csv.QUOTE_ALL)
         csv_writer.writerow(star_stats_header)
         # LOGIC for all stars
         for star in all_stars:
@@ -458,9 +458,9 @@ def write_chain_stats_on_data():
                     funds_out.append(satellite[3])
                 elif star[0] == StarShape.IN_OUT:
                     funds_in.append(satellite[3])
-                    # funder_from_dict = scammer_f_b_dict[satellite[0]]['funder']
-                    # funds_out.append(funder_from_dict['amount'])
-                    # transfer_timestamps.append(funder_from_dict['timestamp'])
+                    funder_from_dict = scammer_f_b_dict[satellite[0]]['funder']
+                    funds_out.append(funder_from_dict['amount'])
+                    transfer_timestamps.append(funder_from_dict['timestamp'])
 
             funds_in_avg = ''
             funds_in_total = ''
@@ -477,6 +477,8 @@ def write_chain_stats_on_data():
 
 
 if __name__ == '__main__':
-    process_stars_on_all_scammers()
-    # write_chain_stats_on_data()
+    # process_stars_on_all_scammers()
+    write_chain_stats_on_data()
     # get_and_save_f_and_b()
+    # find_star_shape_for_scammer("0x346a75e69b77d0b6f128b34014485366cd88f7f8")
+    # print(get_funder_and_beneficiary("0x396a47f56f1c46dabd3a789918bfeb7f8da9534a"))

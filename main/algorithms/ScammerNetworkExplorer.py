@@ -8,6 +8,7 @@ from tqdm import tqdm
 from data_collection.ContractCollector import ContractSourceCodeCollector
 import sys
 import os
+
 sys.path.append(os.path.join(os.path.dirname(sys.path[0])))
 
 from entity.LightCluster import LightCluster
@@ -98,6 +99,10 @@ def explore_scammer_network(group_id, scammers, node_factory, dex='univ2'):
         if LightNodeLabel.BOUNDARY in root.labels:
             print(f"\t REACH BOUNDARY AT {root.address} >> SKIP")
             continue
+        als = [al for al in root.labels if al in LightNodeLabel.ACCEPTABLE_LABELS]
+        if len(als) == 0:
+            print(f"\t UNKNOWN LABELS for {root.address} >> SKIP")
+            continue
         if root.address.lower() in traversed_nodes:
             print(f"\t {root.address} HAS BEEN VISITED >> SKIP")
             continue
@@ -109,7 +114,7 @@ def explore_scammer_network(group_id, scammers, node_factory, dex='univ2'):
                     and (neighbour_address not in queue.addresses)
                     and not cluster.is_address_exist(neighbour_address)):
                 node = node_factory.createNode(neighbour_address, root.path, cluster.id)
-                if not is_slave_PA(node, root) and not any(label in LightNodeLabel.SKIP_LABELS for label in node.labels):
+                if not is_slave_PA(node, root) and not any(label in LightNodeLabel.SKIP_LABELS for label in node.labels) and any(label in LightNodeLabel.ACCEPTABLE_LABELS for label in node.labels):
                     if LightNodeLabel.BIG_CONNECTOR in node.labels:
                         suspicious_big_nodes.append(LightNode.to_sort_dict(node))
                     cluster.add_node(node)
@@ -176,7 +181,7 @@ def explore_with_max_iter(job, max_iter=100, size=20000, dex='univ2'):
         if gid in processed_gids or str(gid) in processed_gids:
             continue
         cluster, queue, it = run_clustering(gid, dex)
-        links =  [str(g) for g in cluster.groups]
+        links = [str(g) for g in cluster.groups]
         record = {
             "gid": gid,
             "cluster_size": len(cluster.nodes),
@@ -189,14 +194,37 @@ def explore_with_max_iter(job, max_iter=100, size=20000, dex='univ2'):
 
 
 def find_complete_group(dex):
-    groups = [2889
-        , 760
-        , 788
-        , 1697
-        , 2526
-        , 363
-        , 1327
-              ]
+    groups = [2002,
+                5009,
+                6010,
+                1008,
+                8004,
+                2005,
+                6506,
+                3011,
+                5504,
+                8503,
+                11519,
+                13,
+                4009,
+                6504,
+                6518,
+                6512,
+                3007,
+                501,
+                9006,
+                10007,
+                9,
+                1001,
+                4013,
+                505,
+                1502,
+                8501,
+                2507,
+                1507,
+                2510,
+                11517,
+]
     config["is_max_iter"] = True
     config["max_iter"] = 300
     file_path = os.path.join(eval(f'path.{dex}_processed_path'), "max_iter_cluster_results.csv")
@@ -218,7 +246,7 @@ if __name__ == '__main__':
     collector = ContractSourceCodeCollector(dex)
     # finish groups: 2, 150
     # Note: 1402 - 0xcc7cf327b3965dbce9a450a358c357e36c0a99bb -> big connector who transfer money to many WT
-    # job = 23
-    # explore_with_max_iter(job, 200, 500, dex)
-    run_clustering(9508, dex)
+    job = 24
+    explore_with_max_iter(job, 200, 500, dex)
+    # run_clustering(9508, dex)
     # find_complete_group(dex)

@@ -32,7 +32,7 @@ class LightNodeLabel:
     OVER_LIMIT_2_BUT_ACCEPT = "over_limit_2_but_accept"
     SKIP_LABELS = [BOUNDARY, OVER_LIMIT_1, OVER_LIMIT_2, BIG_TRANSFER]
     ACCEPT_LIMIT_2_LABELS = [SCAMMER, COORDINATOR, BIG_WASHTRADER]
-
+    ACCEPTABLE_LABELS  = [SCAMMER, DEPOSITOR, WITHDRAWER, COORDINATOR, BIG_WASHTRADER, WASHTRADER, TRANSFER, BIG_TRANSFER]
 
 class LightNode:
     def __init__(self, address, valid_neighbours, normal_txs_len, labels, path, group=None, normal_txs=None):
@@ -299,7 +299,7 @@ class LightNodeFactory:
         print("\t\t LABELS", labels)
         valid_neighbours = []
         # Skip verify neighbours if the node is boundary node
-        if not any(label in LightNodeLabel.SKIP_LABELS for label in labels):
+        if not any(label in LightNodeLabel.SKIP_LABELS for label in labels) and any(label in LightNodeLabel.ACCEPTABLE_LABELS for label in labels):
             valid_neighbours = self.get_valid_neighbours(address, normal_txs, cluster_id)
             if len(valid_neighbours) > 50:
                 labels.add(LightNodeLabel.BIG_CONNECTOR)

@@ -94,46 +94,46 @@ class TransactionUtils:
         # cannot find related internal_txs
         return TransactionUtils.find_withdraw_txs(txs, normal_txs, internals)
 
-class TransactionUtils:
-
-    @staticmethod
-    def get_related_amount_from_internal_txs(txs: NormalTransaction, internals: [InternalTransaction]):
-        for itx in internals:
-            if txs.hash == itx.hash:
-                return float(itx.value) / 10 ** Constant.WETH_BNB_DECIMALS
-        return 0
-
-    @staticmethod
-    def is_scam_token(parsed_result, dataloader):
-        if parsed_result is None:
-            return False
-        if "token" in parsed_result:
-            token = str(parsed_result["token"]).lower()
-            return token in dataloader.scam_token_pool.keys()
-        if "tokenA" in parsed_result:
-            token = str(parsed_result["tokenA"]).lower()
-            return token in dataloader.scam_token_pool.keys()
-        if "tokenB" in parsed_result:
-            token = str(parsed_result["tokenB"]).lower()
-            return token in dataloader.scam_token_pool.keys()
-        return False
-
-    @staticmethod
-    def is_scam_add_liq(txs: NormalTransaction, dataloader):
-        if "addLiquidity" in str(txs.functionName):
-            function_decoder = FunctionInputDecoder()
-            result = function_decoder.decode_add_liq_function_input(txs.input)
-            return TransactionUtils.is_scam_token(result, dataloader)
-        return False
-
-    @staticmethod
-    def is_scam_remove_liq(txs: NormalTransaction, dataloader):
-        if "removeLiquidity" in str(txs.functionName):
-            function_decoder = FunctionInputDecoder()
-            result = function_decoder.decode_remove_liq_function_input(txs.input)
-            return TransactionUtils.is_scam_token(result, dataloader)
-        return False
-
+# class TransactionUtils:
+#
+#     @staticmethod
+#     def get_related_amount_from_internal_txs(txs: NormalTransaction, internals: [InternalTransaction]):
+#         for itx in internals:
+#             if txs.hash == itx.hash:
+#                 return float(itx.value) / 10 ** Constant.WETH_BNB_DECIMALS
+#         return 0
+#
+#     @staticmethod
+#     def is_scam_token(parsed_result, dataloader):
+#         if parsed_result is None:
+#             return False
+#         if "token" in parsed_result:
+#             token = str(parsed_result["token"]).lower()
+#             return token in dataloader.scam_token_pool.keys()
+#         if "tokenA" in parsed_result:
+#             token = str(parsed_result["tokenA"]).lower()
+#             return token in dataloader.scam_token_pool.keys()
+#         if "tokenB" in parsed_result:
+#             token = str(parsed_result["tokenB"]).lower()
+#             return token in dataloader.scam_token_pool.keys()
+#         return False
+#
+#     @staticmethod
+#     def is_scam_add_liq(txs: NormalTransaction, dataloader):
+#         if "addLiquidity" in str(txs.functionName):
+#             function_decoder = FunctionInputDecoder()
+#             result = function_decoder.decode_add_liq_function_input(txs.input)
+#             return TransactionUtils.is_scam_token(result, dataloader)
+#         return False
+#
+#     @staticmethod
+#     def is_scam_remove_liq(txs: NormalTransaction, dataloader):
+#         if "removeLiquidity" in str(txs.functionName):
+#             function_decoder = FunctionInputDecoder()
+#             result = function_decoder.decode_remove_liq_function_input(txs.input)
+#             return TransactionUtils.is_scam_token(result, dataloader)
+#         return False
+#
 
 class Utils:
     def __init__(self):

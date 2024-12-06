@@ -4,13 +4,13 @@ import itertools
 import os
 import statistics
 
-from algorithms.ScammerNetworkBuilder import dataloader
+# from algorithms.ScammerNetworkBuilder import dataloader
 from data_collection.AccountCollector import TransactionCollector
 from utils.DataLoader import DataLoader, load_pool, load_light_pool
 from utils.ProjectPath import ProjectPath
 from utils.Utils import TransactionUtils
-
-dataloader = DataLoader()
+dex="panv2"
+dataloader = DataLoader(dex=dex)
 path = ProjectPath()
 transaction_collector = TransactionCollector()
 
@@ -27,7 +27,7 @@ def chain_pattern_detection(starter_address):
     if valid_address_fwd:
         fwd_chain.append([starter_address])
 
-    starter_transaction_history = transaction_collector.get_transactions(starter_address)
+    starter_transaction_history, _ = transaction_collector.get_transactions(starter_address,dex)
     current_transaction_history = starter_transaction_history
     current_address = starter_address
 
@@ -76,7 +76,7 @@ def count_number_of_remove_liquidity_calls(scammer_address, normal_txs=None):
     num_remove_liquidity_calls = 0
     valid_liquidity_set = return_valid_liquidity_transactions_bool(scammer_address)
     if normal_txs is None:
-        normal_txs = transaction_collector.get_transactions_including_internal(scammer_address)
+        normal_txs, _ = transaction_collector.get_transactions(scammer_address, dex)
 
     for transaction in normal_txs:
         if REMOVE_LIQUIDITY_SUBSTRING in str(transaction.functionName) and not transaction.isError:
@@ -88,19 +88,19 @@ def count_number_of_remove_liquidity_calls(scammer_address, normal_txs=None):
 
 def get_largest_out_after_remove_liquidity(scammer_address: str, normal_txs=None):
     if normal_txs is None:
-        normal_txs = transaction_collector.get_transactions(scammer_address)
+        normal_txs, _ = transaction_collector.get_transactions(scammer_address,dex=dex)
     return get_largest_transaction(normal_txs, scammer_address, REMOVE_LIQUIDITY_SUBSTRING, True, len(normal_txs) - 1, -1, -1)
 
 
 def get_largest_in_before_add_liquidity(scammer_address: str, normal_txs=None):
     if normal_txs is None:
-        normal_txs = transaction_collector.get_transactions(scammer_address)
+        normal_txs, _ = transaction_collector.get_transactions(scammer_address, dex)
     return get_largest_transaction(normal_txs, scammer_address, ADD_LIQUIDITY_SUBSTRING, False, 0, len(normal_txs), 1)
 
 
 def return_valid_liquidity_transactions_bool(scammer_address):
     valid_liquidity_transactions = set()
-    scammer_pool = load_light_pool(scammer_address, dataloader)
+    scammer_pool = load_light_pool(scammer_address, dataloader, dex=dex)
     for pool in scammer_pool:
         for liq_trans in itertools.chain(pool.burns, pool.mints):
             valid_liquidity_transactions.add(liq_trans.transactionHash)
@@ -147,9 +147,9 @@ def get_largest_transaction(normal_txs, scammer_address, liquidity_function_name
         valid_to_return = False
         # needs to pass one of these
         if is_out and largest_transaction.to in dataloader.scammers:
-            valid_to_return = transaction_collector.ensure_valid_eoa_address(largest_transaction.to)
+            valid_to_return = transaction_collector.ensure_valid_eoa_address(largest_transaction.to, dex)
         elif not is_out and largest_transaction.sender in dataloader.scammers:
-            valid_to_return = transaction_collector.ensure_valid_eoa_address(largest_transaction.sender)
+            valid_to_return = transaction_collector.ensure_valid_eoa_address(largest_transaction.sender, dex)
 
     return largest_transaction if valid_to_return else None, normal_txs, num_remove_liquidities_found
 
@@ -219,7 +219,7 @@ def write_chain_stats_on_data():
     chain_stats_path = os.path.join(path.panv2_scammer_chain_path, "chain_stats.csv")
     chain_stats_headers = ["start_address", "end_address", "chain_length", "num_scams_avg", "trans_amt_avg", "trans_time_diff_avg"]
     with open(chain_stats_path, "w", newline='') as chain_stats_file:
-        csv_writer = csv.writer(chain_stats_file, quotechar='"', delimiter='|', quoting=csv.QUOTE_ALL)
+        csv_writer = csv.writer(chain_stats_file, quotechar='"', delimiter=',', quoting=csv.QUOTE_ALL)
         csv_writer.writerow(chain_stats_headers)
 
         for chain in all_chains:
@@ -266,7 +266,7 @@ def convert_seconds_to_hms_string(time_difference: int) -> str:
 
 
 if __name__ == '__main__':
-    run_chain_on_scammers()
-    # write_chain_stats_on_data()
+    # run_chain_on_scammers()
+    write_chain_stats_on_data()
     # print(*chain_pattern_detection("0x9d143bcbf058553ddd86e13a6ed7c3b38b6c73c1"), sep='\n')
     # print(chain_pattern_detection("0x7edda39fd502cb71aa577452f1cc7e83fda9c5c7"))

@@ -299,10 +299,10 @@ def calculate_individual_avg_sim(scammer_hashed_tokens, dex='univ2'):
     print("TOTAL", len(global_sim), "WITH AVG SIM", np.mean(global_sim))
 
 if __name__ == '__main__':
-    dex='univ2'
+    dex='panv2'
     group_hashed_tokens, group_scammers, scammer_hashed_tokens = load_data(dex=dex)
     print("DATA SIZE", len(group_hashed_tokens))
-    print("SCAMMER SIZE", len(group_scammers))
+    print("GROUP SIZE", len(group_scammers))
     print("SCAMMER SIZE", len(scammer_hashed_tokens))
     print("TOTAL HASHED TOKENS", sum([len(s) for s in scammer_hashed_tokens.values()]))
     # generate_intra_sim(group_hashed_tokens, group_scammers, dex=dex)

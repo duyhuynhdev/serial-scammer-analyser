@@ -20,19 +20,19 @@ explorer_api = {
 
 class CreatorCollector:
 
-    def __init__(self, dex='panv2'):
-        print("In constructor of CreatorCollector! Caching objects")
-        pool_creation_path = os.path.join(eval('path.{}_processed_path'.format(dex)), "pool_creation_info.csv")
-        self.pool_existed_data = pd.read_csv(pool_creation_path)
-        self.pool_existed_data.drop_duplicates(inplace=True)
-        self.pool_existed_data.set_index("contractAddress", inplace=True)
+    # def __init__(self, dex='univ2'):
+        # print("In constructor of CreatorCollector! Caching objects")
+        # pool_creation_path = os.path.join(eval('path.{}_processed_path'.format(dex)), "pool_creation_info.csv")
+        # self.pool_existed_data = pd.read_csv(pool_creation_path)
+        # self.pool_existed_data.drop_duplicates(inplace=True)
+        # self.pool_existed_data.set_index("contractAddress", inplace=True)
+        #
+        # token_creation_path = os.path.join(eval('path.{}_processed_path'.format(dex)), "token_creation_info.csv")
+        # self.token_existed_data = pd.read_csv(token_creation_path)
+        # self.token_existed_data.drop_duplicates(inplace=True)
+        # self.token_existed_data.set_index("contractAddress", inplace=True)
 
-        token_creation_path = os.path.join(eval('path.{}_processed_path'.format(dex)), "token_creation_info.csv")
-        self.token_existed_data = pd.read_csv(token_creation_path)
-        self.token_existed_data.drop_duplicates(inplace=True)
-        self.token_existed_data.set_index("contractAddress", inplace=True)
-
-    def get_creators(self, addresses, job, contract_type='pool', dex='panv2'):
+    def get_creators(self, addresses, job, contract_type='pool', dex='univ2'):
         data = []
         five_patch = []
         downloaded_addresses = []
@@ -65,7 +65,7 @@ class CreatorCollector:
             ut.save_or_append_if_exist(data, output_path)
         print(f'FINISHED DOWNLOADING DATA (JOB {job})')
 
-    def download_creator(self, address, output_path, dex='panv2', key_idx=0):
+    def download_creator(self, address, output_path, dex='univ2', key_idx=0):
         # global key_idx
         api = explorer_api[dex]["explorer"]
         keys = explorer_api[dex]["keys"]
@@ -78,7 +78,7 @@ class CreatorCollector:
             print("CANNOT FIND CREATOR OF", address)
             return None
 
-    def get_contract_creator(self, address, dex='panv2'):
+    def get_contract_creator(self, address, dex='univ2'):
         address = address.lower()
         pool_creation_path = os.path.join(eval('path.{}_pool_path'.format(dex)), "pool_creation_info.csv")
         if os.path.isfile(pool_creation_path):
@@ -107,32 +107,57 @@ class CreatorCollector:
         record = existed_data.loc[address]
         return {"contractAddress": address, "contractCreator": record["contractCreator"], "txHash": record["txHash"]}
 
-    def get_pool_creator(self, address, dex='panv2'):
+    # def get_pool_creator(self, address, dex='univ2'):
+    #     address = address.lower()
+    #     # pool_creation_path = os.path.join(eval('path.{}_processed_path'.format(dex)), "pool_creation_info.csv")
+    #     # if not os.path.isfile(pool_creation_path):
+    #     #     return self.download_creator(address, pool_creation_path, dex)
+    #     # existed_data = pd.read_csv(pool_creation_path)
+    #     # if not address in existed_data["contractAddress"].values:
+    #     #     return self.download_creator(address, pool_creation_path, dex)
+    #     # existed_data.drop_duplicates(inplace=True)
+    #     # existed_data.set_index("contractAddress", inplace=True)
+    #     record = self.pool_existed_data.loc[address]
+    #     return {"contractAddress": address, "contractCreator": record["contractCreator"], "txHash": record["txHash"]}
+    #
+    # def get_token_creator(self, address, dex='univ2'):
+    #     address = address.lower()
+    #     # token_creation_path = os.path.join(eval('path.{}_processed_path'.format(dex)), "token_creation_info.csv")
+    #     # if not os.path.isfile(token_creation_path):
+    #     #     return self.download_creator(address, token_creation_path, dex)
+    #     # existed_data = pd.read_csv(token_creation_path)
+    #     # if not address in existed_data["contractAddress"].values:
+    #     #     return self.download_creator(address, token_creation_path, dex)
+    #     # existed_data.drop_duplicates(inplace=True)
+    #     # existed_data.set_index("contractAddress", inplace=True)
+    #     record = self.token_existed_data.loc[address]
+    #     return {"contractAddress": address, "contractCreator": record["contractCreator"], "txHash": record["txHash"]}
+    #
+    def get_pool_creator(self, address, dex='univ2'):
         address = address.lower()
-        # pool_creation_path = os.path.join(eval('path.{}_processed_path'.format(dex)), "pool_creation_info.csv")
+        pool_creation_path = os.path.join(eval('path.{}_processed_path'.format(dex)), "pool_creation_info.csv")
         # if not os.path.isfile(pool_creation_path):
         #     return self.download_creator(address, pool_creation_path, dex)
-        # existed_data = pd.read_csv(pool_creation_path)
+        existed_data = pd.read_csv(pool_creation_path)
         # if not address in existed_data["contractAddress"].values:
         #     return self.download_creator(address, pool_creation_path, dex)
-        # existed_data.drop_duplicates(inplace=True)
-        # existed_data.set_index("contractAddress", inplace=True)
-        record = self.pool_existed_data.loc[address]
+        existed_data.drop_duplicates(inplace=True)
+        existed_data.set_index("contractAddress", inplace=True)
+        record = existed_data.loc[address]
         return {"contractAddress": address, "contractCreator": record["contractCreator"], "txHash": record["txHash"]}
 
-    def get_token_creator(self, address, dex='panv2'):
+    def get_token_creator(self, address, dex='univ2'):
         address = address.lower()
-        # token_creation_path = os.path.join(eval('path.{}_processed_path'.format(dex)), "token_creation_info.csv")
+        token_creation_path = os.path.join(eval('path.{}_processed_path'.format(dex)), "token_creation_info.csv")
         # if not os.path.isfile(token_creation_path):
         #     return self.download_creator(address, token_creation_path, dex)
-        # existed_data = pd.read_csv(token_creation_path)
+        existed_data = pd.read_csv(token_creation_path)
         # if not address in existed_data["contractAddress"].values:
         #     return self.download_creator(address, token_creation_path, dex)
-        # existed_data.drop_duplicates(inplace=True)
-        # existed_data.set_index("contractAddress", inplace=True)
-        record = self.token_existed_data.loc[address]
+        existed_data.drop_duplicates(inplace=True)
+        existed_data.set_index("contractAddress", inplace=True)
+        record = existed_data.loc[address]
         return {"contractAddress": address, "contractCreator": record["contractCreator"], "txHash": record["txHash"]}
-
 
 class TransactionCollector:
     univ2_first_block = Constant.UNISWAP_START_BLOCK
@@ -182,9 +207,9 @@ class TransactionCollector:
                     parsed_internal_txs.append(ptx)
         return parsed_normal_txs, parsed_internal_txs
 
-    def ensure_valid_eoa_address(self, address):
+    def ensure_valid_eoa_address(self, address, dex = 'univ2'):
         # print("Ensuring valid_eoa_address={}".format(address))
-        normal_txs, internal_txs = self.get_transactions_including_internal(address, 'panv2', 0)
+        normal_txs, internal_txs = self.get_transactions(address, dex, 0)
         if len(normal_txs) >= Constant.TX_LIMIT_1:
             return False
         for ntx in normal_txs:
@@ -201,7 +226,7 @@ class TransactionCollector:
                 return False
         return True
 
-    def download_transactions(self, job, addresses, dex='panv2'):
+    def download_transactions(self, job, addresses, dex='univ2'):
         api = explorer_api[dex]["explorer"]
         keys = explorer_api[dex]["keys"]
         chunks = ut.partitioning(0, len(addresses), int(len(addresses) / len(keys)))
@@ -251,7 +276,7 @@ class TransactionCollector:
 
 if __name__ == '__main__':
     dex = 'panv2'
-    job = 24
+    job = 15
     # pool_path = os.path.join(eval('path.{}_processed_path'.format(dex)), "pool_addresses.csv")
     # pools = pd.read_csv(pool_path)["pool"].values
     # collectors = CreatorCollector()

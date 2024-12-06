@@ -381,6 +381,7 @@ def download_token_contract(job, dex="univ2"):
     rp_pools = rp_pools[rp_pools["is_rp"] != 0]
     rp_pools["scam_token"] = rp_pools["scam_token"].str.lower()
     addresses = rp_pools["scam_token"].values.tolist()
+    print("TOKENS LEN", len(addresses))
     contract_source_code_collector = ContractSourceCodeCollector()
     contract_source_code_collector.download_source_codes(job, addresses, dex)
 
@@ -400,11 +401,11 @@ if __name__ == '__main__':
     # collector.merge_all_pools(pancake_chunks, "panv2")
     # collector.merge_all_pool_infos(uni_chunks, dex="univ2")
     ###########################################
-    job = 14
-    collector = TokenInfoCollector()
-    collector.download_tokens_info(job, dex="panv2")
+    # job = 14
+    # collector = TokenInfoCollector()
+    # collector.download_tokens_info(job, dex="panv2")
     ###############################################
-    # job = 24
-    # download_token_contract(job, dex="panv2")
+    job = 24
+    download_token_contract(job, dex="panv2")
     # collector = ContractSourceCodeCollector(dex="univ2")
     # print(collector.is_contract_address("0xCFA6785Cd136d2Cdc37fE5835Cc4513E0E33f6C2"))

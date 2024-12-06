@@ -2,7 +2,6 @@ import math
 
 from web3 import Web3
 
-from data_collection.DataDecoder import FunctionInputDecoder
 from entity.blockchain.DTO import DTO
 
 from utils import Constant

@@ -19,26 +19,30 @@ def tokenize_contracts(addresses, dex='univ2'):
     ast_path = eval(f"path.{dex}_token_ast_path")
     tokenization_path = eval(f"path.{dex}_tokenization_path")
     for address in tqdm(addresses, "Tokenizing Contract Addresses"):
-        address = address.lower()
-        ast_file = os.path.join(ast_path, f"{address}.json")
-        if not os.path.exists(ast_file):
-            print(f"Cannot find AST  >> SKIP ({address})")
-            continue
-        ast = ut.read_json(ast_file)
-        tokenization_file = os.path.join(tokenization_path, f"{address}.token")
-        hash_file = os.path.join(tokenization_path, f"{address}.hash")
-        if os.path.exists(tokenization_file):
-            print(f"Tokenization file was generated already >> SKIP ({address})")
-            continue
-        tokens = ContractTokenization.tokenize_ast(ast)
-        if len(tokens) == 0:
-            print(f"Empty token list >> SKIP ({address})")
-            continue
-        ut.write_list_to_file(tokenization_file, tokens)
-        hashes = []
-        for element in tokens:
-            hashes.append(ut.keccak_hash(element))
-        ut.write_list_to_file(hash_file, hashes)
+        try:
+            address = address.lower()
+            ast_file = os.path.join(ast_path, f"{address}.json")
+            if not os.path.exists(ast_file):
+                print(f"Cannot find AST  >> SKIP ({address})")
+                continue
+            ast = ut.read_json(ast_file)
+            tokenization_file = os.path.join(tokenization_path, f"{address}.token")
+            hash_file = os.path.join(tokenization_path, f"{address}.hash")
+            if os.path.exists(tokenization_file):
+                print(f"Tokenization file was generated already >> SKIP ({address})")
+                continue
+            tokens = ContractTokenization.tokenize_ast(ast)
+            if len(tokens) == 0:
+                print(f"Empty token list >> SKIP ({address})")
+                continue
+            ut.write_list_to_file(tokenization_file, tokens)
+            hashes = []
+            for element in tokens:
+                hashes.append(ut.keccak_hash(element))
+            ut.write_list_to_file(hash_file, hashes)
+        except Exception as e:
+            print("ERROR OCCUR:", address)
+            print(e)
 
 
 def load_scam_token_address(dex='univ2'):
@@ -56,6 +60,7 @@ def load_scam_token_address(dex='univ2'):
 
 def generate_ast_for_scam_tokens(job, size=20, dex='univ2'):
     addresses = load_scam_token_address(dex)
+    print("TOKEN LEN ", len(addresses))
     chunks = ut.partitioning(0, len(addresses), int(len(addresses) / size))
     chunk = chunks[job]
     chunk_addresses = addresses[chunk["from"]:(chunk["to"] + 1)]
@@ -68,8 +73,10 @@ def tokenize_ast_for_scam_tokens(job, size=20, dex='univ2'):
     chunk = chunks[job]
     chunk_addresses = addresses[chunk["from"]:(chunk["to"] + 1)]
     print(f'START DOWNLOADING DATA (JOB {job}/ {len(chunks)} CHUNKS):{chunk["from"]}_{chunk["to"]} (size: {len(chunk_addresses)})')
-    tokenize_contracts(chunk_addresses, dex)
-
+    try:
+        tokenize_contracts(chunk_addresses, dex)
+    except Exception as e:
+        print(e)
 
 def generate_asts_and_tokens(addresses, dex='univ2'):
     contract_path = eval(f"path.{dex}_token_source_code_path")
