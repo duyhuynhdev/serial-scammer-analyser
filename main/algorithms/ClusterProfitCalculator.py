@@ -33,12 +33,52 @@ def log_cluster_calculation(func):
             f"{'=' * 100}"
         )
 
-        print(f"Total pool profits in the cluster: {result}")
         print(
-            f"Total transfer fees between nodes in the cluster: {args[0].cluster_transfer_fees}"
+            f"Total number of pools within the cluster is {len(args[0].scammer_pools)}"
+        )
+
+        # Access the true and untrue profits for each pool in the cluster
+        true_profits = args[0].true_profits
+        untrue_profits = args[0].untrue_profits
+
+        # Calculate and print average profits
+        average_true_profit = sum(true_profits) / len(true_profits)
+        average_untrue_profit = sum(untrue_profits) / len(untrue_profits)
+        print(f"Average true profit per pool: {average_true_profit}")
+        print(f"Average untrue profit per pool: {average_untrue_profit}")
+
+        # Calculate and print median profits
+        median_true_profit = sorted(true_profits)[len(true_profits) // 2]
+        median_untrue_profit = sorted(untrue_profits)[len(untrue_profits) // 2]
+        print(f"Median true profit per pool: {median_true_profit}")
+        print(f"Median untrue profit per pool: {median_untrue_profit}")
+
+        # Calculate and print total profits
+        total_true_profit = sum(true_profits)
+        total_untrue_profit = sum(untrue_profits)
+        print(f"Total true profit for all pools: {total_true_profit}")
+        print(f"Total untrue profit for all pools: {total_untrue_profit}")
+
+        # Calculate and print minimum profits
+        min_true_profit = min(true_profits)
+        min_untrue_profit = min(untrue_profits)
+        print(f"Minimum true profit per pool: {min_true_profit}")
+        print(f"Minimum untrue profit per pool: {min_untrue_profit}")
+
+        # Calculate and print maximum profits
+        max_true_profit = max(true_profits)
+        max_untrue_profit = max(untrue_profits)
+        print(f"Maximum true profit per pool: {max_true_profit}")
+        print(f"Maximum untrue profit per pool: {max_untrue_profit}")
+
+        # Print total transfer fees and net cluster profit
+        total_transfer_fees = args[0].cluster_transfer_fees
+        net_cluster_profit = result - total_transfer_fees
+        print(
+            f"Total transfer fees between nodes in the cluster: {total_transfer_fees}"
         )
         print(
-            f"Net cluster profit after deducting transfer fees: {result - args[0].cluster_transfer_fees}"
+            f"Net cluster true profit after deducting transfer fees: {net_cluster_profit}"
         )
 
         return result
@@ -119,6 +159,20 @@ class ClusterProfitCalculator:
             for tx in self.cluster_transfers
         )
 
+    @cached_property
+    def true_profits(self) -> List[float]:
+        """
+        Returns the true profit for each pool in the cluster.
+        """
+        return [pool.true_profit for pool in self.scammer_pools]
+
+    @cached_property
+    def untrue_profits(self) -> List[float]:
+        """
+        Returns the untrue profit for each pool in the cluster.
+        """
+        return [pool.untrue_profit for pool in self.scammer_pools]
+
     def _initialise_cluster(self, cluster_name: str) -> None:
         """
         Initializes the cluster with the provided cluster_name
@@ -133,6 +187,8 @@ class ClusterProfitCalculator:
         self.__dict__.pop("scammer_pools", None)
         self.__dict__.pop("cluster_transfers", None)
         self.__dict__.pop("cluster_transfer_fees", None)
+        self.__dict__.pop("true_profits", None)
+        self.__dict__.pop("untrue_profits", None)
 
     @log_cluster_calculation
     def calculate(self, cluster_name: str) -> float:
@@ -147,16 +203,16 @@ class ClusterProfitCalculator:
         for scammer_pool in self.scammer_pools:
             self.update_profit_metrics_per_pool(scammer_pool)
 
-        pools_sorted_bt_profit = sorted(
-            [ProfitPool(pool.profit, pool) for pool in self.scammer_pools],
+        pools_sorted_by_profit = sorted(
+            [ProfitPool(pool.true_profit, pool) for pool in self.scammer_pools],
             key=lambda x: x.profit,
         )
 
-        for _, pool in pools_sorted_bt_profit:
+        for _, pool in pools_sorted_by_profit:
             self.log_pool_calculation_results(pool)
 
         pools_profits_total = sum(
-            profit_and_pool.profit for profit_and_pool in pools_sorted_bt_profit
+            profit_and_pool.profit for profit_and_pool in pools_sorted_by_profit
         )
 
         return pools_profits_total
@@ -258,7 +314,10 @@ class ClusterProfitCalculator:
 
         # self._validate_transaction_amount_is_zero(token_creation_tx, pool)
 
-        token_creation_fee += token_creation_tx.get_transaction_fee() + token_creation_tx.get_transaction_amount()
+        token_creation_fee += (
+            token_creation_tx.get_transaction_fee()
+            + token_creation_tx.get_transaction_amount()
+        )
 
         return token_creation_fee
 
@@ -284,8 +343,12 @@ class ClusterProfitCalculator:
         return pool.investing_node_addresses & self.node_addresses_in_cluster
 
     @staticmethod
-    def calculate_profit_per_pool(x: float, y: float, z: float) -> float:
+    def calculate_true_profit_per_pool(x: float, y: float, z: float) -> float:
         return y - x - z
+
+    @staticmethod
+    def calculate_untrue_profit_per_pool(x: float, y: float) -> float:
+        return y - x
 
     def update_profit_metrics_per_pool(self, pool: Pool) -> None:
         """
@@ -294,12 +357,14 @@ class ClusterProfitCalculator:
         y = self.calculate_y_per_pool(pool)
         x = self.calculate_x_per_pool(pool)
         z = self.calculate_z_per_pool(pool)
-        profit = self.calculate_profit_per_pool(x, y, z)
+        true_profit = self.calculate_true_profit_per_pool(x, y, z)
+        untrue_profit = self.calculate_untrue_profit_per_pool(x, y)
 
         pool.x = x
         pool.y = y
         pool.z = z
-        pool.profit = profit
+        pool.true_profit = true_profit
+        pool.untrue_profit = untrue_profit
 
     def log_pool_calculation_results(self, pool: Pool) -> None:
         # Get legitimate and scam investor node addresses
@@ -319,7 +384,8 @@ class ClusterProfitCalculator:
             f"Value of z: {pool.z}\n"
             f"Legitimate investor node addresses:\n - {legitimate_addresses_str}\n"
             f"Scam investor node addresses:\n - {scam_addresses_str}\n"
-            f"The profit of this pool is {pool.profit}"
+            f"The profit of this pool with wash-trading in consideration is {pool.true_profit}"
+            f"The profit of this pool without wash-trading in consideration is {pool.untrue_profit}"
             f"\n"
         )
 
