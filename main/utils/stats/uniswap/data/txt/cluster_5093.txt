@@ -1,0 +1,42 @@
+====================================================================================================
+       Starting Calculation for Cluster: cluster_5093       
+====================================================================================================
+Pool address: 0x098523a6b444389d4de734691e84309a0d170a57
+Value of y: 2.22104627272267
+Value of x: 1.0328466739247
+Value of z: 1.2860249178206593
+Legitimate investor node addresses:
+ - 0x3c16b3fa0abcabb72f85800bf1684a00bd2fb93b
+Scam investor node addresses:
+ - 0xa4789bab4dfe3cd632a4b5423e1417ab20e4f385
+ - 0xee2c8055d3d085cc15d6d733d8b7ade4994f7b83
+ - 0x5709cc30a10e611c62925188c2dbbbe5445310a1
+ - 0xc9c6a4ee8c067fe59271b8995b4e8555dbb88dbb
+ - 0x1fa92a80063fb4f082e3bf557c59ad73de1e041d
+ - 0x44d0889fe5633cb9d274d5dcd50d5bb29b3c52db
+ - 0x75b9bad483e0cd63690713230fa07c96b962d5e9
+ - 0x6c22820f63e5154a656c83bf31c3a5b868557aea
+ - 0xaba85c4f103c6446ce5291cb8f0511c102bf7eed
+ - 0xe9d885909ff1af8089529b1fc53b656a9055c219
+ - 0x65090fc402bb7495c35cd9a2869a6a668c380d70
+ - 0x8820994fa9da735ec4a2b7de137308692ad88dda
+ - 0x5a0fc0b209af1cee17a1dbb0363a13b80ec83b7b
+ - 0x6606df2e8ebf4f00adebf4ffca55ab525cbfeb87
+ - 0xcebc4ec0b18df1830feb5eb350c7173f87f7161f
+ - 0x8b1aacf36995369d2aa34f4d64308001ace6f064
+ - 0x15e91ad2df39369403d2788e29bc6768642ea263
+ - 0x7e7e492c1f85efe767e04a3cef5b5b80f704d97d
+ - 0xce02d3a39a0c9a57b667484dd7bf640621ec0223
+ - 0x183a78e3707ddd013c67b8741874f2a5d7e91cc2
+ - 0x82a121e7b9445812e0e864d9ae18923cfdab9ad5
+ - 0x8ee37bf2803372c7652d7792fbd5aeb614db09ad
+The profit of this pool is -0.0978253190226892
+
+====================================================================================================
+       Completed Calculation for Cluster: cluster_5093       
+====================================================================================================
+Total pool profits in the cluster: -0.0978253190226892
+0x9b7da7aa5c7b3cc80982f1eb98ba63b0e00c3bb6 No columns to parse from file
+0xbda9df63fa4f68283cf96d647811763dc78f48a3 No columns to parse from file
+Total transfer fees between nodes in the cluster: 0.005202774739658998
+Net cluster profit after deducting transfer fees: -0.1030280937623482

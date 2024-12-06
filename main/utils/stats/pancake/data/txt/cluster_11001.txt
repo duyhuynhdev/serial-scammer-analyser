@@ -1,0 +1,63 @@
+====================================================================================================
+       Starting Calculation for Cluster: cluster_11001       
+====================================================================================================
+Pool address: 0x0c67964dfba56e8acca59a23454b32c6c6c35883
+Value of y: 0.0
+Value of x: 0.006337626
+Value of z: 0.0
+Legitimate investor node addresses:
+ - None
+Scam investor node addresses:
+ - None
+The profit of this pool with wash-trading in consideration is -0.006337626
+The profit of this pool without wash-trading in consideration is -0.006337626
+
+Pool address: 0x450ade05875779bdfa2290e0424db2b3e94dd776
+Value of y: 0.0
+Value of x: 0.004527693
+Value of z: 0.0
+Legitimate investor node addresses:
+ - None
+Scam investor node addresses:
+ - None
+The profit of this pool with wash-trading in consideration is -0.004527693
+The profit of this pool without wash-trading in consideration is -0.004527693
+
+Pool address: 0xaf136e4b06ff3a1a12b2140d9cd3303e0e8de5dd
+Value of y: 0.0
+Value of x: 0.002877135
+Value of z: 0.0
+Legitimate investor node addresses:
+ - None
+Scam investor node addresses:
+ - None
+The profit of this pool with wash-trading in consideration is -0.002877135
+The profit of this pool without wash-trading in consideration is -0.002877135
+
+Pool address: 0x773aaf1eb46638b7521a2eb6950d213803127cfa
+Value of y: 0.0
+Value of x: 0.000881247
+Value of z: 0.0
+Legitimate investor node addresses:
+ - None
+Scam investor node addresses:
+ - None
+The profit of this pool with wash-trading in consideration is -0.000881247
+The profit of this pool without wash-trading in consideration is -0.000881247
+
+====================================================================================================
+       Completed Calculation for Cluster: cluster_11001       
+====================================================================================================
+Total number of pools within the cluster is 4
+Average true profit per pool: -0.00365592525
+Average untrue profit per pool: -0.00365592525
+Median true profit per pool: -0.002877135
+Median untrue profit per pool: -0.002877135
+Total true profit for all pools: -0.014623701
+Total untrue profit for all pools: -0.014623701
+Minimum true profit per pool: -0.006337626
+Minimum untrue profit per pool: -0.006337626
+Maximum true profit per pool: -0.000881247
+Maximum untrue profit per pool: -0.000881247
+Total transfer fees between nodes in the cluster: 0.00084
+Net cluster true profit after deducting transfer fees: -0.015463701

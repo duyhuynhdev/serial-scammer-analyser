@@ -1,0 +1,41 @@
+====================================================================================================
+       Starting Calculation for Cluster: cluster_645       
+====================================================================================================
+Pool address: 0x0115fe7ee91ba3b13703be747daa73719fb309b5
+Value of y: 1.8753119288608315
+Value of x: 1.1030596843591935
+Value of z: 0.904832730043197
+Legitimate investor node addresses:
+ - 0xb8597c9a625efbb97d8ffcc98e59fa1097368b52
+ - 0xe6c678906d2264f21882ceaca2ec5ade190a41d5
+ - 0x3fc91a3afd70395cd496c647d5a6cc9d4b2b7fad
+ - 0xf8d17c6f6895516934a5e790aacbe37569c1dc78
+ - 0x3083893e1db6209722d1322eb848dc2559189015
+Scam investor node addresses:
+ - 0xb9c86a85fece889707099ac167f7caaf284a674a
+ - 0x903b49b10f4194314b5532735e09fafd21cc36ca
+ - 0x24c60c902ee9e1d64df19844efab33ce28037100
+ - 0x7c684d47489fcdcf656f42f2f6f8abcdcb3407fe
+ - 0x77bad04531ad02ab7e37bbc0952a0952a5a4af33
+ - 0x1d8328b6b60dcf63da02a0b34a6f76a9d4ed2794
+ - 0x7968bafa01a1b779233ca17f22d929ee53ee7ddf
+ - 0x641e7c0acb379811d474496b57506555e0f23a95
+ - 0x93fb30b98059731867bce931973cd4792706250e
+ - 0x4f96ef49cb1be021be51608679e2ac7953287e2d
+ - 0xeaece8e68b7a5b53d2f6b195f0db8e65a65af91f
+ - 0xa28ddbcccdd1d496ebcfa5a6b299eef2285ad564
+ - 0x8cdd0bf1c729f7af1161b2fea35c4e616222922a
+ - 0x2a617d143f20e6d8f7ee0430a521719f34ea4e73
+ - 0x26c4de03bad82031ffed351ad1924ca1ba3c5cdc
+ - 0x70e3e9fe986682174f02f21f0d3f3a70f0696b1f
+ - 0x0c30f0a623e37ed57178cb24ef11e8c4e3d27e10
+ - 0xf3903959ebe00e420ea862bbe7f0b49935f1ee74
+The profit of this pool is -0.132580485541559
+
+====================================================================================================
+       Completed Calculation for Cluster: cluster_645       
+====================================================================================================
+Total pool profits in the cluster: -0.132580485541559
+0x3236a29e3e03e1e0caaf224c1c802014ef5adce0 No columns to parse from file
+Total transfer fees between nodes in the cluster: 0.014363863732260002
+Net cluster profit after deducting transfer fees: -0.146944349273819

@@ -1,0 +1,391 @@
+====================================================================================================
+       Starting Calculation for Cluster: cluster_567       
+====================================================================================================
+Pool address: 0x1e70b373745f5dda6507ffb41649c09c2a288753
+Value of y: 1.5324446955580293
+Value of x: 1.714748342877504
+Value of z: 0.04560842369130565
+Legitimate investor node addresses:
+ - 0x07b2f2fa7dcddc40525ca0d0ad1ea103878f1143
+Scam investor node addresses:
+ - 0x38a2d496811c5c2b579a366a61d56dd58efb90fb
+The profit of this pool is -0.22791207101078043
+
+Pool address: 0x00f8055b6de2f9775767a15c860fcf48f93f5bb6
+Value of y: 1.9957742049187932
+Value of x: 2.098872438843674
+Value of z: 0.0
+Legitimate investor node addresses:
+ - 0x570d456aa7c3dbc74b8fcb624a5705831ee085d6
+ - 0x6f23173b74e8606f33af9740745079d303d80004
+ - 0x1d143615bad3a24f9487e5277a0ed216be58234e
+Scam investor node addresses:
+ - None
+The profit of this pool is -0.10309823392488071
+
+Pool address: 0x195bcc1dcd2d368b35cc229fd711eecc6b722ce4
+Value of y: 1.9985352791129594
+Value of x: 2.0697696724965984
+Value of z: 0.0
+Legitimate investor node addresses:
+ - 0x2538bb29f8b848d4f79e7b9651170812c4fc7025
+ - 0x5ffd6e3e6d66f9164289eb8503439b16ca5f7948
+Scam investor node addresses:
+ - None
+The profit of this pool is -0.07123439338363902
+
+Pool address: 0xb50524db8e953e05da81ead86e6703aa10943c62
+Value of y: 2.0205235454658963
+Value of x: 2.08381865077065
+Value of z: 0.0
+Legitimate investor node addresses:
+ - 0xb11e5da5bb1c187db569cff7328f01e1692a7587
+ - 0x475ca2c0494986eddaf9e2f3dd6f3fe20ca5ec1f
+ - 0x4ec8264b52c79d09b613688369503a50af302241
+ - 0x5c6c04ee97ab2ed9208f7ba28162725b1f45c2d9
+Scam investor node addresses:
+ - None
+The profit of this pool is -0.06329510530475391
+
+Pool address: 0x74b71a33c7bd8f5c207f418c9eb1de578a79d166
+Value of y: 2.01309408986869
+Value of x: 2.0659650379910253
+Value of z: 0.0
+Legitimate investor node addresses:
+ - 0x570d456aa7c3dbc74b8fcb624a5705831ee085d6
+Scam investor node addresses:
+ - None
+The profit of this pool is -0.05287094812233528
+
+Pool address: 0x8d5bac94e2080760a27d44920d8fbd408cce7082
+Value of y: 2.165982668768611
+Value of x: 2.0915343349423923
+Value of z: 0.08464328907748672
+Legitimate investor node addresses:
+ - 0x36ea94731fee2aa0ced34bc3e075995958b5fc3a
+ - 0xd0ab6070e4de0cd2c49ffc3d547d8de8ad0f7e40
+Scam investor node addresses:
+ - 0xc022533cd588c3a54128d15f34171f3996ee50df
+The profit of this pool is -0.010194955251268206
+
+Pool address: 0x4f492d29e6e8ee313e61503c18f38077e6aaaf26
+Value of y: 2.0797127006191602
+Value of x: 2.0851827326666124
+Value of z: 0.0
+Legitimate investor node addresses:
+ - 0xc4e12d017f7d393d75234151214e88dcc06b4443
+ - 0xe6dd39f14dc5f104ae74dce25005db6891271300
+ - 0x2f2bb8a11f37c436ba8b0c1f8b8d55ffeb704fce
+Scam investor node addresses:
+ - None
+The profit of this pool is -0.005470032047452111
+
+Pool address: 0xa7beb6110e6dc052bd1f372eac6e45771f533002
+Value of y: 2.0668938700843937
+Value of x: 2.066219184253273
+Value of z: 0.0
+Legitimate investor node addresses:
+ - 0x5d689505b1497a91780e96c9317251cc44ca9ac2
+ - 0x055e1e3fc7f44bb0f95e2090ab69d29a705dc745
+ - 0x49e55e9bb4db4ff41b60c78274dad016520e3339
+ - 0x7afff1235017fe4d64bee5b6ebc1d941f805072d
+ - 0xdb7e1c7d0c68e93445bbcf6b25497d54abbe922a
+Scam investor node addresses:
+ - None
+The profit of this pool is 0.000674685831120847
+
+Pool address: 0x5f2524833096584405858480da99223eef6e8620
+Value of y: 2.150697518063747
+Value of x: 2.149056624924528
+Value of z: 0.0
+Legitimate investor node addresses:
+ - 0x0a5c46aa8421822d957cc7f4e35d6e1b8ae89fb0
+ - 0xc3fee6ff70c231b9e33a4e6d82adb99b35da2047
+ - 0x1819b869157e02867a67913d836f6457e72f4ecc
+Scam investor node addresses:
+ - None
+The profit of this pool is 0.0016408931392191128
+
+Pool address: 0x0746e498ab51b11d81933cb012f139084307aaea
+Value of y: 2.105279466671325
+Value of x: 2.0734251054065633
+Value of z: 0.0
+Legitimate investor node addresses:
+ - 0x84016581add03a6b7ba291ee2d735925a5ddb47e
+ - 0x696d61ab6779c30bf65699d6662ea7396cbc7780
+ - 0x232830f04d04af637b2fd68edf9ef41f1142a91c
+ - 0x5305f86623fda0d51daa3ada3595e399221a4644
+ - 0x22ba43f5c2028f2518860775ef5b3f5dce360eeb
+ - 0xf43e12bfb359f4824c8781a519ceef0b64290647
+Scam investor node addresses:
+ - None
+The profit of this pool is 0.03185436126476171
+
+Pool address: 0x83f274fc664e5e9e552c2b76e166cf1b5a55984a
+Value of y: 2.142070697619325
+Value of x: 2.0964908056960554
+Value of z: 0.0
+Legitimate investor node addresses:
+ - 0xeb5123726354018da466c5eec8d057de3b822adb
+ - 0x7b393a26f6e2f7c63a6f3dc6fdb406fd5d8e7a55
+Scam investor node addresses:
+ - None
+The profit of this pool is 0.0455798919232695
+
+Pool address: 0x8ec3fb77d9f76e2e743279ac9f4a02d08361577f
+Value of y: 2.128375232393592
+Value of x: 2.0603674274761516
+Value of z: 0.0
+Legitimate investor node addresses:
+ - 0x2214572cfe8ee5a22b36778e1f1640fcd009103e
+ - 0x8453df599de6c19074a31c289324b7d6dbc7f286
+ - 0xf697bf695c4e385ab99b19823ac811c5f7fb30b1
+ - 0x49343f6598507551e050cdb402020b776a1cfecf
+ - 0xbbd018a45b40bb699df47c7bca87623810a2534b
+Scam investor node addresses:
+ - None
+The profit of this pool is 0.0680078049174404
+
+Pool address: 0x3b743d2716752256ddbb6ad5bdfdcaf98717fca3
+Value of y: 2.219049767000039
+Value of x: 2.1348491855621745
+Value of z: 0.0
+Legitimate investor node addresses:
+ - 0xb27092983cd5a2c44e28c934eb3eaa4b7216503c
+ - 0x3a6e7ab397fbdb2d7ccb4c40f400e4d8da0e8e28
+ - 0x413e2a021f2cd7bd9284bb548861125128bae8d0
+ - 0x51dbc7fde0b01f28fb05e150c4c7ca86b46c52a1
+ - 0xb6094467e1347a30871355518c98881f5ee391af
+ - 0xca7f8c8a38dc21edd555a4555be31d2620d9cfd4
+ - 0x4504dfa3861ec902226278c9cb7a777a01118574
+ - 0x6d6be3d261d9f84a3aa6ae79620019381a7b790d
+ - 0x841315eec73712aa210ed11df57d4df0ac740abb
+ - 0x04ace9edcbacca3c0168657188b9d83d1e4136c2
+ - 0xa260077e246e32e6d822be67da4aa439ed5f5e6b
+Scam investor node addresses:
+ - None
+The profit of this pool is 0.08420058143786457
+
+Pool address: 0x28cdfb16104d9f56ebfa1da3aea327bfceab821e
+Value of y: 2.1710026739371036
+Value of x: 2.0678374259512116
+Value of z: 0.0
+Legitimate investor node addresses:
+ - 0xce5b3675c43d9b3f0d91f8b9530b173b23002c5c
+ - 0x87602d030c0e91bc448b499bfdda1dc39561b22d
+ - 0x2cf1aceb1f0bbf09bc70cb463a11d42026accb66
+ - 0x855e4b081c0899394598f25427c282e16fce554d
+ - 0xf62cc03ccd3b38906ca83414d92909211cca7d18
+Scam investor node addresses:
+ - None
+The profit of this pool is 0.103165247985892
+
+Pool address: 0xd7c99f5e8c9aed834474d330e509e417e6f26a8e
+Value of y: 2.1918117726667585
+Value of x: 2.056971914512064
+Value of z: 0.0
+Legitimate investor node addresses:
+ - 0x71e759c4124b9a1df7611537e27d8552f72c4e9b
+ - 0x3f812afa43196871105b425f6c9dfa0b1b0bdb52
+ - 0x79ef68aabae184f51dbe1890308dcaa442b467a1
+ - 0x41c1386367ff57c46f024badd850d6753b3037e2
+ - 0x91a595aaa565489a3fb4616dec7be5e8b1597cec
+Scam investor node addresses:
+ - None
+The profit of this pool is 0.13483985815469435
+
+Pool address: 0x18e3fd4a4b6e82ffe7d79d80bbe71b9d7097f8d3
+Value of y: 1.5842359776378148
+Value of x: 1.340715459258307
+Value of z: 0.0
+Legitimate investor node addresses:
+ - 0xae87da7aa001e2c9ecf6ff5845977732c650f957
+ - 0xec767ba444a01d2faaaf68b50de3b7ad33968789
+ - 0x4f2e9e123f24f88179d7f28b9b29a092b4406fc5
+ - 0x9a931b7016bf5092126807e4975cfe7b2ccad7cb
+ - 0xfdafc1be6287d8c018eb7084c84f49239c3bf0f0
+ - 0x6c07456233f0e0fd03137d814aacf225f528068d
+ - 0xb2b2aa928571ebc750dde8f1aa869044513f16fd
+ - 0x4752e84c5ac25eeb173dcc0ed6bac132fde1703d
+ - 0xb8bfbf3e3278a3cefff875afc0fa49bb6d0d9113
+ - 0x48fc08c4c823089250fa3f7a2cedf076f32950a9
+ - 0x79a2ab37e19a38424a01a4f4478d6a8f2131bb17
+ - 0x6eb780cdd4607b8a6cb41952edbe8b7f7a05caa4
+ - 0xce9bf15e9903da0f0a008a6369d02f3affa7f0d8
+ - 0xe40133ba16d01869c30913482103f3d8ed9730ec
+ - 0x5af32ff3bd13507c77f063942207aadc254f6220
+ - 0x092efcb9c558dba02615dff5553a045a318a47a3
+ - 0x04843b1c3488fdf7dc7ed808ea4b667f28cd7374
+ - 0x235acd856e680b341704b9717a39c977a21e83a4
+ - 0x30315c78a87c11d4ffa87b9d50c9dc5cbb2d0435
+ - 0xd0ed1578a5dab7abe09ac850888932ece06abdee
+ - 0xa7d3226b5acccec2e06078745b77cd509c909955
+ - 0x8a1bdfdb9a6ba11dee57f7125bdd55ca54f651ea
+ - 0x709e0c1921baa5f46c2d6fb459a521560572bf7a
+ - 0x069c69fa069ceee980ab14664b221ebb66943848
+ - 0xa3366e2ad9782a371a29a7c9f3a0055511f24485
+ - 0x2f6dc65ffbbdb2d9b1d5b0447f507ffdb29c1c3b
+ - 0xeaad2abd8cb70c11079cefcdc9cbc276a0a6b315
+ - 0x362a3908b751b9a059a233489eb6f6cec3599945
+ - 0xe930cc92c86e15fd11c042654279fa4012e716c1
+ - 0x12d23712617b425e1a009a0a5fb7502a9d5a328e
+ - 0x73ec69efb5d2e87b12dcaba7a749ceeebcc9f958
+ - 0xd742e89e82d9111b31d30233329fbe2c8db5d109
+ - 0xc2c9e1814486ad41668dbc53f2b26ed05be0bdf5
+ - 0xfc22c2a6d460e8a9754071ec5c3e7812479d7845
+ - 0xca2a9bd94b11e7d4bcd6f029541adf1d50eb8d8c
+ - 0xa41446c0e06ef122823bbb61b36226218febfffd
+ - 0x58e9faae3334aee01d41b235c87cc6fe7170ee75
+Scam investor node addresses:
+ - None
+The profit of this pool is 0.24352051837950772
+
+Pool address: 0xff7866facce2ce371578e002170e32bb3d45b672
+Value of y: 3.4220490603036593
+Value of x: 3.1677412378946723
+Value of z: 0.0
+Legitimate investor node addresses:
+ - 0xbedb7d97c3d30b8049cb4b699714bc64fd09322a
+ - 0x7efe20010abc3070d865dc96f9f59de6697a4a9e
+ - 0x83842a45bf32d674cd37715918686375d78bb626
+ - 0x782beb6f0788a464378acf42d67082643f4b0e6f
+ - 0xe3797912fce6049d3342bfd0eae8139c4c49e6db
+ - 0x3e80139e87b1f29a3345339b8da94475c2670115
+ - 0x4504dfa3861ec902226278c9cb7a777a01118574
+ - 0xea7b55b249f3575815d8a6bbc9912f93ce042770
+ - 0x4d855291488daf31305a0fb436b39506b21f21e4
+ - 0x1c519a0aef8ef649f61fc3ff62380b241f13fefe
+Scam investor node addresses:
+ - None
+The profit of this pool is 0.25430782240898697
+
+Pool address: 0x145a00e05843a6b72ab91c819650bb171fc54225
+Value of y: 2.5676588438900354
+Value of x: 2.1375222454765193
+Value of z: 0.15544523256505288
+Legitimate investor node addresses:
+ - 0xed98ee42fba1a6c6fbb716d3653edc10e3c620ff
+ - 0x99fbfd23eb15edea439cc29268615910950fbd36
+ - 0x01a04ba8532b30f98a41d6f973d86d3d7af4f51b
+ - 0x5331ca4145439a2994e2afbcd944a339d0e42011
+ - 0x76b3f8936d1b25a9724fca43c973e80a7d998c10
+ - 0xcbfa71b7630662dcc5c5596dc4d148f46036bfb9
+ - 0x21340c5da8a46058f18a1458186ecc0b31a88cca
+ - 0x819862d5727179684762da20d0ce5226783f3396
+ - 0x9e4b679e716e302a2116fba6614e1fe8777c9758
+ - 0x9c3da6c3b7222fa6e218be6a33b646457f9c9441
+ - 0x67f580dcdad4c17ab3f5bead75387f63bd7a7593
+ - 0x35b120f4de3f9bb432cda3a1a2c7ead1da53dd60
+ - 0x75edfa200bb964ff0545791dbc4860ec4db2ceeb
+ - 0x40a3c720e0547f2c2886c946d272995d90c9ce0b
+ - 0x0a6e6d297fc307cdcfda4e123f3b550aaa1cbb14
+ - 0x2655ab604228a581b604fb5e07950a2bf7fd33bd
+ - 0x485320100b429c4a487ee8ef3ee26a855720ba47
+Scam investor node addresses:
+ - 0x848164d42b4dbce2463c777efdbd58d274c9f581
+The profit of this pool is 0.27469136584846326
+
+Pool address: 0xe5c46a4ab9a4be14494afcae6b6afe57d989d8d8
+Value of y: 2.8472539761329214
+Value of x: 2.0715047081377875
+Value of z: 0.0
+Legitimate investor node addresses:
+ - 0xc6c0cc6fe934a0c8ed926682ef9a5ee327564b3d
+ - 0x6d217238b19f3495944bdac042e736ae867f9827
+ - 0x839126d8b0ff719d5394fd288a55ab24b2a7baac
+ - 0xf7829ee2386ffb28ed5d29a16309182c2151464f
+ - 0x82d98a15d9615f693fb62fce02eb58ec182db390
+ - 0xc65d8bdd90315f83f91c7f7ede16c1a5946b0580
+ - 0xd9f2538c585cd25ec9ef8bd65d621f711ce240dd
+ - 0x7f7bcd4a2a20683fc0cecba57228586158750c2c
+ - 0x9226286eaa0252e6fad096609b823c524958772d
+ - 0x803838b1bd64a55f45d4f16b713f58aaab417858
+ - 0x2e508afc3f33f2261a6e71b5aba959d0bba19ef1
+ - 0x3550b2c5cba617e9e26199e69abc46b185d045bd
+ - 0x950d77dcbeeb1cfc7dad556faa51f2ca3cc7c427
+ - 0xba20939d4d126de93ebc621f87c83851c19b2bdf
+ - 0x24ab582de3414599e122156f25bf72f0d0cca437
+ - 0x1f3ca34e78ccb5581807b51915b0afe304a92450
+ - 0x39c033fc32d187d597aaf9016b0041148b92a708
+ - 0x582ad0795e4bda3e4d394cae5f1e12bf648e6ea0
+ - 0x3793b8b04a93ec794c163a86d0aedab92d8a7a34
+ - 0x7cb5b063f4527e067a5f97a99ebbfc962e179339
+ - 0x0ceb451f36148492c9edad1b43643d815e93fad2
+ - 0xd5912faaed711f9477e5024940998ff935404182
+ - 0x6350b838f505602f48e809bc9258e32c1253fbcf
+ - 0xff301b56bebcb9ca6f861572e25ad3849e8470bb
+ - 0xbf185e1971d974d19cab410f66d28022174ffe46
+ - 0x3e2d2949027260b34641cc81a95dd61a859facb7
+ - 0xb0c223063ddb91de39a08be166b9ae95dc74fe52
+ - 0xd3eac9a72fc163ce0757ef28618f6985da417346
+Scam investor node addresses:
+ - None
+The profit of this pool is 0.7757492679951339
+
+Pool address: 0x2bd3a820cdbe19153a36f5853c9064bd8d3140cc
+Value of y: 2.09174374167722
+Value of x: 1.1726799584144938
+Value of z: 0.0
+Legitimate investor node addresses:
+ - 0x869a2345296f8afae56d982870f0b4425ab01234
+ - 0x52f3ae4429bba2dfe719c026815f46ba77f32422
+ - 0x000454307bb96e303044046a6eb2736d2ad560b6
+ - 0x710e7dbfe197d92a40b2929052befd39475aaf84
+ - 0xcf578cd6660b406496377834277fd3940522c44a
+ - 0x344f28c24a31b9b637c15e92ee10e78081788dcb
+ - 0x0818c985fd31189134a1475d78453911305dac4b
+ - 0xf1f4479017333607e2225bd0ab31c603be91f56f
+ - 0x825a34b6bc7de878d55a8159afffe0c93f7adfa0
+ - 0x8dbcce1dc90fe262a2df5a98014c90d1630ea2e0
+ - 0x808ecad4bb89e8447ed4db47dda818d45826d8ad
+ - 0x69fa3e599057930b66d5a66bab7dbc1ed39a80e8
+ - 0x82412969100a310c006e865f5e4369efea8272f7
+ - 0x0b98dd25600bb9a521b1d54c03cf303028c0503d
+ - 0x7d4790f9ab634b6f67357023343e82b2e8090b0f
+ - 0x6394c899b65bafa2f38832aaaea2d1f8bdf53b88
+ - 0x62ec0fee10b49a2cbfc70c24dbb2bd5762dc597d
+ - 0x04f7ea869bf0390a8ba238a92b6f8f1211efcbb0
+ - 0x104b71ecbad290bb348d85c99a967b82bd2b9549
+ - 0xdc4bcaae36495a0f541e530127f0115b0433f176
+ - 0x653ab39baf156f92fb99d4d806a82df9cb5286b2
+ - 0xf2be6ccc9bfa0da54801d36d5e6e62088eb84a13
+ - 0x32a211ca34ad8d7da1c870c2f79fd1d1e410a944
+ - 0x76e3bf223fbe542a000ad8f98dfdf55f4084b636
+ - 0x4e4e7b84680abd9888535e16403e18c9481ed7ce
+ - 0xc2f77e7f3f768dd94eb43053867ccb73bc34c9a5
+ - 0xfc2ced6c4609f36572d296ec67cc59147fa615eb
+ - 0xf8efd62b7f6e397a387a7fb232a54fe8f59c6b2a
+ - 0xa8589d8a0f5ad195349c5545737098002036dacb
+ - 0x7364d14577d583ef578276e953a22cf10fbdc544
+ - 0x47bbdb7faf13b33e5b9b2fc816acf18006f4745f
+ - 0xfaded000cc97f8707e3a5598e5e1f7da5dbd8186
+ - 0x07c7ba3001a848aec3f0a11a24f3ce7b03206fb7
+ - 0x85439b27d4c3d5276e5be8bd222ba4ddcea8eebd
+ - 0xd267287aff18d5f8263f5c8a30c37ce6f7989794
+ - 0x3f5a7eff2aab482d499f5df90ecf722ecec3a0f3
+ - 0xc5b05407f9e848af161138a0c21217fd819152c5
+ - 0xa3366e2ad9782a371a29a7c9f3a0055511f24485
+ - 0x9bafc07926c4517a357f7e390f1f499372f03bb9
+ - 0x4ef45ea052eeab1631dca09d28946fe8e17633b5
+ - 0xe38b5aa8055c0741c2f635ae1cfe490cb3577b67
+ - 0xe930cc92c86e15fd11c042654279fa4012e716c1
+ - 0x32d8bd3caaee7efbb387647762390ff417750fc3
+ - 0x57a2e65ee26b7a54ab966a62e382be7500961a25
+ - 0xff3092ef6bf19018ae5f44e3abaa873071408fef
+ - 0xe545c3cd397be0243475af52bcff8c64e9ead5d7
+ - 0x7ef509d958ead4c143eb3bca20248693b2b6c221
+ - 0xa51e748875bc57439637afe2968b3fcfe7d78d96
+ - 0x7bbcf92ddd341a13b313fa6dff086fab659300fd
+ - 0x399173fc0099e02f31b6766edf12a0af3fad503e
+ - 0x5b3b4c65d357ec9b44690cc6aa95a12ff7d8c61a
+Scam investor node addresses:
+ - None
+The profit of this pool is 0.9190637832627264
+
+====================================================================================================
+       Completed Calculation for Cluster: cluster_567       
+====================================================================================================
+Total pool profits in the cluster: 2.403220343503971
+0x77b307060776d617e3bd605b5a384a06145757c5 No columns to parse from file
+Total transfer fees between nodes in the cluster: 0.02290666384954819
+Net cluster profit after deducting transfer fees: 2.380313679654423

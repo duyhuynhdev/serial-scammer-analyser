@@ -1,0 +1,419 @@
+====================================================================================================
+       Starting Calculation for Cluster: cluster_11508       
+====================================================================================================
+Pool address: 0xa71f979469a53528383dfa1e3b9310d7fb208cdc
+Value of y: 0.0
+Value of x: 7.022050825
+Value of z: 45.759154759999994
+Legitimate investor node addresses:
+ - 0x1c113f8c9782742370ec97bc984ef2c96ecc799e
+ - 0x2be87ad70cf11ea294d7c42044b5b8277a3e4874
+ - 0x1ec883aaa3620df6105aeb11f29b77cefe8d9527
+Scam investor node addresses:
+ - 0x4349bfcc5d3127f015592339ef5b97923c5be000
+The profit of this pool with wash-trading in consideration is -52.781205584999995The profit of this pool without wash-trading in consideration is -7.022050825
+
+Pool address: 0x77d0bd7ea5fce13cab17b64c6095a2dc610d1efe
+Value of y: 0.0
+Value of x: 7.022050944999999
+Value of z: 45.15321998
+Legitimate investor node addresses:
+ - 0xcc5eb7392c3cf91f160b5008867a29aceb97b9e7
+ - 0x2be87ad70cf11ea294d7c42044b5b8277a3e4874
+ - 0x3334b438471840d21706f8c629a76a1e3827c207
+ - 0x93b5b83ff5be60b2a7967326fe2748847bab4e5e
+Scam investor node addresses:
+ - 0x3bb3b1e6db67cff6ad4fb90fa26cafd02a9206e9
+The profit of this pool with wash-trading in consideration is -52.175270925The profit of this pool without wash-trading in consideration is -7.022050944999999
+
+Pool address: 0x99f08c5b3a78b36ea0d2d25572214e376add9e55
+Value of y: 0.0
+Value of x: 7.022050285
+Value of z: 45.121573639999994
+Legitimate investor node addresses:
+ - 0x42502d5e5e6ca64c38b405e44f38eab15a86a812
+ - 0x2be87ad70cf11ea294d7c42044b5b8277a3e4874
+ - 0x97b2589ee5254a78fcf7f4258dbb8794043fc814
+ - 0x93b5b83ff5be60b2a7967326fe2748847bab4e5e
+ - 0xbe0e66a49ee08da0ab3619a655075f8491ab5e6d
+ - 0xa9bcdbb8425c0a70e1e8fc642bf5d051f747b8f5
+Scam investor node addresses:
+ - 0xa78c0977d48ebbef20773164d5c4c81c52fc09fc
+The profit of this pool with wash-trading in consideration is -52.14362392499999The profit of this pool without wash-trading in consideration is -7.022050285
+
+Pool address: 0xd810eb358ae074d57c9ab2ca04bc847cda8e1034
+Value of y: 0.0
+Value of x: 8.022050525000001
+Value of z: 42.196598040000005
+Legitimate investor node addresses:
+ - 0x1571cbac57191949a236561bbc454fe236093eec
+ - 0x93b5b83ff5be60b2a7967326fe2748847bab4e5e
+ - 0x793c2782e383ae80589d0ae7a49d9c2b136b4995
+ - 0xad80679402d1515e601af87b17a335baee1d4165
+ - 0x2be87ad70cf11ea294d7c42044b5b8277a3e4874
+Scam investor node addresses:
+ - 0x78468577b4a0821cf48fda0e7592d2facb3c8b42
+The profit of this pool with wash-trading in consideration is -50.21864856500001The profit of this pool without wash-trading in consideration is -8.022050525000001
+
+Pool address: 0x7a47476909e7deb4556674e3a0cb5cb43c12b0e4
+Value of y: 0.0
+Value of x: 8.022050525000001
+Value of z: 42.069867640000005
+Legitimate investor node addresses:
+ - 0x82bb66454529371add586598651caae44e01fbea
+ - 0x93b5b83ff5be60b2a7967326fe2748847bab4e5e
+ - 0xd9f077eeeb44edda0a6497829a799669ce64e1e3
+ - 0x2be87ad70cf11ea294d7c42044b5b8277a3e4874
+ - 0x17584fca0f2022ae0532a247bf88ecf40f20500a
+Scam investor node addresses:
+ - 0x67a74f8747056a2d2854e03d7de2e305da61e753
+The profit of this pool with wash-trading in consideration is -50.09191816500001The profit of this pool without wash-trading in consideration is -8.022050525000001
+
+Pool address: 0x7ee87f64626a481522eede8ef2ca8469c4895d48
+Value of y: 0.0
+Value of x: 7.022050945
+Value of z: 43.058901640000016
+Legitimate investor node addresses:
+ - 0xe794f15a4fc16a647ae2c7d51070ea9754f074a8
+ - 0xeedeb642a060a96436f41d7e5ed014355aa60bfb
+ - 0x2be87ad70cf11ea294d7c42044b5b8277a3e4874
+ - 0x93b5b83ff5be60b2a7967326fe2748847bab4e5e
+Scam investor node addresses:
+ - 0xa340ec66743182cc9bc268f33f82778d8437dc8f
+The profit of this pool with wash-trading in consideration is -50.08095258500002The profit of this pool without wash-trading in consideration is -7.022050945
+
+Pool address: 0xf49b97a96eb86b5eecb23e96a483395e36a08dcd
+Value of y: 0.0
+Value of x: 8.022050405
+Value of z: 41.46422764
+Legitimate investor node addresses:
+ - 0x0c1bb5588e5a7d3a1e0761957c63738228f0e6bc
+ - 0x2be87ad70cf11ea294d7c42044b5b8277a3e4874
+ - 0x3790c9b5a9b9d9aa1c69140a5f01a57c9b868e1e
+ - 0x93b5b83ff5be60b2a7967326fe2748847bab4e5e
+Scam investor node addresses:
+ - 0x2d1f89273a752215b4961e4ee861298d5ba247f0
+The profit of this pool with wash-trading in consideration is -49.486278045The profit of this pool without wash-trading in consideration is -8.022050405
+
+Pool address: 0xc6f8167bfdb4233e8db302d010b44da32ea99d4d
+Value of y: 0.0
+Value of x: 8.022050285
+Value of z: 41.429217640000005
+Legitimate investor node addresses:
+ - 0x405ce58ed807aa0f23dce1b24bc6fce4a5a4c16f
+ - 0x2be87ad70cf11ea294d7c42044b5b8277a3e4874
+ - 0xc3b634439fb2ea18abd331337aee719add13fab7
+ - 0x93b5b83ff5be60b2a7967326fe2748847bab4e5e
+Scam investor node addresses:
+ - 0x1f67a2832ec266840b2dd43c115dc045d1d599f1
+The profit of this pool with wash-trading in consideration is -49.451267925The profit of this pool without wash-trading in consideration is -8.022050285
+
+Pool address: 0x1214e2398e67ac0075756cfa3ea9de26c7b65743
+Value of y: 0.0
+Value of x: 7.022050644999999
+Value of z: 39.31862065499999
+Legitimate investor node addresses:
+ - 0xd1dce598422ea3758bbe47e67769b9c1e04cc148
+ - 0x2be87ad70cf11ea294d7c42044b5b8277a3e4874
+ - 0x9ce247ee359115c6a81b2fc4bec18c5f8bdb4f3a
+ - 0x93b5b83ff5be60b2a7967326fe2748847bab4e5e
+Scam investor node addresses:
+ - 0x18e598b0160d06d6434d3385320452fa1d045c05
+The profit of this pool with wash-trading in consideration is -46.34067129999999The profit of this pool without wash-trading in consideration is -7.022050644999999
+
+Pool address: 0x19976240e5cda7047d71e31169853bbb01049dc2
+Value of y: 0.0
+Value of x: 7.0220504649999995
+Value of z: 39.207660594999986
+Legitimate investor node addresses:
+ - 0xd1dce598422ea3758bbe47e67769b9c1e04cc148
+ - 0x2be87ad70cf11ea294d7c42044b5b8277a3e4874
+ - 0xfeb06507e3749a49a9ea331a81037b78bb293305
+ - 0x93b5b83ff5be60b2a7967326fe2748847bab4e5e
+Scam investor node addresses:
+ - 0x55c73bdb9d3810939a7a2a5e6e510a0e14f7959b
+The profit of this pool with wash-trading in consideration is -46.229711059999985The profit of this pool without wash-trading in consideration is -7.0220504649999995
+
+Pool address: 0x37fd2c083b66201e3b59f9e1c3b21d4ed61c722c
+Value of y: 0.0
+Value of x: 7.022050405
+Value of z: 39.132135895
+Legitimate investor node addresses:
+ - 0x93b5b83ff5be60b2a7967326fe2748847bab4e5e
+ - 0x0b8e437a1b7cdd6b0db20aeaff2f387813a5ce4f
+ - 0x64e72bf7c85de46ed70a22b5e1dce50b459a952a
+ - 0x89d65c1304c73e1a6f3ec1a78c73774f90369a30
+ - 0x2be87ad70cf11ea294d7c42044b5b8277a3e4874
+Scam investor node addresses:
+ - 0x6ae0a5532b13a560bfff571ecb106c008e9b4d0b
+The profit of this pool with wash-trading in consideration is -46.1541863The profit of this pool without wash-trading in consideration is -7.022050405
+
+Pool address: 0xfc41c036c7232aff3e3e867ce2200a062d22e9b0
+Value of y: 0.0
+Value of x: 7.022050825
+Value of z: 39.09045139500001
+Legitimate investor node addresses:
+ - 0xd9f077eeeb44edda0a6497829a799669ce64e1e3
+ - 0x2be87ad70cf11ea294d7c42044b5b8277a3e4874
+ - 0x882e89ff8483d2ca3835f612bf82f61b653ab5a0
+ - 0x93b5b83ff5be60b2a7967326fe2748847bab4e5e
+Scam investor node addresses:
+ - 0x6acfec77e35fa71314d934d82831882e14741293
+The profit of this pool with wash-trading in consideration is -46.11250222000001The profit of this pool without wash-trading in consideration is -7.022050825
+
+Pool address: 0x0d105d7c2b54b7615d468bf4bed6b90d62edfe22
+Value of y: 0.0
+Value of x: 7.022050165
+Value of z: 38.792916655
+Legitimate investor node addresses:
+ - 0xbbba17799e90af4ca691ea6410360c58b5b764d9
+ - 0x93b5b83ff5be60b2a7967326fe2748847bab4e5e
+ - 0xd9f077eeeb44edda0a6497829a799669ce64e1e3
+ - 0x594b35c8898e45e82b30d0354332f68e5f86e013
+ - 0x2be87ad70cf11ea294d7c42044b5b8277a3e4874
+Scam investor node addresses:
+ - 0x4717fb63e682bae0444b7b84f55dc41e1f567e74
+The profit of this pool with wash-trading in consideration is -45.814966819999995The profit of this pool without wash-trading in consideration is -7.022050165
+
+Pool address: 0x471932c587b6be6ea66a2f28cbf43805d205db19
+Value of y: 0.0
+Value of x: 7.022050344999999
+Value of z: 38.71400265500001
+Legitimate investor node addresses:
+ - 0x7ba84b73efac6bcd473ee8a3d67296c1e4afeb5c
+ - 0x2be87ad70cf11ea294d7c42044b5b8277a3e4874
+ - 0x995203e8ef0361d25a870220ed7efb4a0e32fea0
+ - 0x93b5b83ff5be60b2a7967326fe2748847bab4e5e
+Scam investor node addresses:
+ - 0x97e074072854e7ccd35c37fe9a3bfb831d1a1ae6
+The profit of this pool with wash-trading in consideration is -45.736053000000005The profit of this pool without wash-trading in consideration is -7.022050344999999
+
+Pool address: 0xf296e272e95acb18942b0d5e30eb4a6f9135876b
+Value of y: 0.0
+Value of x: 8.022050525000001
+Value of z: 36.77779065499999
+Legitimate investor node addresses:
+ - 0x13331522d48175ed918a4130656c59a0363dc7e6
+ - 0x5cd6b34f3c3083917925bfbebdd1eb29ee6d8db3
+ - 0x117ca950212e1dd1471188175912275883198c1d
+ - 0xddf00da305ed3a86f1d658b4702f500b09e8df3f
+ - 0x93b5b83ff5be60b2a7967326fe2748847bab4e5e
+ - 0x2be87ad70cf11ea294d7c42044b5b8277a3e4874
+Scam investor node addresses:
+ - 0x60a13d67c5c86f9217021c6552963499d0498a6b
+The profit of this pool with wash-trading in consideration is -44.79984117999999The profit of this pool without wash-trading in consideration is -8.022050525000001
+
+Pool address: 0x78bbd361f16a16f474c3f0d6e3796e261405d235
+Value of y: 0.0
+Value of x: 8.022050405
+Value of z: 36.462490654999996
+Legitimate investor node addresses:
+ - 0x42502d5e5e6ca64c38b405e44f38eab15a86a812
+ - 0x20314543d20bb2769cd1a57de9591fcea8b42093
+ - 0x3e31517c491ace31c730b6b1a912b9d07eb7c0fe
+ - 0x93b5b83ff5be60b2a7967326fe2748847bab4e5e
+ - 0xdb6f1920a889355780af7570773609bd8cb1f498
+ - 0xfa82b46842ebd26f491d0a3ac5056019ca355d17
+ - 0x2be87ad70cf11ea294d7c42044b5b8277a3e4874
+Scam investor node addresses:
+ - 0xcaacef7d6b388adff0ec2a26e8a9f46dbe1c4032
+The profit of this pool with wash-trading in consideration is -44.48454106The profit of this pool without wash-trading in consideration is -8.022050405
+
+Pool address: 0x3d67f511cf40c3c86c7b03b8c4867b14bcb78da5
+Value of y: 0.0
+Value of x: 8.022051245
+Value of z: 36.364141455
+Legitimate investor node addresses:
+ - 0xbe19cc6f1a64ba1e7f0f502cda8e3631037b2a3c
+ - 0x93b5b83ff5be60b2a7967326fe2748847bab4e5e
+ - 0x7fc8034da64487f7d93bc12431ebe766162ac556
+ - 0x59e85b34b9eb07bd4ab127f512200dfb88c444d7
+ - 0x2be87ad70cf11ea294d7c42044b5b8277a3e4874
+Scam investor node addresses:
+ - 0xf47214e010e096d7f6f7a47e8b028f01ec88d032
+The profit of this pool with wash-trading in consideration is -44.3861927The profit of this pool without wash-trading in consideration is -8.022051245
+
+Pool address: 0xff8a97e39fc4428902b751d96c6be20b2dc141a8
+Value of y: 0.0
+Value of x: 8.022050705
+Value of z: 36.35246145500001
+Legitimate investor node addresses:
+ - 0xb64fa072100d5323bd1c51e3da39314beb8c3e50
+ - 0x2be87ad70cf11ea294d7c42044b5b8277a3e4874
+ - 0x18259d13bca30459bf7352721882b869261f44c6
+ - 0x93b5b83ff5be60b2a7967326fe2748847bab4e5e
+Scam investor node addresses:
+ - 0xbe3c0ffe27745523d5c17e23df88f57474cf6ad6
+The profit of this pool with wash-trading in consideration is -44.37451216000001The profit of this pool without wash-trading in consideration is -8.022050705
+
+Pool address: 0x2543c3d81fe77104a17db983bbecbf6d1388567c
+Value of y: 0.0
+Value of x: 8.022050344999998
+Value of z: 36.34440927500001
+Legitimate investor node addresses:
+ - 0x9807691c5ce2f3eb306bb00c44028bb0f309f9ac
+ - 0x93b5b83ff5be60b2a7967326fe2748847bab4e5e
+Scam investor node addresses:
+ - 0x790eafd9e07ebd96f47c93d829c215a74302d7aa
+The profit of this pool with wash-trading in consideration is -44.36645962000001The profit of this pool without wash-trading in consideration is -8.022050344999998
+
+Pool address: 0xf3d4daec87e14ba923fbb0d76a4544bdf31edc96
+Value of y: 0.0
+Value of x: 8.022050645
+Value of z: 36.319380655
+Legitimate investor node addresses:
+ - 0x2be87ad70cf11ea294d7c42044b5b8277a3e4874
+ - 0x93b5b83ff5be60b2a7967326fe2748847bab4e5e
+Scam investor node addresses:
+ - 0x13d3776fd2040577fd66bc952482665547b9902d
+The profit of this pool with wash-trading in consideration is -44.3414313The profit of this pool without wash-trading in consideration is -8.022050645
+
+Pool address: 0xe3a0999ce88427fcaeab157a4b3efe56616d3ddb
+Value of y: 0.0
+Value of x: 7.022050344999999
+Value of z: 34.72139367
+Legitimate investor node addresses:
+ - 0x2be87ad70cf11ea294d7c42044b5b8277a3e4874
+ - 0x93b5b83ff5be60b2a7967326fe2748847bab4e5e
+Scam investor node addresses:
+ - 0x0ca8c6f7450e15ecb06ce91395c607576ad7983f
+The profit of this pool with wash-trading in consideration is -41.743444014999994The profit of this pool without wash-trading in consideration is -7.022050344999999
+
+Pool address: 0xc5bbcba5ff0857cf8fc495250224e82b8fb88147
+Value of y: 0.0
+Value of x: 7.0220504649999995
+Value of z: 34.42190925
+Legitimate investor node addresses:
+ - 0xd1dce598422ea3758bbe47e67769b9c1e04cc148
+ - 0x2ec63d2baf6a96eb4935023c9ab0e3a0f3ff4b56
+ - 0x93b5b83ff5be60b2a7967326fe2748847bab4e5e
+Scam investor node addresses:
+ - 0xd2ba24a41c945b1c56fe6f959014dc75c56ae3fa
+The profit of this pool with wash-trading in consideration is -41.443959715The profit of this pool without wash-trading in consideration is -7.0220504649999995
+
+Pool address: 0xdf200212fb94a253e388db1e6684fe8d0b225913
+Value of y: 0.0
+Value of x: 7.022051064999999
+Value of z: 34.33440761000001
+Legitimate investor node addresses:
+ - 0x45fa1de57da352e22645665b6219f93268dd0de3
+ - 0xe5e38c95f21ccc04be14033c5f7ae6bf7478e872
+ - 0xd6c2149547181105ab7e3e68133fb14bc1df12e3
+ - 0x93b5b83ff5be60b2a7967326fe2748847bab4e5e
+Scam investor node addresses:
+ - 0x2ae2b1b9288eaf9beb7e8df5af31538af6198739
+The profit of this pool with wash-trading in consideration is -41.356458675000006The profit of this pool without wash-trading in consideration is -7.022051064999999
+
+Pool address: 0xf767c2e9d3822ad3e9ca44b3b1de6ec25b409a89
+Value of y: 0.0
+Value of x: 7.022050885
+Value of z: 34.29966286999999
+Legitimate investor node addresses:
+ - 0x2be87ad70cf11ea294d7c42044b5b8277a3e4874
+ - 0x0f4ef2b0fa5d7355e4dfe336a7a4dca9b3f2903b
+ - 0x93b5b83ff5be60b2a7967326fe2748847bab4e5e
+Scam investor node addresses:
+ - 0xcc62ab630273d18bc2363befffae31c668af7fad
+The profit of this pool with wash-trading in consideration is -41.32171375499999The profit of this pool without wash-trading in consideration is -7.022050885
+
+Pool address: 0x524d1b54c09fbf58ee50b5793437752f3ae677b1
+Value of y: 0.0
+Value of x: 8.022050465
+Value of z: 32.75539235000001
+Legitimate investor node addresses:
+ - 0xee7c077abad180cb3c7c60fb29732bbb19815273
+ - 0x0ca5f342e5c4bfd02c6293ced0b253894b38de01
+ - 0xdb6f1920a889355780af7570773609bd8cb1f498
+ - 0x93b5b83ff5be60b2a7967326fe2748847bab4e5e
+ - 0x7f749940eeba6fc6b8f003c36976251300156573
+ - 0x157648b761914f83a6b4900c5eced53f83ba6e20
+ - 0x1a540286deee7b3e3514ff3163e9be782f6db7d3
+Scam investor node addresses:
+ - 0xc419c4dd4bedbe8e1528658f152c9d296eb65289
+The profit of this pool with wash-trading in consideration is -40.77744281500001The profit of this pool without wash-trading in consideration is -8.022050465
+
+Pool address: 0xe43a6bfe1ccc4d3d5ff68c52b908f490ae4d7f6f
+Value of y: 0.0
+Value of x: 8.022050405
+Value of z: 32.72831235
+Legitimate investor node addresses:
+ - 0xd1dce598422ea3758bbe47e67769b9c1e04cc148
+ - 0x2be87ad70cf11ea294d7c42044b5b8277a3e4874
+ - 0x93b5b83ff5be60b2a7967326fe2748847bab4e5e
+ - 0x43101ec4069437cd8496619eb2f524395555adb3
+Scam investor node addresses:
+ - 0xbc47218ee6ef3caa045636fd37cefa3b1681488c
+The profit of this pool with wash-trading in consideration is -40.750362755000005The profit of this pool without wash-trading in consideration is -8.022050405
+
+Pool address: 0xe586f57e056753f25eadab335f48d2f8ad22e943
+Value of y: 0.0
+Value of x: 8.022050405
+Value of z: 32.63385367
+Legitimate investor node addresses:
+ - 0x0edb45ecda925d7faaffa664f5446c4ed08a0af8
+ - 0x02851a885f6c23fc8df06a1d9fe802b7c9bbcc0b
+ - 0xdb6f1920a889355780af7570773609bd8cb1f498
+ - 0x93b5b83ff5be60b2a7967326fe2748847bab4e5e
+ - 0x7f749940eeba6fc6b8f003c36976251300156573
+ - 0x2be87ad70cf11ea294d7c42044b5b8277a3e4874
+Scam investor node addresses:
+ - 0xb336b2a4e914466a7b2ed3d3076cb4f6f29969d5
+The profit of this pool with wash-trading in consideration is -40.655904075The profit of this pool without wash-trading in consideration is -8.022050405
+
+Pool address: 0x32f8a12db182186800a5a92ee1193542a98e9dd5
+Value of y: 0.0
+Value of x: 8.022050465
+Value of z: 32.42026367
+Legitimate investor node addresses:
+ - 0x20314543d20bb2769cd1a57de9591fcea8b42093
+ - 0x817d513759ae5ea62dbd6bcd66873bc5e799e7cb
+ - 0xbe404825511694dec5e1b833016cf5df5520c53e
+ - 0x93b5b83ff5be60b2a7967326fe2748847bab4e5e
+ - 0x2be87ad70cf11ea294d7c42044b5b8277a3e4874
+Scam investor node addresses:
+ - 0x8e3aa64339359aa88bb31226df98b0d88d7e51fe
+The profit of this pool with wash-trading in consideration is -40.442314135The profit of this pool without wash-trading in consideration is -8.022050465
+
+Pool address: 0x7b9e58cd60df922227371fe96208c91297e8fec5
+Value of y: 0.0
+Value of x: 8.022050465000001
+Value of z: 32.41671367
+Legitimate investor node addresses:
+ - 0x89b3fda36a6e3ad85a5638efcd57198d1add4a1a
+ - 0xd1dce598422ea3758bbe47e67769b9c1e04cc148
+ - 0x43101ec4069437cd8496619eb2f524395555adb3
+ - 0x93b5b83ff5be60b2a7967326fe2748847bab4e5e
+ - 0x2be87ad70cf11ea294d7c42044b5b8277a3e4874
+ - 0x8f16f84a4f7d1f3895080ee7b7d4afb29244e747
+Scam investor node addresses:
+ - 0x8cefbf6a6275cb2a4a388ba6d4ec128c45c636e3
+The profit of this pool with wash-trading in consideration is -40.438764135The profit of this pool without wash-trading in consideration is -8.022050465000001
+
+Pool address: 0x1543b71c4d9d978174edd32b74c9348b2a648401
+Value of y: 0.0
+Value of x: 8.022050465000001
+Value of z: 32.24397367
+Legitimate investor node addresses:
+ - 0x2be87ad70cf11ea294d7c42044b5b8277a3e4874
+ - 0xa3f680489cfe47fd5208a499b271366ffdafec8d
+ - 0x93b5b83ff5be60b2a7967326fe2748847bab4e5e
+Scam investor node addresses:
+ - 0xad4073b829ab38577de653f879a338943d87689c
+The profit of this pool with wash-trading in consideration is -40.266024135The profit of this pool without wash-trading in consideration is -8.022050465000001
+
+====================================================================================================
+       Completed Calculation for Cluster: cluster_11508       
+====================================================================================================
+Total number of pools within the cluster is 30
+Average true profit per pool: -45.292220754999995
+Average untrue profit per pool: -7.555383896333334
+Median true profit per pool: -44.48454106
+Median untrue profit per pool: -8.022050285
+Total true profit for all pools: -1358.7666226499998
+Total untrue profit for all pools: -226.66151689
+Minimum true profit per pool: -52.781205584999995
+Minimum untrue profit per pool: -8.022051245
+Maximum true profit per pool: -40.266024135
+Maximum untrue profit per pool: -7.022050165
+Total transfer fees between nodes in the cluster: 0.0030450000000000013
+Net cluster true profit after deducting transfer fees: -1358.7696676500002

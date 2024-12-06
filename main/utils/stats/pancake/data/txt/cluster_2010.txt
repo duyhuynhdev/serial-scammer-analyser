@@ -1,0 +1,31 @@
+====================================================================================================
+       Starting Calculation for Cluster: cluster_2010       
+====================================================================================================
+Pool address: 0x01d20c2001e2c1005e650335c8e7ec66420c43bf
+Value of y: 0.0
+Value of x: 0.028110055
+Value of z: 0.0
+Legitimate investor node addresses:
+ - None
+Scam investor node addresses:
+ - None
+The profit of this pool with wash-trading in consideration is -0.028110055
+The profit of this pool without wash-trading in consideration is -0.028110055
+
+
+====================================================================================================
+       Completed Calculation for Cluster: cluster_2010       
+====================================================================================================
+Total number of pools within the cluster is 1
+Average true profit per pool: -0.028110055
+Average untrue profit per pool: -0.028110055
+Median true profit per pool: -0.028110055
+Median untrue profit per pool: -0.028110055
+Total true profit for all pools: -0.028110055
+Total untrue profit for all pools: -0.028110055
+Minimum true profit per pool: -0.028110055
+Minimum untrue profit per pool: -0.028110055
+Maximum true profit per pool: -0.028110055
+Maximum untrue profit per pool: -0.028110055
+Total transfer fees between nodes in the cluster: 0.0005250000000000001
+Net cluster true profit after deducting transfer fees: -0.028635055

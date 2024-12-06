@@ -1,0 +1,67 @@
+====================================================================================================
+       Starting Calculation for Cluster: cluster_8001       
+====================================================================================================
+Pool address: 0xbce4735b168b12f73d9152fb2a3b4abc3fc1cec4
+Value of y: 0.20359678967491085
+Value of x: 0.225810785
+Value of z: 0.0
+Legitimate investor node addresses:
+ - 0x7ee3263593904d6e9f68c22bc818f95338c2cf90
+ - 0x33714e048b3d886b9a9187894a253355db8e4759
+ - 0x43d4b4551bc9cd2f1770e5fc59b043043a80d167
+ - 0x065160ca4cc340e40da90e4c5433b0b51e48f5f5
+Scam investor node addresses:
+ - None
+The profit of this pool with wash-trading in consideration is -0.022213995325089164
+The profit of this pool without wash-trading in consideration is -0.022213995325089164
+
+Pool address: 0x01ad0da447e6c61b6818a198aa4d942538347bd3
+Value of y: 0.2279001160722715
+Value of x: 0.225810785
+Value of z: 0.0
+Legitimate investor node addresses:
+ - 0xdf1c0d91ab75667dfc4cc1ec5b5affb13e537b4e
+ - 0x57c233f7999113df0039b08933d87597419713dc
+ - 0xcee2b04db752b4704c381203739706c5a44167f2
+ - 0x787a4527b98363dd6f01839979fd3eb63c0d16d4
+ - 0x32b218443d1683e8235854247883c0d2838fced5
+Scam investor node addresses:
+ - None
+The profit of this pool with wash-trading in consideration is 0.002089331072271494
+The profit of this pool without wash-trading in consideration is 0.002089331072271494
+
+Pool address: 0x0896528ffac6d40479709bd676261bad8fd6805e
+Value of y: 0.2574917823387358
+Value of x: 0.22581140500000002
+Value of z: 0.0
+Legitimate investor node addresses:
+ - 0x70bbaf73928f015f1f8566cfd5c4de47b66f2ef6
+ - 0x7ee3263593904d6e9f68c22bc818f95338c2cf90
+ - 0x00008e511292f1f42667cd99239127cf4cf0422a
+ - 0x0bd75ad4102486e26563de94a4dd1a9819e6db5f
+ - 0x82454c0dad297cb187692cfe274b2187fe8ac404
+ - 0x7347077db5a0e385ad9b77cf6903c502356b3283
+ - 0xeda0d15af1f529505e648b066847cc462ccd9251
+ - 0x1d46f3db7ff4bb63c25fc3e1e0e600a4a71b1705
+ - 0xdcfe2f903eba479546f0dedbec393f434d2594fa
+Scam investor node addresses:
+ - None
+The profit of this pool with wash-trading in consideration is 0.0316803773387358
+The profit of this pool without wash-trading in consideration is 0.0316803773387358
+
+====================================================================================================
+       Completed Calculation for Cluster: cluster_8001       
+====================================================================================================
+Total number of pools within the cluster is 3
+Average true profit per pool: 0.00385190436197271
+Average untrue profit per pool: 0.00385190436197271
+Median true profit per pool: 0.002089331072271494
+Median untrue profit per pool: 0.002089331072271494
+Total true profit for all pools: 0.011555713085918129
+Total untrue profit for all pools: 0.011555713085918129
+Minimum true profit per pool: -0.022213995325089164
+Minimum untrue profit per pool: -0.022213995325089164
+Maximum true profit per pool: 0.0316803773387358
+Maximum untrue profit per pool: 0.0316803773387358
+Total transfer fees between nodes in the cluster: 0.0020160000000000004
+Net cluster true profit after deducting transfer fees: 0.009539713085918129

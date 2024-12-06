@@ -1,0 +1,96 @@
+====================================================================================================
+       Starting Calculation for Cluster: cluster_8699       
+====================================================================================================
+Pool address: 0x10c725d6db1e89542313d16b3892af180cc4b5db
+Value of y: 23.304155000033266
+Value of x: 3.454985524842006
+Value of z: 21.051656380992902
+Legitimate investor node addresses:
+ - 0x4b7761316134cbb8aa8622c1153cfe3b8a9de889
+ - 0x368d8817e8821c871cd7cb56045ab3f53e9b0989
+ - 0x353f76c4006dbdbbea1aab99644e4c8ff81907b5
+ - 0x430d548dc3e383c91a4662e3db4f071fa25ffc6f
+ - 0xbc6ac520a32802fedbaa4538af9da7296e2a3bf9
+ - 0x5ed7297ecc772d3893b3243cd2087b53780c56fc
+ - 0x699075e4d86e333736ef85834624f6addd0dcf38
+ - 0x9868cdf80a783df7bc2b9c16ec4b1feaa2f3e93b
+ - 0x00000000d6955e3a5178817ef00ab5c35cafa96a
+ - 0xb1c438be81560a91317498ac82763bf94e506464
+ - 0x1f46183fd21ee5410da3ac21778389dc2208a202
+ - 0x025050c351452d8738fc6ac8792a4b87883ca055
+ - 0xc242d5ef164e85b8a6f81593b6f9a053c30e83e7
+ - 0x605c3f2e622aa3a01a75693fc2c510e0b1da9ee5
+ - 0xb229bb3686bc43aaad4982ef01e301285c9e3cb7
+ - 0xf94c50935be77442ac432e5221e0f0a3dac0dddf
+ - 0x9e5fd8e36d5b08e166a18bb44c4ac191b6e0c7de
+ - 0x832e4fefebbd2440ddcc9827dea5392be811f470
+ - 0x007933790a4f00000099e9001629d9fe7775b800
+ - 0x74e2ab5a0a401814c9a54d5e873ccfcfd6c356fb
+ - 0xc438e5d32f9381b59072b9a0c730cbac41575a4e
+ - 0x39ca735837d01f3f7d4fefdf589c0202965637f3
+ - 0x00000000500e2fece27a7600435d0c48d64e0c00
+ - 0x000000000005af2ddc1a93a03e9b7014064d3b8d
+ - 0x1df11346d40b7b6594527a03ee8070e2cf54ac9f
+ - 0x74a945ea5877a15d788cd74cd5af86367c3e80b7
+ - 0xc6727ce5beb9094ca2b564ab6cf279afc89036a8
+ - 0x3349b1e80fa60858413b9bcd587c59030a86b92d
+ - 0xfb822b259ff9daa029c669937e471341e89b0dc0
+ - 0xb856267689d974f4e8f554e0335269f69b9acf20
+ - 0xd8ec21dbf06b3dd0ede40f8d7464a6a421546a47
+ - 0x1127faec8c1265df68292f5117d16ca774716d1f
+ - 0x00000000a991c429ee2ec6df19d40fe0c80088b8
+ - 0x6b082b30897b28570955ee3b00d549bfffdeb1a6
+ - 0x71a1718cf9aa881511bba3321ef25382d92fc64e
+ - 0xa1cfcc07223fef8dd3a03137f8bb36275655f1fc
+ - 0x7ee7200a6326391a2be928e43496071fbb1fc22c
+ - 0x27110f8be60993d717cf3efcd6dc91a69adf7984
+ - 0xdf6525df88b5e094ef1546dc5b1800c256e06db3
+Scam investor node addresses:
+ - 0xe35b1acd7676025e23740abc804b04f6affb5b3c
+ - 0x6c4d35f79910104269fb55a199e23fae3ab91cda
+ - 0xdeacd4cbb624fe2f4b8bd2a976b5e3c527c59d02
+ - 0x1b5e58c041e72f588c3a6d10dd4eeb4586dfe6df
+ - 0x4c2f0a5aebbdf8ef97983d45ea2993a477eb7f41
+ - 0x6e0f45e3885292fcdcad0b641ef25a716c9eac6b
+ - 0xc01d3a2bad87bef154aa26e34340c547bdd03467
+ - 0x3d5de6afbe1c47fb515e3a18e3c8e1eff1af34d3
+ - 0x6987bf8e62b30b9131001a1d9985b5bb0c8cbbe6
+ - 0xb8204514e1b4aace35a7b05faf68be0b950868f3
+ - 0x0062c0238866982df70ac4d113acbfb8af0f7c4c
+ - 0xc16d458358a115e7e58bc0b2f17e79ee07eff56a
+ - 0x2fed573c502f9eff4b8a0837615cccfbb928ffc6
+ - 0xe5918a29c78fd9ce12ddc3bca42a4ad0df19f81b
+ - 0xde02e32d1ba07fa127a686c2c420b6c7006630cd
+ - 0xff65c93a26739c63e9d7e2678569ffbc1736d751
+ - 0x05d401e20fff12ddb99915567cfeaa4cd3578ae1
+ - 0xb9653fc999729eb19b281dfbce0f56bea6738a02
+ - 0x34c539e892614ed4721325d2191bc54ca11ddc1c
+ - 0x6354d025121a8deacb35c10819a72cd1ec6a035b
+The profit of this pool is -1.202486905801642
+
+====================================================================================================
+       Completed Calculation for Cluster: cluster_8699       
+====================================================================================================
+Total pool profits in the cluster: -1.202486905801642
+0xe35b1acd7676025e23740abc804b04f6affb5b3c No columns to parse from file
+0x6c4d35f79910104269fb55a199e23fae3ab91cda No columns to parse from file
+0x4c2f0a5aebbdf8ef97983d45ea2993a477eb7f41 No columns to parse from file
+0x6e0f45e3885292fcdcad0b641ef25a716c9eac6b No columns to parse from file
+0xc01d3a2bad87bef154aa26e34340c547bdd03467 No columns to parse from file
+0x3d5de6afbe1c47fb515e3a18e3c8e1eff1af34d3 No columns to parse from file
+0x6987bf8e62b30b9131001a1d9985b5bb0c8cbbe6 No columns to parse from file
+0xb8204514e1b4aace35a7b05faf68be0b950868f3 No columns to parse from file
+0x0062c0238866982df70ac4d113acbfb8af0f7c4c No columns to parse from file
+0xc16d458358a115e7e58bc0b2f17e79ee07eff56a No columns to parse from file
+0x2fed573c502f9eff4b8a0837615cccfbb928ffc6 No columns to parse from file
+0xe5918a29c78fd9ce12ddc3bca42a4ad0df19f81b No columns to parse from file
+0xde02e32d1ba07fa127a686c2c420b6c7006630cd No columns to parse from file
+0x51d8a6e8667fe4ddd1767583a1365ddd7f8b161a No columns to parse from file
+0xff65c93a26739c63e9d7e2678569ffbc1736d751 No columns to parse from file
+0x358ebad2b14eb757e987704609921e11f886939f No columns to parse from file
+0x05d401e20fff12ddb99915567cfeaa4cd3578ae1 No columns to parse from file
+0x10f8fda4ecc52d971bfcea925010ba81c33587c6 No columns to parse from file
+0x34c539e892614ed4721325d2191bc54ca11ddc1c No columns to parse from file
+0x6354d025121a8deacb35c10819a72cd1ec6a035b No columns to parse from file
+Total transfer fees between nodes in the cluster: 0.018539208431436
+Net cluster profit after deducting transfer fees: -1.221026114233078

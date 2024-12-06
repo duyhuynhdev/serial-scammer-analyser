@@ -1,0 +1,49 @@
+====================================================================================================
+       Starting Calculation for Cluster: cluster_1022       
+====================================================================================================
+Pool address: 0x01cabc88813931f7b18c0408d678bfabdfb90240
+Value of y: 1.7920639665461757
+Value of x: 1.0445881223671283
+Value of z: 1.128856827378076
+Legitimate investor node addresses:
+ - 0xa2eda06b07517a99f3dd691264b6b214fc44a2a9
+ - 0xb616ab9178301f7f79811c1eaf3dcf88acbc95d0
+ - 0x7a53e9789ffa08e550f6cf71c11d14afd9744e3a
+ - 0x3f890f67d2da8824b13709c3656505a696d9fa05
+ - 0x1d91da30b083fc17c5cda25b25819d4b8db27862
+ - 0xa454af0340e0633c40e11a686b78a7a40f954d7c
+ - 0x00000000a991c429ee2ec6df19d40fe0c80088b8
+ - 0x4d0302f243f2f68fc204933fd7b6ca46d60515a0
+ - 0xfa2b74f84fda709cb7721872d61c64118845e26d
+ - 0x4e9d0f18e5254fe6c124cd8d8d971196042f0345
+Scam investor node addresses:
+ - 0x28b03a3c0769a2f1d830c34562d78a60baddbe58
+ - 0xd493c82538f327b4b93b70e73c1759d5bf2810a6
+ - 0x35aa20fd8830868f24511d11a8fc3121df5eed76
+ - 0xdde892906c3dd77a98c7be8421e703caa44d12b3
+ - 0xa70bc2405c1f77e90b0422b9be18ba946a091018
+ - 0x34459e850f0923920dfe9835c6cb0685bb7de48e
+ - 0x045b1cdc07d4840c9915bde9ab652cb76f2912de
+ - 0xbd7895c56ad356a8a7171f7ae09b684e157794f6
+ - 0x2825c690295788309142a2cfcf8cfc2ed33de78e
+ - 0x3bcb85257a3c9e68bccdaea0da374bc6c91031b2
+ - 0xadb993b940725900d03abb7f4767ed4fd1eb0b0f
+ - 0x8e5ce804991d1b75a472a745c65adfd2f752db32
+ - 0x545e38016657a56a3ee0c2ef257dee9557b25cff
+ - 0xafb5bd3133c3f859c190a1fa9a53c79b6c6b3a97
+ - 0xeb6173bc0dcae65e789b25fd104460f7c3b0f51d
+ - 0xa2313f7d8b3221a0676c901f0369a08fdd49318b
+ - 0x3fa018e5984ed9326f2f67f0069c0c3e2eabea08
+ - 0x9754ac0d72ea4cf92f20ca75043a33c1a25043fb
+ - 0x544903bb9a070a386fa327ac1e96a453020dec7b
+ - 0x118b49c8575802a3108b72e313b747b3da7250b9
+The profit of this pool is -0.38138098319902847
+
+====================================================================================================
+       Completed Calculation for Cluster: cluster_1022       
+====================================================================================================
+Total pool profits in the cluster: -0.38138098319902847
+0x512a84a60bd5977dd6684bc24674bafda67fe331 No columns to parse from file
+0x3fa018e5984ed9326f2f67f0069c0c3e2eabea08 No columns to parse from file
+Total transfer fees between nodes in the cluster: 0.006989140452483
+Net cluster profit after deducting transfer fees: -0.38837012365151147

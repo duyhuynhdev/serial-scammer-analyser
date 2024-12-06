@@ -1,0 +1,58 @@
+====================================================================================================
+       Starting Calculation for Cluster: cluster_7063       
+====================================================================================================
+Pool address: 0x0d732db273e9a5787f78c373ab9babaea47f90d5
+Value of y: 2.9136953560671457
+Value of x: 1.4977612175896267
+Value of z: 1.1261565413274413
+Legitimate investor node addresses:
+ - 0x701eb981d15b512c2ffe3b588069dd8345517340
+ - 0x7e41300b7c78a805f225447823446a1a29bbf1e2
+ - 0xbde25aad92abc50242267d759b804ce952536c41
+ - 0x56387962e0d8e575e9a816777f110b7a2e9c6cb3
+ - 0x1845288c38cee829db063a09838a31489c558bec
+ - 0x980e613289486193c88f7daac4d32e4c4f0db514
+ - 0xd7cb782bab97bf99b96278fd35dd79181d507c69
+ - 0x03da6b5a21e3f3bf9c508ae7e97510887e1aeabb
+ - 0x9ee0ce8c13fea4274614d90e19dec4ee76f2c212
+ - 0x6d9ef80eaea16b30e9ac8c39aed3ad623e0fcee6
+ - 0x3db9540b9bb28ce488efa82a7aa8f5fef924cf2c
+ - 0x2cf1aceb1f0bbf09bc70cb463a11d42026accb66
+ - 0x0c33a078c3fd0880bc945a5b7f92344cf9208eee
+ - 0x30214a5f36fcb95c075857426b2d7b82f01f55f7
+ - 0xa3366e2ad9782a371a29a7c9f3a0055511f24485
+ - 0xff8904c3c8cb2ab65c7620d7407e02c82c122516
+ - 0xe930cc92c86e15fd11c042654279fa4012e716c1
+ - 0x8f1c73b92d1dea59cda986fe6523713849278408
+ - 0xd39bc2d6a3629f33852e9fc054f3931b47678442
+ - 0x1b63e884871aff9a6a55fdd30dbcb82d647d5f99
+ - 0x3f46cb3461625fde3e15f55d8b740e0b6f6b77ee
+ - 0x2f074c2bafe01ac85d0ce3972b35e1ab6bb0d39e
+ - 0xc059bf39e1a7eb9df8a8606da5c86a4bfabf5421
+Scam investor node addresses:
+ - 0x433c3b8f40837dc35b053f7fcfe6cddce851d962
+ - 0x0110f10d6d4b6e45c5413a08ae776e5f06b53f2d
+ - 0x48c83e176e386e0536ed2326ea3e3be8757ee898
+ - 0xc38153234cfdc4139232e561020baba8e0674d8a
+ - 0x38d6291f5dbea03d1ad7a3a63f41a10f35121855
+ - 0xeba11ed5ddc77073c5b89b17b77d5c2b2ac6a490
+ - 0x0a68423d5036e26d3ca767f3e51d488528d958b4
+ - 0x4a180128cee29d1b790f0ef43bc30fce8d2cb228
+ - 0xbc5fae1c1651b40d4473f968c5f8c95f1d2a7fe3
+ - 0x85ba0fe808e782cd1febaedb298741b2fef2310e
+ - 0x052aefb527d47a8185a195fdc6489612dc5fe9bf
+ - 0xaac03e5d6ab8b8db6875bacbac565f0be23934e3
+ - 0xa363941c9ed0acd69771bcd3e09a11f4c451295c
+ - 0x9773b46f6800b5f5212390da928021a1e4da267a
+ - 0x9b107966537f0b54660ab62e827b8c55ccc3f02b
+ - 0xad3d437b09e2f04320a3c2b396df74f87e299f6d
+ - 0x1ca6da2ac2fd0ce7359518b8cc73568491d038fc
+ - 0x866a4d5d64c4020fdb691947e78a8cd06e7f4de9
+The profit of this pool is 0.2897775971500778
+
+====================================================================================================
+       Completed Calculation for Cluster: cluster_7063       
+====================================================================================================
+Total pool profits in the cluster: 0.2897775971500778
+Total transfer fees between nodes in the cluster: 0.027720000000000012
+Net cluster profit after deducting transfer fees: 0.26205759715007776
