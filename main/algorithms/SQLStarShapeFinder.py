@@ -8,31 +8,29 @@ import sys
 
 sys.path.append(os.path.join(os.path.dirname(sys.path[0])))
 from enum import Enum
-
-from data_collection.AccountCollector import TransactionCollector
-from utils.DataLoader import DataLoader, load_light_pool
+from sql.DataQuerier import DataQuerier
+from sql.PostgresDTO import *
+# from data_collection.AccountCollector import TransactionCollector
+from utils import DataLoader
 from utils.ProjectPath import ProjectPath
 
 dex = 'panv2'
-dataloader = DataLoader(dex=dex)
+# dataloader = DataLoader(dex=dex)
 path = ProjectPath()
-transaction_collector = TransactionCollector()
-
+# transaction_collector = TransactionCollector()
+querier = DataQuerier(dex)
 
 REMOVE_LIQUIDITY_SUBSTRING = "removeLiquidity"
 ADD_LIQUIDITY_SUBSTRING = "addLiquidity"
-OUT_PERCENTAGE_THRESHOLD = 0.8
+OUT_PERCENTAGE_THRESHOLD = 0.95
 IN_PERCENTAGE_THRESHOLD = 1.0
 MIN_NUMBER_OF_SATELLITES = 5
 PREFIX = str(int(IN_PERCENTAGE_THRESHOLD * 100)) + "_" + str(int(OUT_PERCENTAGE_THRESHOLD * 100))
 
 SCAMMER_F_AND_B_PATH = os.path.join(eval(f"path.{dex}_star_shape_path"), f"{PREFIX}_scammer_funder_and_beneficiary.csv")
 
-ALL_SCAMMERS = frozenset(dataloader.scammers)
-END_NODES = (
-        dataloader.bridge_addresses | dataloader.defi_addresses | dataloader.cex_addresses | dataloader.MEV_addresses
-        | dataloader.mixer_addresses | dataloader.wallet_addresses | dataloader.other_addresses)
-
+ALL_SCAMMERS = frozenset(DataLoader.load_scammers(dex))
+END_NODES = DataLoader.load_full_end_nodes(dex)
 
 class StarShape(Enum):
     IN = 1  # satellites to center
@@ -106,10 +104,10 @@ def find_star_shape_for_scammer(scammer_address, scammer_dict=None, star_to_igno
         else:
             raise Exception("There was no star detected in the possible_star_shapes")
 
-        normal_txs = transaction_collector.get_normal_transactions(center_address, dex)
+        normal_txs = querier.get_normal_transactions(center_address)
         for transaction in normal_txs:
             if is_valid_address(is_out, transaction, center_address):
-                scammer_address_dest = transaction.to if is_out else transaction.sender
+                scammer_address_dest = transaction.receiver if is_out else transaction.sender
                 if scammer_address_dest in ALL_SCAMMERS:
                     satellite_star_shapes, f_b_dict = determine_assigned_star_shape_and_f_b(scammer_address_dest, scammer_dict)
                     if star_shape in satellite_star_shapes:
@@ -142,12 +140,14 @@ def find_liquidity_transactions_in_pool(scammer_address):
     # key: transaction hash
     # value: liquidity added/removed
     liquidity_transactions_pool = {}
-    scammer_pool = load_light_pool(scammer_address, dataloader, dex=dex)
-    for pool_index in range(len(scammer_pool)):
-        eth_pos = scammer_pool[pool_index].get_high_value_position()
-        for liquidity_trans in itertools.chain(scammer_pool[pool_index].mints, scammer_pool[pool_index].burns):
+    scammer_pools = querier.get_scam_pool(scammer_address)
+    for pool in scammer_pools:
+        eth_pos = pool.get_high_value_position()
+        mints = querier.get_pool_mint(pool.address)
+        burns = querier.get_pool_burn(pool.address)
+        for liquidity_trans in itertools.chain(mints, burns):
             liquidity_amount = calc_liquidity_amount(liquidity_trans, eth_pos)
-            liquidity_transactions_pool[liquidity_trans.transactionHash] = liquidity_amount
+            liquidity_transactions_pool[liquidity_trans.transaction_hash] = liquidity_amount
 
     return liquidity_transactions_pool
 
@@ -169,13 +169,14 @@ def get_funder_and_beneficiary(scammer_address):
     num_remove_liquidities = 0
     passed_add_liquidity = passed_remove_liquidity = False
     duplicate_in_amt = duplicate_out_amt = False
-    normal_txs = transaction_collector.get_normal_transactions(scammer_address, dex)
+    normal_txs = querier.get_normal_transactions(scammer_address)
     liq_trans_dict = find_liquidity_transactions_in_pool(scammer_address)
 
     for transaction in normal_txs:
+        # transaction = NormalTransaction()
         if transaction.is_not_error():
             # LOGIC upon passing the first add liquidity, mark down the amount and don't check any more add liquidaties
-            if not passed_add_liquidity and ADD_LIQUIDITY_SUBSTRING in str(transaction.functionName):
+            if not passed_add_liquidity and ADD_LIQUIDITY_SUBSTRING in str(transaction.function_name):
                 decode_valid_add = False
                 candidate_add_liquidity_amt = liq_trans_dict.get(transaction.hash)
                 if candidate_add_liquidity_amt:
@@ -185,7 +186,7 @@ def get_funder_and_beneficiary(scammer_address):
                         passed_add_liquidity = True
                         add_liquidity_amt = candidate_add_liquidity_amt
             # LOGIC upon passing a remove liquidity - current largest_out becomes ineligible
-            elif REMOVE_LIQUIDITY_SUBSTRING in str(transaction.functionName):
+            elif REMOVE_LIQUIDITY_SUBSTRING in str(transaction.function_name):
                 decode_valid_remove = False
                 candidate_rmv_amt = liq_trans_dict.get(transaction.hash)
                 if candidate_rmv_amt:
@@ -214,7 +215,7 @@ def get_funder_and_beneficiary(scammer_address):
                             largest_in_transaction = transaction
             # LOGIC OUT transaction
             elif is_valid_address(True, transaction, scammer_address):
-                out_addresses.add(transaction.to)
+                out_addresses.add(transaction.receiver)
                 # LOGIC set largest_out when none is a candidate
                 if not largest_out_transaction:
                     largest_out_transaction = transaction
@@ -231,8 +232,8 @@ def get_funder_and_beneficiary(scammer_address):
     }
     funder_dict = beneficiary_dict = None
 
-    def get_dict_info(normal_tx, address):
-        return {'address': address, 'timestamp': normal_tx.timeStamp, 'amount': normal_tx.get_transaction_amount()}
+    def get_dict_info(normal_tx: NormalTransaction, address):
+        return {'address': address, 'timestamp': normal_tx.timestamp, 'amount': normal_tx.get_transaction_amount()}
 
     if passed_add_liquidity and passed_remove_liquidity:
         passed_in_threshold = False
@@ -241,30 +242,30 @@ def get_funder_and_beneficiary(scammer_address):
         valid_out_address = False
         if largest_in_transaction:
             passed_in_threshold = largest_in_transaction.get_transaction_amount_and_fee() / add_liquidity_amt >= IN_PERCENTAGE_THRESHOLD
-            print("Check valid in", scammer_address)
-            valid_in_address = transaction_collector.ensure_valid_eoa_address(largest_in_transaction.sender, dex)
+            # print("Check valid in", scammer_address)
+            valid_in_address = querier.ensure_valid_eoa_address(largest_in_transaction.sender)
         if largest_out_transaction:
             passed_out_threshold = largest_out_transaction.get_transaction_amount_and_fee() / remove_liquidity_amt >= OUT_PERCENTAGE_THRESHOLD
-            print("Check valid out", scammer_address)
-            valid_out_address = transaction_collector.ensure_valid_eoa_address(largest_out_transaction.to, dex)
+            # print("Check valid out", scammer_address)
+            valid_out_address = querier.ensure_valid_eoa_address(largest_out_transaction.receiver)
 
         # LOGIC case where the in sender and out receiver are the same for IN_OUT star
-        if valid_out_address and passed_in_threshold and passed_out_threshold and largest_in_transaction and largest_out_transaction and not duplicate_out_amt and not duplicate_in_amt and largest_in_transaction.sender == largest_out_transaction.to:
-        # if passed_in_threshold and passed_out_threshold and largest_in_transaction and largest_out_transaction and not duplicate_out_amt and not duplicate_in_amt and largest_in_transaction.sender == largest_out_transaction.to:
+        if valid_out_address and passed_in_threshold and passed_out_threshold and largest_in_transaction and largest_out_transaction and not duplicate_out_amt and not duplicate_in_amt and largest_in_transaction.sender == largest_out_transaction.receiver:
+            # if passed_in_threshold and passed_out_threshold and largest_in_transaction and largest_out_transaction and not duplicate_out_amt and not duplicate_in_amt and largest_in_transaction.sender == largest_out_transaction.to:
             funder_dict = get_dict_info(largest_in_transaction, largest_in_transaction.sender)
-            beneficiary_dict = get_dict_info(largest_out_transaction, largest_out_transaction.to)
+            beneficiary_dict = get_dict_info(largest_out_transaction, largest_out_transaction.receiver)
         else:
             # LOGIC for funder, if it didn't perform any out transactions, no duplicate, passed the threshold then add
             if largest_in_transaction:
                 if passed_in_threshold and not duplicate_in_amt and largest_in_transaction.sender not in out_addresses and valid_in_address:
-                # if passed_in_threshold and not duplicate_in_amt and largest_in_transaction.sender not in out_addresses:
+                    # if passed_in_threshold and not duplicate_in_amt and largest_in_transaction.sender not in out_addresses:
                     funder_dict = get_dict_info(largest_in_transaction, largest_in_transaction.sender)
 
             # LOGIC for beneficiary, if it didn't perform any in transactions, no duplicate, and passed the threshold and is not a contract address
             if largest_out_transaction:
                 # if passed_out_threshold and not duplicate_out_amt and largest_out_transaction.to not in in_addresses:
-                if passed_out_threshold and not duplicate_out_amt and largest_out_transaction.to not in in_addresses and valid_out_address:
-                    beneficiary_dict = get_dict_info(largest_out_transaction, largest_out_transaction.to)
+                if passed_out_threshold and not duplicate_out_amt and largest_out_transaction.receiver not in in_addresses and valid_out_address:
+                    beneficiary_dict = get_dict_info(largest_out_transaction, largest_out_transaction.receiver)
 
     if funder_dict:
         results_dict.update({'funder': funder_dict})
@@ -274,9 +275,9 @@ def get_funder_and_beneficiary(scammer_address):
     return results_dict
 
 
-def is_valid_address(is_out, transaction, scammer_address):
+def is_valid_address(is_out, transaction: NormalTransaction, scammer_address):
     if is_out:
-        return transaction.is_to_eoa(scammer_address) and transaction.to not in END_NODES
+        return transaction.is_to_eoa(scammer_address) and transaction.receiver not in END_NODES
     elif not is_out:
         return transaction.is_in_tx(scammer_address) and transaction.sender not in END_NODES
     return False
@@ -323,13 +324,14 @@ def process_stars_on_all_scammers():
                 scammer_chain = ast.literal_eval(line_r[2])
                 for scammer in scammer_chain:
                     set_to_remove.discard(scammer[0])
+
     star_path = eval(f"path.{dex}_star_shape_path")
     in_stars_path = os.path.join(star_path, f"{PREFIX}_in_stars.csv")
     out_stars_path = os.path.join(star_path, f"{PREFIX}_out_stars.csv")
     in_out_stars_path = os.path.join(star_path, f"{PREFIX}_in_out_stars.csv")
     no_stars_path = os.path.join(star_path, f"{PREFIX}_no_star.csv")
 
-    in_scammers_remaining = set(dataloader.scammers)
+    in_scammers_remaining = set(ALL_SCAMMERS)
 
     # remove the scammers with no stars
     with open(no_stars_path, "r", newline='') as file:
@@ -484,10 +486,12 @@ def write_chain_stats_on_data():
                 funds_out_total = sum(funds_out)
             scam_duration = max(transfer_timestamps) - min(transfer_timestamps)
             csv_writer.writerow([star[0].name, star[1], star[2], funds_in_avg, funds_in_total, funds_out_avg, funds_out_total, scam_duration, sum(num_scams_total)])
+
+
 def init_files():
     pattern_header = ["center_address", "star_size", "satellites"]
     no_pattern_header = ["scammer_address"]
-    f_n_b_pattern_header = ["address","funder","beneficiary"]
+    f_n_b_pattern_header = ["address", "funder", "beneficiary"]
     star_path = eval(f"path.{dex}_star_shape_path")
     in_stars_path = os.path.join(star_path, f"{PREFIX}_in_stars.csv")
     out_stars_path = os.path.join(star_path, f"{PREFIX}_out_stars.csv")
@@ -520,7 +524,7 @@ def init_files():
 
     if not os.path.exists(f_n_b_path):
         with open(f_n_b_path, "w", newline='') as f_n_b_file:
-            csv_writer = csv.writer(f_n_b_file, quotechar='"' , delimiter='|', quoting=csv.QUOTE_ALL)
+            csv_writer = csv.writer(f_n_b_file, quotechar='"', delimiter='|', quoting=csv.QUOTE_ALL)
             csv_writer.writerow(f_n_b_pattern_header)
             f_n_b_file.close()
 

@@ -82,12 +82,37 @@ def load_scammer_tokens(dex='univ2'):
     return scammer_tokens
 
 
-def load_data(dex='univ2'):
+def load_pattern_data(file_path, dex='univ2'):
     scammer_tokens = load_scammer_tokens(dex)
     group_hashed_tokens = dict()
     group_scammers = dict()
     scammer_hashed_tokens = dict()
-    file_path = os.path.join(eval('path.{}_processed_path'.format(dex)), "non_swap_simple_rp_scammer_group.csv")
+    if os.path.exists(file_path):
+        groups = pd.read_csv(file_path)
+        group_scammers = groups.groupby("pattern_id")["scammer"].apply(list).to_dict()
+        for group_id, scammers in group_scammers.items():
+            tokens = set()
+            for scammer in scammers:
+                if scammer in scammer_tokens.keys():
+                    tokens.update(scammer_tokens[scammer])
+                    past = get_available_hash_data(scammer_tokens[scammer], dex)
+                    if len(past) >= 1:
+                        scammer_hashed_tokens[scammer] = past
+                else:
+                    print("Could not find scammer {}".format(scammer))
+            available_ast = get_available_hash_data(tokens, dex)
+            if len(available_ast) >= 1:
+                group_hashed_tokens[group_id] = available_ast
+    return group_hashed_tokens, group_scammers, scammer_hashed_tokens
+
+
+def load_cluster_data(dex='univ2'):
+    scammer_tokens = load_scammer_tokens(dex)
+    group_hashed_tokens = dict()
+    group_scammers = dict()
+    scammer_hashed_tokens = dict()
+    # file_path = os.path.join(eval('path.{}_processed_path'.format(dex)), "non_swap_simple_rp_scammer_group.csv")
+    file_path = os.path.join(eval('path.{}_processed_path'.format(dex)), "sql_scammer_group.csv")
     if os.path.exists(file_path):
         groups = pd.read_csv(file_path)
         group_scammers = groups.groupby("group_id")["scammer"].apply(list).to_dict()
@@ -146,6 +171,7 @@ def intra_cluster_similarity(group_id, hashed_tokens, dex='univ2', prefix="", li
     print("\t SAVED SIM TO ", similarity_file)
     return similarites
 
+
 def individual_scammer_similarity(address, hashed_tokens, dex='univ2', limit=10000):
     similarity_path = eval(f"path.{dex}_individual_similarity_path")
     similarity_file = os.path.join(similarity_path, f"{address}_similarity.json")
@@ -158,6 +184,7 @@ def individual_scammer_similarity(address, hashed_tokens, dex='univ2', limit=100
     ut.write_json(similarity_file, similarites)
     print("\t SAVED SIM TO ", similarity_file)
     return similarites
+
 
 def pick_random_groups(groups, size):
     if len(groups) < size:
@@ -172,12 +199,12 @@ def pick_random_groups(groups, size):
     return randoms
 
 
-def inter_cluster_similarity(group_1_id, avaiHash1, group_tokens, dex='univ2', limit=100):
+def inter_cluster_similarity(group_1_id, avaiHash1, group_tokens, dex='univ2', limit=100, prefix=""):
     print("*" * 100)
     similarity_path = eval(f"path.{dex}_inter_similarity_path")
-    similarity_file = os.path.join(similarity_path, f"inter_{group_1_id}_similarity.json")
+    similarity_file = os.path.join(similarity_path, f"{prefix}inter_{group_1_id}_similarity.json")
     similarites = dict()
-    for r in range (0,10):
+    for r in range(0, 10):
         random_groups = pick_random_groups(group_tokens, 500)
         for group_2_id, avaiHash2 in random_groups.items():
             print("-" * 50)
@@ -214,7 +241,7 @@ def calculate_intra_avg_sim(group_tokens, group_scammers, dex='univ2', prefix=""
                     values.append(v)
             avg = np.mean(values)
             global_sim.append(avg)
-            record = {"group_id:": gid, "scammers": len(scammers), "available_tokens": len(sims), "intra_similarity": avg}
+            record = {"group_id": gid, "scammers": len(scammers), "available_tokens": len(sims), "similarity": avg}
             sim_data.append(record)
             print(record)
     df = pd.DataFrame(sim_data)
@@ -222,13 +249,13 @@ def calculate_intra_avg_sim(group_tokens, group_scammers, dex='univ2', prefix=""
     print("TOTAL", len(global_sim), "WITH AVG SIM", np.mean(global_sim))
 
 
-def calculate_inter_avg_sim(group_tokens, group_scammers, dex='univ2'):
+def calculate_inter_avg_sim(group_tokens, group_scammers, dex='univ2', prefix=""):
     global_sim = []
     sim_data = []
     for gid, tokens in tqdm(group_tokens.items()):
         scammers = group_scammers[gid]
         similarity_path = eval(f"path.{dex}_inter_similarity_path")
-        similarity_file = os.path.join(similarity_path, f"inter_{gid}_similarity.json")
+        similarity_file = os.path.join(similarity_path, f"{prefix}inter_{gid}_similarity.json")
         values = []
         if os.path.exists(similarity_file):
             sims = ut.read_json(similarity_file)
@@ -240,33 +267,34 @@ def calculate_inter_avg_sim(group_tokens, group_scammers, dex='univ2'):
                         values.append(v)
             avg = np.mean(values)
             global_sim.append(avg)
-            record = {"group_id:": gid, "scammers": len(scammers), "available_tokens": token_count, "groups": len(sims), "intra_similarity": avg}
+            record = {"group_id:": gid, "scammers": len(scammers), "available_tokens": token_count, "groups": len(sims), "similarity": avg}
             sim_data.append(record)
             print(record)
     df = pd.DataFrame(sim_data)
-    df.to_csv(f"{dex}_inter_similarities.csv", index=False)
+    df.to_csv(f"{dex}_{prefix}inter_similarities.csv", index=False)
     print("TOTAL", len(global_sim), "WITH AVG SIM", np.mean(global_sim))
 
 
-def generate_intra_sim(group_hashed_tokens, group_scammers, dex='univ2'):
+def generate_intra_sim(group_hashed_tokens, group_scammers, dex='univ2', prefix=""):
     print("GENERATE PAIRS SIM")
     for gid, hashed_tokens in tqdm(group_hashed_tokens.items()):
         scammers = group_scammers[gid]
         print("GID:", gid, "SCAMMERS:", len(scammers), "HASHED TOKENS:", len(hashed_tokens))
         if len(scammers) > 1:
-            similarites = intra_cluster_similarity(gid, hashed_tokens, dex)
+            similarites = intra_cluster_similarity(gid, hashed_tokens, dex, prefix=prefix)
         else:
-            similarites = intra_cluster_similarity(gid, hashed_tokens, dex, prefix="one_scammer_group_")
+            similarites = intra_cluster_similarity(gid, hashed_tokens, dex, prefix=prefix + "one_scammer_group_")
         if len(similarites) > 0:
             print(gid, ":", similarites)
 
 
-def generate_inter_sim(group_tokens, dex='univ2'):
+def generate_inter_sim(group_tokens, dex='univ2', prefix=""):
     print("GENERATE PAIRS SIM")
     for gid1, avaiHash1 in tqdm(group_tokens.items()):
         # print("GID:", gid1, "HASHED TOKENS:", len(avaiHash1))
         if len(avaiHash1) > 0:
-            inter_cluster_similarity(gid1, avaiHash1, group_tokens, dex)
+            inter_cluster_similarity(gid1, avaiHash1, group_tokens, dex, prefix=prefix)
+
 
 def generate_individual_sim(scammer_hashed_tokens, dex='univ2'):
     print("GENERATE PAIRS SIM")
@@ -276,6 +304,7 @@ def generate_individual_sim(scammer_hashed_tokens, dex='univ2'):
             similarites = individual_scammer_similarity(scammer, hashed_tokens, dex)
             if len(similarites) > 0:
                 print(scammer, ":", similarites)
+
 
 def calculate_individual_avg_sim(scammer_hashed_tokens, dex='univ2'):
     global_sim = []
@@ -291,23 +320,99 @@ def calculate_individual_avg_sim(scammer_hashed_tokens, dex='univ2'):
                     values.append(v)
             avg = np.mean(values)
             global_sim.append(avg)
-            record = {"scammer:": scammer, "available_tokens": len(hashed_tokens), "intra_similarity": avg}
+            record = {"scammer:": scammer, "available_tokens": len(hashed_tokens), "similarity": avg}
             sim_data.append(record)
             print(record)
     df = pd.DataFrame(sim_data)
     df.to_csv(f"{dex}_individual_similarities.csv", index=False)
     print("TOTAL", len(global_sim), "WITH AVG SIM", np.mean(global_sim))
 
-if __name__ == '__main__':
-    dex='panv2'
-    group_hashed_tokens, group_scammers, scammer_hashed_tokens = load_data(dex=dex)
+
+def run_uniswap_cluster_similarity(dex = 'univ2'):
+    group_hashed_tokens, group_scammers, scammer_hashed_tokens = load_cluster_data(dex=dex)
+    prefix = ""
     print("DATA SIZE", len(group_hashed_tokens))
     print("GROUP SIZE", len(group_scammers))
     print("SCAMMER SIZE", len(scammer_hashed_tokens))
     print("TOTAL HASHED TOKENS", sum([len(s) for s in scammer_hashed_tokens.values()]))
-    # generate_intra_sim(group_hashed_tokens, group_scammers, dex=dex)
-    # calculate_intra_avg_sim(group_hashed_tokens, group_scammers,dex=dex)
-    # calculate_intra_avg_sim(group_hashed_tokens, group_scammers, prefix="one_scammer_group_",dex=dex)
+    generate_intra_sim(group_hashed_tokens, group_scammers, dex=dex, prefix=prefix)
+    calculate_intra_avg_sim(group_hashed_tokens, group_scammers, dex=dex, prefix=prefix)
+    calculate_intra_avg_sim(group_hashed_tokens, group_scammers, prefix=prefix+"one_scammer_group_", dex=dex)
+    generate_inter_sim(group_hashed_tokens, dex=dex, prefix=prefix)
+    calculate_inter_avg_sim(group_hashed_tokens, group_scammers,dex=dex, prefix=prefix)
+    generate_individual_sim(scammer_hashed_tokens, dex=dex)
+    calculate_individual_avg_sim(scammer_hashed_tokens, dex=dex)
+
+def run_pattern_similarity(dex = 'univ2'):
+#     group_hashed_tokens, group_scammers, scammer_hashed_tokens = load_pattern_data(f"../analysis/data/patterns/data/{dex}_simple_chain_scammers.csv", dex=dex)
+#     prefix = "simple_chain_"
+#     print("DATA SIZE", len(group_hashed_tokens))
+#     print("GROUP SIZE", len(group_scammers))
+#     print("SCAMMER SIZE", len(scammer_hashed_tokens))
+#     print("TOTAL HASHED TOKENS", sum([len(s) for s in scammer_hashed_tokens.values()]))
+#     generate_intra_sim(group_hashed_tokens, group_scammers, dex=dex, prefix=prefix)
+#     calculate_intra_avg_sim(group_hashed_tokens, group_scammers, dex=dex, prefix=prefix)
+#     generate_inter_sim(group_hashed_tokens, dex=dex,  prefix=prefix)
+#     calculate_inter_avg_sim(group_hashed_tokens, group_scammers,dex=dex, prefix=prefix)
+#
+#     group_hashed_tokens, group_scammers, scammer_hashed_tokens = load_pattern_data(f"../analysis/data/patterns/data/{dex}_in_star_scammers.csv", dex=dex)
+#     prefix = "in_star_"
+#     print("DATA SIZE", len(group_hashed_tokens))
+#     print("GROUP SIZE", len(group_scammers))
+#     print("SCAMMER SIZE", len(scammer_hashed_tokens))
+#     print("TOTAL HASHED TOKENS", sum([len(s) for s in scammer_hashed_tokens.values()]))
+#     generate_intra_sim(group_hashed_tokens, group_scammers, dex=dex, prefix=prefix)
+#     calculate_intra_avg_sim(group_hashed_tokens, group_scammers, dex=dex, prefix=prefix)
+#     generate_inter_sim(group_hashed_tokens, dex=dex, prefix=prefix)
+#     calculate_inter_avg_sim(group_hashed_tokens, group_scammers, dex=dex, prefix=prefix)
+#
+#     group_hashed_tokens, group_scammers, scammer_hashed_tokens = load_pattern_data(f"../analysis/data/patterns/data/{dex}_out_star_scammers.csv", dex=dex)
+#     prefix = "out_star_"
+#     print("DATA SIZE", len(group_hashed_tokens))
+#     print("GROUP SIZE", len(group_scammers))
+#     print("SCAMMER SIZE", len(scammer_hashed_tokens))
+#     print("TOTAL HASHED TOKENS", sum([len(s) for s in scammer_hashed_tokens.values()]))
+#     generate_intra_sim(group_hashed_tokens, group_scammers, dex=dex, prefix=prefix)
+#     calculate_intra_avg_sim(group_hashed_tokens, group_scammers, dex=dex, prefix=prefix)
+#     generate_inter_sim(group_hashed_tokens, dex=dex, prefix=prefix)
+#     calculate_inter_avg_sim(group_hashed_tokens, group_scammers, dex=dex, prefix=prefix)
+#
+#     group_hashed_tokens, group_scammers, scammer_hashed_tokens = load_pattern_data(f"../analysis/data/patterns/data/{dex}_in_out_star_scammers.csv", dex=dex)
+#     prefix = "in_out_star_"
+#     print("DATA SIZE", len(group_hashed_tokens))
+#     print("GROUP SIZE", len(group_scammers))
+#     print("SCAMMER SIZE", len(scammer_hashed_tokens))
+#     print("TOTAL HASHED TOKENS", sum([len(s) for s in scammer_hashed_tokens.values()]))
+#     generate_intra_sim(group_hashed_tokens, group_scammers, dex=dex, prefix=prefix)
+#     calculate_intra_avg_sim(group_hashed_tokens, group_scammers, dex=dex, prefix=prefix)
+#     generate_inter_sim(group_hashed_tokens, dex=dex, prefix=prefix)
+#     calculate_inter_avg_sim(group_hashed_tokens, group_scammers, dex=dex, prefix=prefix)
+
+    group_hashed_tokens, group_scammers, scammer_hashed_tokens = load_pattern_data(f"../analysis/data/patterns/data/{dex}_MSF_scammers.csv", dex=dex)
+    prefix = "MSF_"
+    print("DATA SIZE", len(group_hashed_tokens))
+    print("GROUP SIZE", len(group_scammers))
+    print("SCAMMER SIZE", len(scammer_hashed_tokens))
+    print("TOTAL HASHED TOKENS", sum([len(s) for s in scammer_hashed_tokens.values()]))
+    generate_intra_sim(group_hashed_tokens, group_scammers, dex=dex, prefix=prefix)
+    calculate_intra_avg_sim(group_hashed_tokens, group_scammers, dex=dex, prefix=prefix)
+    generate_inter_sim(group_hashed_tokens, dex=dex, prefix=prefix)
+    calculate_inter_avg_sim(group_hashed_tokens, group_scammers, dex=dex, prefix=prefix)
+
+
+if __name__ == '__main__':
+    dex = 'panv2'
+    # group_hashed_tokens, group_scammers, scammer_hashed_tokens = load_cluster_data(dex=dex)
+    # # group_hashed_tokens, group_scammers, scammer_hashed_tokens = load_pattern_data("../analysis/data/patterns/data/univ2_simple_chain_scammers.csv", dex=dex)
+    # # prefix = "simple_chain_"
+    # print("DATA SIZE", len(group_hashed_tokens))
+    # print("TOKEN SIZE", sum([len(group_hashed_tokens[k]) for k in group_hashed_tokens.keys()]))
+    # print("GROUP SIZE", len(group_scammers))
+    # print("SCAMMER SIZE", len(scammer_hashed_tokens))
+    # print("TOTAL HASHED TOKENS", sum([len(s) for s in scammer_hashed_tokens.values()]))
+    # generate_intra_sim(group_hashed_tokens, group_scammers, dex=dex, prefix=prefix)
+    # calculate_intra_avg_sim(group_hashed_tokens, group_scammers, dex=dex, prefix=prefix)
+    # calculate_intra_avg_sim(group_hashed_tokens, group_scammers, prefix=prefix+"one_scammer_group_", dex=dex)
     # generate_inter_sim(group_hashed_tokens, dex=dex)
     # calculate_inter_avg_sim(group_hashed_tokens, group_scammers,dex=dex)
     # generate_individual_sim(scammer_hashed_tokens, dex=dex)
@@ -316,3 +421,4 @@ if __name__ == '__main__':
     # for gi, hash_token in group_hashed_tokens.items():
     #     g_count.append(len(hash_token))
     # print(g_count.count(1))
+    run_pattern_similarity(dex=dex)

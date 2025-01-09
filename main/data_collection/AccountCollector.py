@@ -4,6 +4,7 @@ from tqdm import tqdm
 import os
 import pandas as pd
 
+from api.EtherscanAPI import get_normal_transactions, get_internal_transactions
 from entity.blockchain.Transaction import NormalTransaction, InternalTransaction
 from utils.Settings import Setting
 from utils.ProjectPath import ProjectPath
@@ -21,16 +22,16 @@ explorer_api = {
 class CreatorCollector:
 
     # def __init__(self, dex='univ2'):
-        # print("In constructor of CreatorCollector! Caching objects")
-        # pool_creation_path = os.path.join(eval('path.{}_processed_path'.format(dex)), "pool_creation_info.csv")
-        # self.pool_existed_data = pd.read_csv(pool_creation_path)
-        # self.pool_existed_data.drop_duplicates(inplace=True)
-        # self.pool_existed_data.set_index("contractAddress", inplace=True)
-        #
-        # token_creation_path = os.path.join(eval('path.{}_processed_path'.format(dex)), "token_creation_info.csv")
-        # self.token_existed_data = pd.read_csv(token_creation_path)
-        # self.token_existed_data.drop_duplicates(inplace=True)
-        # self.token_existed_data.set_index("contractAddress", inplace=True)
+    # print("In constructor of CreatorCollector! Caching objects")
+    # pool_creation_path = os.path.join(eval('path.{}_processed_path'.format(dex)), "pool_creation_info.csv")
+    # self.pool_existed_data = pd.read_csv(pool_creation_path)
+    # self.pool_existed_data.drop_duplicates(inplace=True)
+    # self.pool_existed_data.set_index("contractAddress", inplace=True)
+    #
+    # token_creation_path = os.path.join(eval('path.{}_processed_path'.format(dex)), "token_creation_info.csv")
+    # self.token_existed_data = pd.read_csv(token_creation_path)
+    # self.token_existed_data.drop_duplicates(inplace=True)
+    # self.token_existed_data.set_index("contractAddress", inplace=True)
 
     def get_creators(self, addresses, job, contract_type='pool', dex='univ2'):
         data = []
@@ -159,38 +160,29 @@ class CreatorCollector:
         record = existed_data.loc[address]
         return {"contractAddress": address, "contractCreator": record["contractCreator"], "txHash": record["txHash"]}
 
+
 class TransactionCollector:
     univ2_first_block = Constant.UNISWAP_START_BLOCK
     univ2_last_block = Constant.UNISWAP_END_BLOCK  # Aug-25-2024 02:17:59 PM +UTC
     panv2_first_block = Constant.PANCAKESWAP_START_BLOCK
     panv2_last_block = Constant.PANCAKESWAP_END_BLOCK
 
-    def get_transactions(self, address, dex='univ2',key_idx = 0):
-        from_block = eval('self.{}_first_block'.format(dex))
-        to_block = eval('self.{}_last_block'.format(dex))
+    def get_normal_transactions(self, address, dex='univ2', key_idx=1):
         api = explorer_api[dex]["explorer"]
         keys = explorer_api[dex]["keys"]
-        key_idx = key_idx % len(keys)
+        from_block = eval('self.{}_first_block'.format(dex))
+        to_block = eval('self.{}_last_block'.format(dex))
         normal_txs_path = os.path.join(eval('path.{}_normal_tx_path'.format(dex)), f"{address}.csv")
         parsed_normal_txs = []
-        parsed_internal_txs = []
         if os.path.isfile(normal_txs_path):
             try:
                 normal_txs = pd.read_csv(normal_txs_path)
             except Exception as e:
-                print(address, e)
+                # print(address, e)
                 normal_txs = None
         else:
             normal_txs = pd.DataFrame(self.download_normal_transactions(address, api, keys[key_idx], dex))
-        internal_txs_path = os.path.join(eval('path.{}_internal_tx_path'.format(dex)), f"{address}.csv")
-        if os.path.isfile(internal_txs_path):
-            try:
-                internal_txs = pd.read_csv(internal_txs_path)
-            except Exception as e:
-                print(address, e)
-                internal_txs = None
-        else:
-            internal_txs = pd.DataFrame(self.download_internal_transactions(address, api, keys[key_idx], dex))
+
         if normal_txs is not None:
             normal_txs.rename(columns={'from': 'sender'}, inplace=True)
             for tx in normal_txs.to_dict('records'):
@@ -198,6 +190,24 @@ class TransactionCollector:
                 ptx.from_dict(tx)
                 if from_block <= int(ptx.blockNumber) <= to_block:
                     parsed_normal_txs.append(ptx)
+        return parsed_normal_txs
+
+    def get_internal_transactions(self, address, dex='univ2', key_idx=1):
+        api = explorer_api[dex]["explorer"]
+        keys = explorer_api[dex]["keys"]
+        from_block = eval('self.{}_first_block'.format(dex))
+        to_block = eval('self.{}_last_block'.format(dex))
+        internal_txs_path = os.path.join(eval('path.{}_internal_tx_path'.format(dex)), f"{address}.csv")
+        parsed_internal_txs = []
+        if os.path.isfile(internal_txs_path):
+            try:
+                internal_txs = pd.read_csv(internal_txs_path)
+            except Exception as e:
+                # print(address, e)
+                internal_txs = None
+        else:
+            internal_txs = pd.DataFrame(self.download_internal_transactions(address, api, keys[key_idx], dex))
+
         if internal_txs is not None:
             internal_txs.rename(columns={'from': 'sender'}, inplace=True)
             for tx in internal_txs.to_dict('records'):
@@ -205,11 +215,18 @@ class TransactionCollector:
                 ptx.from_dict(tx)
                 if from_block <= int(ptx.blockNumber) <= to_block:
                     parsed_internal_txs.append(ptx)
+        return parsed_internal_txs
+
+    def get_transactions(self, address, dex='univ2', key_idx=1):
+        keys = explorer_api[dex]["keys"]
+        key_idx = key_idx % len(keys)
+        parsed_normal_txs = self.get_normal_transactions(address, dex, key_idx)
+        parsed_internal_txs = self.get_internal_transactions(address, dex, key_idx)
         return parsed_normal_txs, parsed_internal_txs
 
-    def ensure_valid_eoa_address(self, address, dex = 'univ2'):
-        # print("Ensuring valid_eoa_address={}".format(address))
-        normal_txs, internal_txs = self.get_transactions(address, dex, 0)
+    def ensure_valid_eoa_address(self, address, dex='univ2'):
+        print("Ensuring valid_eoa_address={}".format(address))
+        normal_txs = self.get_normal_transactions(address, dex, 2)
         if len(normal_txs) >= Constant.TX_LIMIT_1:
             return False
         for ntx in normal_txs:
@@ -219,6 +236,7 @@ class TransactionCollector:
                 return False
             if ntx.is_contract_call_tx() and ntx.to.lower() == address.lower():  # address is a contract called by other address
                 return False
+        internal_txs = self.get_internal_transactions(address, dex, 2)
         for itx in internal_txs:
             if itx.sender.lower() == address.lower():  # sender of internal txs must be contract
                 return False
@@ -237,20 +255,20 @@ class TransactionCollector:
             self.download_normal_transactions(address, api, keys[job % len(keys)], dex)
             self.download_internal_transactions(address, api, keys[job % len(keys)], dex)
 
-    def download_normal_transactions(self, address, api, apikey, dex='univ2', is_force = False):
+    def download_normal_transactions(self, address, api, apikey, dex='univ2', is_force=False):
         output_path = os.path.join(eval('path.{}_normal_tx_path'.format(dex)), address + ".csv")
         if not os.path.isfile(output_path) or is_force:
             result = api.get_normal_transactions(address, fromBlock=eval('self.{}_first_block'.format(dex)), toBlock=eval('self.{}_last_block'.format(dex)), apikey=apikey)
             ut.save_overwrite_if_exist(result, output_path)
-            print(f"\t\tSAVED NORMAL TXs OF {address}")
+            print(f"\t\t({dex}) SAVED NORMAL TXs OF {address}")
             return result
 
-    def download_internal_transactions(self, address, api, apikey, dex='univ2', is_force = False):
+    def download_internal_transactions(self, address, api, apikey, dex='univ2', is_force=False):
         output_path = os.path.join(eval('path.{}_internal_tx_path'.format(dex)), address + ".csv")
         if not os.path.isfile(output_path) or is_force:
             result = api.get_internal_transactions(address, fromBlock=eval('self.{}_first_block'.format(dex)), toBlock=eval('self.{}_last_block'.format(dex)), apikey=apikey)
             ut.save_overwrite_if_exist(result, output_path)
-            print(f"\t\tSAVED INTERNAL TXs OF {address}")
+            print(f"\t\t({dex}) SAVED INTERNAL TXs OF {address}")
             return result
 
     def prepare_normal_transactions(self, job, addresses, dex='univ2'):
@@ -263,20 +281,21 @@ class TransactionCollector:
         for address in tqdm(chunk_addresses):
             normal_txs_path = os.path.join(eval('path.{}_normal_tx_path'.format(dex)), f"{address}.csv")
             if not os.path.exists(normal_txs_path):
-                self.download_normal_transactions(address, api, keys[job % len(keys)], dex, is_force = True)
+                self.download_normal_transactions(address, api, keys[job % len(keys)], dex, is_force=True)
             else:
                 try:
                     normal_txs = pd.read_csv(normal_txs_path)
                     if len(normal_txs) >= 10000 or len(normal_txs) == 0:
-                        self.download_normal_transactions(address, api, keys[job % len(keys)], dex, is_force = True)
+                        self.download_normal_transactions(address, api, keys[job % len(keys)], dex, is_force=True)
                 except Exception as e:
-                    print(address, e)
-                    self.download_normal_transactions(address, api, keys[job % len(keys)], dex, is_force = True)
+                    # print(address, e)
+                    self.download_normal_transactions(address, api, keys[job % len(keys)], dex, is_force=True)
             # self.download_internal_transactions(address, api, keys[job % len(keys)], dex)
 
+
 if __name__ == '__main__':
-    dex = 'panv2'
-    job = 15
+    dex = 'univ2'
+    job = 17
     # pool_path = os.path.join(eval('path.{}_processed_path'.format(dex)), "pool_addresses.csv")
     # pools = pd.read_csv(pool_path)["pool"].values
     # collectors = CreatorCollector()
@@ -292,7 +311,7 @@ if __name__ == '__main__':
     # collectors.get_creators(addresses=token_addresses, job=job, contract_type='token', dex=dex)
     # print(collectors.get_pool_creator("0x2102A87B61Ca83a947473808677f1cF33A260c69", dex=dex))
     #############################################################################
-    scammers_df = pd.read_csv(os.path.join(eval('path.{}_processed_path'.format(dex)), "1_pair_scammers.csv"))
+    scammers_df = pd.read_csv(os.path.join(eval('path.{}_processed_path'.format(dex)), "filtered_simple_rp_scammers.csv"))
     # index_issue = scammers[(scammers["pool"] == scammers["scammer"])].index
     # scammers.drop(index_issue, inplace=True)
     # scammers["pool"] = scammers["pool"].str.lower()
@@ -304,4 +323,3 @@ if __name__ == '__main__':
     # #########################################################################################
     # transactions = tx_collector.get_transactions("0x5b5d8c8eed6c85ac215661de026676823faa0a0c", dex)
     # print([tx.blockNumber for tx in transactions[0]])
-

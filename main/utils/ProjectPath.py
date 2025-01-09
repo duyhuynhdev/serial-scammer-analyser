@@ -62,6 +62,7 @@ class ProjectPath(object):
         self.panv2_star_shape_path = os.path.join(self.panv2_base_path, "star_shape")
         self.panv2_public_addresses_path = os.path.join(self.panv2_processed_path, "public_addresses")
         self.panv2_cluster_path = os.path.join(self.panv2_processed_path, "cluster")
+        self.panv2_network_path = os.path.join(self.panv2_processed_path, "completed_network")
         self.panv2_visited_scammer_path = os.path.join(self.panv2_processed_path, "visited_scammers")
         # LOCAL DATA
         ROOT_FOLDER = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))

@@ -1,5 +1,7 @@
 import json
 
+from web3 import Web3
+
 import utils.Utils as ut
 from tqdm import tqdm
 import os
@@ -35,10 +37,12 @@ class ContractEventCollector:
 
     def download_event_logs(self, pool_address, outpath, last_block, event, explorer=EtherscanAPI, apikey=setting.ETHERSCAN_API_KEY):
         if os.path.exists(outpath):
+            print("FILE EXISTS")
             with open(outpath, 'r') as f:
                 logs = json.load(f)
                 f.close()
             return logs
+        print("START NEW DOWNLOAD")
         event_signature_hash = ut.keccak_hash(self.event_info[event]["signature"])
         logs = explorer.get_event_logs(pool_address, fromBlock=0, toBlock=last_block, topic=event_signature_hash, apikey=apikey)
         with open(outpath, 'w') as wf:
@@ -82,10 +86,10 @@ class ContractEventCollector:
     def download_download_token_events_by_patch(self, job, dex="univ2"):
         explorer = explorer_api[dex]["explorer"]
         keys = explorer_api[dex]["keys"]
-        pool_labels_path = os.path.join(eval('path.{}_processed_path'.format(dex)), "1_pair_pool_labels.csv")
+        pool_labels_path = os.path.join(eval('path.{}_processed_path'.format(dex)), "filtered_simple_rp_pool.csv")
         pool_labels_df = pd.read_csv(pool_labels_path)
         pool_labels_df.fillna("", inplace=True)
-        scam_tokens = pool_labels_df[pool_labels_df["is_rp"] != '0']["scam_token"].values
+        scam_tokens = pool_labels_df["scam_token"].values
         chunks = ut.partitioning(0, len(scam_tokens), int(len(scam_tokens) / len(keys)))
         chunk = chunks[job]
         chunk_addresses = scam_tokens[chunk["from"]:(chunk["to"] + 1)]
@@ -108,6 +112,8 @@ class ContractEventCollector:
     def get_event(self, address, event, event_path, dex):
         global key_index
         event_logs_path = os.path.join(event_path, event, address + ".json")
+        if not os.path.exists(event_logs_path):
+            event_logs_path = os.path.join(event_path, event,  Web3.to_checksum_address(address) + ".json")
         if not os.path.exists(event_logs_path):  # if not exist , starts download corresponding event
             while key_index < len(explorer_api[dex]["keys"]):
                 try:
@@ -148,7 +154,8 @@ def clean_fail_data(event, dex="univ2"):
 
 
 if __name__ == '__main__':
-    job = 17
+    job = 24
     collector = ContractEventCollector()
-    collector.download_download_token_events_by_patch(job)
+    dex = 'panv2'
+    collector.download_download_token_events_by_patch(job, dex=dex)
     # collector.get_event("0x590fcAdC577810658Cc225E26d78C642cf08be4e","Transfer", path.univ2_token_events_path, "univ2")

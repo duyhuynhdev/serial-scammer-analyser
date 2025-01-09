@@ -1,4 +1,4 @@
-from cmath import polar
+import time
 
 import pandas as pd
 import os
@@ -187,6 +187,16 @@ def link_pool_and_group(scammer_pools, group_scammers):
     return pool_group
 
 
+def load_scammers(dex="univ2", scammer_file_name="filtered_simple_rp_scammers.csv"):
+    scammers = pd.read_csv(
+        os.path.join(eval("path.{}_processed_path".format(dex)), scammer_file_name)
+    )
+    index_issue = scammers[(scammers["pool"] == scammers["scammer"])].index
+    scammers.drop(index_issue, inplace=True)
+    scammers["scammer"] = scammers["scammer"].str.lower()
+    return set(scammers["scammer"].str.lower().to_list())
+
+
 def load_rug_pull_dataset(dex="univ2", scammer_file_name="1_pair_scammers.csv", pool_file_name="1_pair_pool_labels.csv"):
     print("LOAD RUG PULL INFO")
     scam_pools = list()
@@ -234,6 +244,7 @@ def load_transaction_by_address(address, dex="univ2"):
 contract_event_collector = ContractEventCollector()
 creator_collector = CreatorCollector()
 
+
 def load_light_pool(scammer_address, dataloader, dex="univ2"):
     pool_addresses = dataloader.scammer_pools[scammer_address.lower()]
     pool_event_path = eval("path.{}_pool_events_path".format(dex))
@@ -267,17 +278,21 @@ def load_light_pool(scammer_address, dataloader, dex="univ2"):
         )
         pools.append(pool)
     return pools
+
+
 def load_pool(scammer_address, dataloader, dex="univ2"):
     pool_addresses = dataloader.scammer_pools[scammer_address.lower()]
     pool_event_path = eval("path.{}_pool_events_path".format(dex))
     contract_event_collector = ContractEventCollector()
     creator_collector = CreatorCollector()
     pools = []
+    # print("NUM POOLS", len(pool_addresses))
     for pool_address in pool_addresses:
-        transfer_list = contract_event_collector.get_event(
-            pool_address, "Transfer", pool_event_path, dex
-        )
-        transfers = [TransferEvent().from_dict(e) for e in transfer_list]
+        t = time.time()
+        # transfer_list = contract_event_collector.get_event(
+        #     pool_address, "Transfer", pool_event_path, dex
+        # )
+        # transfers = [TransferEvent().from_dict(e) for e in transfer_list]
         swaps_list = contract_event_collector.get_event(
             pool_address, "Swap", pool_event_path, dex
         )
@@ -311,11 +326,12 @@ def load_pool(scammer_address, dataloader, dex="univ2"):
             mints,
             burns,
             swaps,
-            transfers,
+            None,
             pool_creation["contractCreator"],
             pool_creation["txHash"],
         )
         pools.append(pool)
+        # print("Load Pool", time.time() - t)
     return pools
 
 

@@ -12,6 +12,7 @@ from typing import Set, List, Union, Mapping
 from entity.blockchain.Transaction import NormalTransaction
 from utils import DataLoader, Constant
 from utils.Utils import get_transaction_by_hash
+from utils import Utils as ut
 
 ProfitPool = namedtuple("ProfitPool", ["profit", "pool"])
 
@@ -143,8 +144,8 @@ class ClusterProfitCalculator:
                 node_address, dex=self.dex
             )[0]
             if normal_tx.is_transfer_tx()
-            and normal_tx.sender.lower() in self.node_addresses_in_cluster
-            and normal_tx.to.lower() in self.node_addresses_in_cluster
+               and normal_tx.sender.lower() in self.node_addresses_in_cluster
+               and normal_tx.to.lower() in self.node_addresses_in_cluster
         }
 
     @cached_property
@@ -156,7 +157,7 @@ class ClusterProfitCalculator:
         This includes only the fees from normal transactions between the nodes
         """
         return sum(
-            float(tx.gasUsed) * float(tx.gasPrice) / 10**Constant.WETH_BNB_DECIMALS
+            float(tx.gasUsed) * float(tx.gasPrice) / 10 ** Constant.WETH_BNB_DECIMALS
             for tx in self.cluster_transfers
         )
 
@@ -208,14 +209,26 @@ class ClusterProfitCalculator:
             [ProfitPool(pool.true_profit, pool) for pool in self.scammer_pools],
             key=lambda x: x.profit,
         )
-
+        data = []
         for _, pool in pools_sorted_by_profit:
             self.log_pool_calculation_results(pool)
-
+            # pool.x = x
+            # pool.y = y
+            # pool.z = z
+            # pool.true_profit = true_profit
+            # pool.untrue_profit = untrue_profit
+            data.append({
+                "pool_address": pool.address.lower(),
+                "y_revenue": pool.y,
+                "x_cost": pool.x,
+                "z_wash_trade": pool.z,
+                "old_profit": pool.untrue_profit,
+                "true_profit": pool.true_profit,
+            })
         pools_profits_total = sum(
             profit_and_pool.profit for profit_and_pool in pools_sorted_by_profit
         )
-
+        ut.save_overwrite_if_exist(data, f"profit/{cluster_name}.csv")
         return pools_profits_total
 
     def calculate_y_per_pool(self, pool: Pool) -> float:
@@ -257,14 +270,14 @@ class ClusterProfitCalculator:
         return x
 
     def _validate_scam_token_is_created_by_cluster(
-        self, scam_token_creator_info: Mapping[str, str], pool: Pool
+            self, scam_token_creator_info: Mapping[str, str], pool: Pool
     ) -> None:
         """
         Validate that the scam token creator is in the cluster.
         """
         if (
-            scam_token_creator_info["contractCreator"]
-            not in self.node_addresses_in_cluster
+                scam_token_creator_info["contractCreator"]
+                not in self.node_addresses_in_cluster
         ):
             raise ValueError(
                 f"Scam token creator {scam_token_creator_info['contractCreator']} of the scam "
@@ -273,7 +286,7 @@ class ClusterProfitCalculator:
             )
 
     def _validate_transaction_amount_is_zero(
-        self, transaction: NormalTransaction, pool: Pool
+            self, transaction: NormalTransaction, pool: Pool
     ) -> None:
         """
         Validate that the transaction amount is zero.
@@ -316,8 +329,8 @@ class ClusterProfitCalculator:
         # self._validate_transaction_amount_is_zero(token_creation_tx, pool)
 
         token_creation_fee += (
-            token_creation_tx.get_transaction_fee()
-            + token_creation_tx.get_transaction_amount()
+                token_creation_tx.get_transaction_fee()
+                + token_creation_tx.get_transaction_amount()
         )
 
         return token_creation_fee
@@ -385,8 +398,8 @@ class ClusterProfitCalculator:
             f"Value of z: {pool.z}\n"
             f"Legitimate investor node addresses:\n - {legitimate_addresses_str}\n"
             f"Scam investor node addresses:\n - {scam_addresses_str}\n"
-            f"The profit of this pool with wash-trading in consideration is {pool.true_profit}"
-            f"The profit of this pool without wash-trading in consideration is {pool.untrue_profit}"
+            f"The profit of this pool with wash-trading in consideration is {pool.true_profit}\n"
+            f"The profit of this pool without wash-trading in consideration is {pool.untrue_profit}\n"
             f"\n"
         )
 
@@ -398,152 +411,56 @@ class ClusterProfitCalculator:
 
 
 if __name__ == "__main__":
-    uni_accepted_cluster = [
-        1528,
-        3025,
-        1519,
-        1647,
-        3628,
-        8739,
-        7004,
-        3605,
-        6615,
-        7585,
-        6717,
-        8653,
-        117,
-        7280,
-        90,
-        4508,
-        5518,
-        8256,
-        5033,
-        2027,
-        268,
-        641,
-        4009,
-        1565,
-        6696,
-        6556,
-        1147,
-        7031,
-        262,
-        8589,
-        171,
-        667,
-        2042,
-        6,
-        4152,
-        1507,
-        8028,
-        1573,
-        4205,
-        1263,
-        3049,
-        717,
-        5069,
-        3213,
-        3106,
-        1706,
-        3525,
-        7556,
-        2029,
-        8283,
-        8057,
-        3540,
-        1253,
-        5190,
-        7045,
-        8745,
-        735,
-        1739,
-        5747,
-        2116,
-        3015,
-        1686,
-        6016,
-        4064,
-        3636,
-        5218,
-        1540,
-        567,
-        2249,
-        6607,
-        1559,
-        85,
-        6155,
-        4060,
-        3594,
-        4006,
-        7562,
-        8631,
-        2111,
-        5710,
-        3112,
-        7063,
-        7275,
-        2503,
-        2057,
-        1256,
-        2047,
-        3166,
-        2054,
-        4596,
-        8612,
-        4020,
-        6724,
-        1731,
-        8125,
-        5011,
-        5093,
-        5067,
-        6509,
-        5013,
-        8699,
-        5029,
-        511,
-        1050,
-        1022,
-        4036,
-        5538,
-        6561,
-        7608,
-        5587,
-        6168,
-        5197,
-        249,
-        5736,
-        8279,
-        6114,
-        1570,
-        6530,
-        4004,
-        5543,
-        8587,
-        7581,
-        1650,
-        4141,
-        1664,
-        3116,
-        4590,
-        645,
-        2187,
-        7159,
-        8597,
-        5062,
-        306,
-        7153,
+    pan_accepted_cluster = [
+        # 6504,
+        # 6004,
+        # 9006,
+        # 5502,
+        # 1007,
+        # 9511,
+        # 10001,
+        # 7509,
+        # 8516,
+        12006,
+        # 4504,
+        # 2,
+        # 2003,
+        # 1001,
+        # 3005,
+        # 4002,
+        # 4503,
+        # 11508,
+        # 4517,
+        # 4501,
+        # 8503,
+        # 8505,
+        # 5505,
+        # 7001,
+        # 2007,
+        # 8504,
+        # 9505,
+        # 8501,
+        # 9508,
+        # 2502,
+        # 6003,
+        # 4510,
+        # 8001,
+        # 9509,
+        # 2010,
+        # 11001,
+        # 2002,
+        # 2004,
+        # 4508,
     ]
-
-    uni_dex = "univ2"
-    cpc = ClusterProfitCalculator(dex=uni_dex)
-
-    for cid in uni_accepted_cluster:
+    # dex = "univ2"
+    dex = "panv2"
+    calculator = ClusterProfitCalculator(dex=dex)
+    for cid in pan_accepted_cluster:
         if os.path.exists(f"profit/cluster_{cid}.txt"):
             print("SKIP", f"profit/cluster_{cid}")
             continue
         orignal_std_out = sys.stdout
         sys.stdout = open(f"profit/cluster_{cid}.txt", "w")
-        cpc.calculate(f"network_{cid}")
+        calculator.calculate(f"cluster_{cid}")
         # break
         sys.stdout = orignal_std_out

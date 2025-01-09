@@ -20,11 +20,12 @@ from utils.ProjectPath import ProjectPath
 from entity.blockchain import Transaction
 
 
-dex = 'panv2'
+dex = 'univ2'
 dataloader = DataLoader(dex=dex)
 path = ProjectPath()
 transaction_collector = TransactionCollector()
-
+PERCENTAGE_THRESHOLD = 0.9
+PREFIX = PERCENTAGE_THRESHOLD * 100
 all_funding_txs = set()
 all_funding_tx_hashes = set()
 all_scammer_addrs = set()
@@ -181,11 +182,11 @@ def get_valid_funding_txs(all_scammmer_addrs):
             b_txs = []
             sum_out = 0
             for tx in sorted_txs_out:
-                if sum_out >= 0.9 * revenue_value:
+                if sum_out >= PERCENTAGE_THRESHOLD * revenue_value:
                     break
                 sum_out += float(tx.value)
                 b_txs.append(tx)
-            if sum_out >= 0.9 * revenue_value:
+            if sum_out >= PERCENTAGE_THRESHOLD * revenue_value:
                 B_txs[scammer_addr] = b_txs # update funding txs from scammer addr (beneficiaries of scammer addr)
                 tmp_txs.update(b_txs)
 
@@ -310,28 +311,28 @@ if __name__ == '__main__':
     # create_atomic_MSF_groups()
     # connected_components, MSF_clusters = find_MSF_clusters(atomic_MSF_groups)
 
-    if not os.path.exists(f"funding_txs_{dex}.pkl"):
+    if not os.path.exists(f"{PREFIX}_funding_txs_{dex}.pkl"):
         get_valid_funding_txs(all_scammer_addrs)
-        with open(f'funding_txs_{dex}.pkl', 'wb') as file:
+        with open(f'{PREFIX}_funding_txs_{dex}.pkl', 'wb') as file:
             pickle.dump((all_funding_txs, all_funding_tx_hashes, F_txs, B_txs), file)
     else:
-        with open(f'funding_txs_{dex}.pkl', 'rb') as file:
+        with open(f'{PREFIX}_funding_txs_{dex}.pkl', 'rb') as file:
             all_funding_txs, all_funding_tx_hashes, F_txs, B_txs = pickle.load(file)
 
-    if not os.path.exists(f'atomic_groups_{dex}.pkl'):
+    if not os.path.exists(f'{PREFIX}_atomic_groups_{dex}.pkl'):
         create_atomic_MSF_groups()
-        with open(f'atomic_groups_{dex}.pkl', 'wb') as file:
+        with open(f'{PREFIX}_atomic_groups_{dex}.pkl', 'wb') as file:
             pickle.dump(atomic_MSF_groups, file)
     else:
-        with open(f'atomic_groups_{dex}.pkl', 'rb') as file:
+        with open(f'{PREFIX}_atomic_groups_{dex}.pkl', 'rb') as file:
             atomic_MSF_groups = pickle.load(file)
 
-    if not os.path.exists(f'MSF_clusters_{dex}.pkl'):
+    if not os.path.exists(f'{PREFIX}_MSF_clusters_{dex}.pkl'):
         connected_components, MSF_clusters = find_MSF_clusters(atomic_MSF_groups)
-        with open(f'MSF_clusters_{dex}.pkl', 'wb') as file:
+        with open(f'{PREFIX}_MSF_clusters_{dex}.pkl', 'wb') as file:
             pickle.dump((connected_components, MSF_clusters), file)
     else:
-        with open(f'MSF_clusters_{dex}.pkl', 'rb') as file:
+        with open(f'{PREFIX}_MSF_clusters_{dex}.pkl', 'rb') as file:
             connected_components, MSF_clusters = pickle.load(file)
 
     # Statistics
@@ -358,4 +359,4 @@ if __name__ == '__main__':
         df.loc[i, 'fund_in'] = sum([tx.get_transaction_amount() for v in cluster.inputs for tx in B_txs[v]])
         df.loc[i, 'fund_out'] = sum([tx.get_transaction_amount() for v in cluster.outputs for tx in F_txs[v]])
 
-    df.to_csv(f"MSF_clusters_statistics_{dex}.csv")
+    df.to_csv(f"{PREFIX}_MSF_clusters_statistics_{dex}.csv")

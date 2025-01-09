@@ -180,6 +180,7 @@ class InternalTransaction(Transaction):
         input=None,
         isError=None,
         type=None,
+        traceId=None,
         errCode=None,
     ):
         super().__init__(
@@ -196,4 +197,5 @@ class InternalTransaction(Transaction):
             isError,
         )
         self.type = type
+        self.traceId = traceId
         self.errCode = errCode
