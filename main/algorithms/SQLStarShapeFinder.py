@@ -14,7 +14,7 @@ from sql.PostgresDTO import *
 from utils import DataLoader
 from utils.ProjectPath import ProjectPath
 
-dex = 'panv2'
+dex = 'univ2'
 # dataloader = DataLoader(dex=dex)
 path = ProjectPath()
 # transaction_collector = TransactionCollector()
@@ -22,7 +22,7 @@ querier = DataQuerier(dex)
 
 REMOVE_LIQUIDITY_SUBSTRING = "removeLiquidity"
 ADD_LIQUIDITY_SUBSTRING = "addLiquidity"
-OUT_PERCENTAGE_THRESHOLD = 0.95
+OUT_PERCENTAGE_THRESHOLD = 0.9
 IN_PERCENTAGE_THRESHOLD = 1.0
 MIN_NUMBER_OF_SATELLITES = 5
 PREFIX = str(int(IN_PERCENTAGE_THRESHOLD * 100)) + "_" + str(int(OUT_PERCENTAGE_THRESHOLD * 100))

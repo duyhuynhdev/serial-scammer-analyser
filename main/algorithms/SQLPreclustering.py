@@ -17,8 +17,8 @@ from tqdm import tqdm
 
 path = ProjectPath()
 setting = Setting()
-# dex='univ2'
-dex='panv2'
+dex='univ2'
+# dex='panv2'
 querier = DataQuerier(dex)
 
 def get_related_scammer_from_pool_events(pool_address, scammers):
@@ -80,24 +80,24 @@ def scammer_grouping():
     print("GRAPH HAVE", len(nx.nodes(graph)), "NODES")
     groups = list(nx.connected_components(graph))
     isolates = set(nx.isolates(graph))
-    return groups, isolates
+    return groups, isolates, graph
 
 
 def pre_clusterting():
-    file_path = os.path.join(eval('path.{}_processed_path'.format(dex)), "sql_scammer_group.csv")
-    groups, isolates = scammer_grouping()
+    file_path = os.path.join(eval('path.{}_processed_path'.format(dex)), "new_sql_scammer_group.csv")
+    groups, isolates, graph = scammer_grouping()
     data = []
     id = 1
     existing_scammers = set()
     for group in groups:
         for s in group:
             if s not in existing_scammers:
-                data.append({"group_id": id, "scammer": s})
+                data.append({"group_id": id, "scammer": s, "degree": graph.degree[s]})
                 existing_scammers.add(s)
         id += 1
     for i in isolates:
         if i not in existing_scammers:
-            data.append({"group_id": id, "scammer": i})
+            data.append({"group_id": id, "scammer": i, "degree": graph.degree[i]})
             id += 1
     print("DATA SIZE", len(data))
     ut.save_overwrite_if_exist(data, file_path)

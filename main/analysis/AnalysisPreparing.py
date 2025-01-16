@@ -1,13 +1,16 @@
 import os
 import pandas as pd
+import requests
 from tqdm import tqdm
 from hexbytes import HexBytes
+from web3 import Web3
+
 from api import EtherscanAPI, BSCscanAPI
 from utils.ProjectPath import ProjectPath
 from utils import Utils as ut
 from utils.Settings import Setting
 from data_collection.EventCollector import ContractEventCollector
-
+from sql.DataQuerier import DataQuerier
 
 
 # GLOBAL VARS
@@ -15,9 +18,19 @@ setting = Setting()
 path = ProjectPath()
 
 
+uni_sql_querier = DataQuerier("univ2")
+pan_sql_querier = DataQuerier("panv2")
+
 explorer_api = {
     "univ2": {"explorer": EtherscanAPI, "keys": setting.ETHERSCAN_API_KEYS},
     "panv2": {"explorer": BSCscanAPI, "keys": setting.BSCSCAN_API_KEYS},
+}
+
+infura_api = {
+    "univ2": {"node_url": setting.INFURA_ETH_NODE_URL, "num_pairs": setting.UNIV2_NUM_OF_PAIRS, "factory_abi": setting.UNIV2_FACTORY_ABI, "factory_address": setting.UNIV2_FACTORY_ADDRESS,
+              "pool_abi": setting.UNIV2_POOL_ABI, "token_abi": setting.ETH_TOKEN_ABI},
+    "panv2": {"node_url": setting.INFURA_BSC_NODE_URL, "num_pairs": setting.PANV2_NUM_OF_PAIRS, "factory_abi": setting.PANV2_FACTORY_ABI, "factory_address": setting.PANV2_FACTORY_ADDRESS,
+              "pool_abi": setting.PANV2_POOL_ABI, "token_abi": setting.BSC_TOKEN_ABI},
 }
 
 def load_pool(pool_address, contract_event_collector, pool_event_path, dex):
@@ -39,6 +52,11 @@ def load_pool(pool_address, contract_event_collector, pool_event_path, dex):
         burn_ts =  [{"address": pool_address, "timestamp": e["timeStamp"]} for e  in burns_list]
         mint_ts =  [{"address": pool_address, "timestamp": e["timeStamp"]} for e  in mint_list]
         return pool, transfer_ts, swap_ts, burn_ts, mint_ts
+
+def pool_with_washtrader_and_real_victims(dex="univ2"):
+    querier =  uni_sql_querier if dex == "univ2" else pan_sql_querier
+
+
 def load_pools(addresses, dex):
     pool_event_path = eval("path.{}_pool_events_path".format(dex))
     contract_event_collector = ContractEventCollector()
@@ -59,11 +77,34 @@ def create_pool_statistic_data(job, size, dex):
     print(f"DOWNLOAD ALL POOL EVENTS FROM {chunk['from']} TO {chunk['to']} (JOB {job})")
     load_pools(addresses, dex)
 
+
+def rpc_single_call(url, key, method, params):
+    """
+    Infura JSON RPC calling
+    :param method: JSON-RPC method name (see: https://docs.infura.io/infura/networks/ethereum/json-rpc-methods)
+    :param params: method's params
+    :return:
+    """
+    base_url = url + key
+    data = {"jsonrpc": "2.0", "method": method, "params": params, "id": 1}
+    response = requests.post(base_url, headers={"Content-Type": "application/json"}, json=data)
+    return response.json()
+
+def eth_getBlockByNumber(block, url, key):
+    response = rpc_single_call(url, key, "eth_getBlockByNumber", [hex(block), False])
+    return response
+
+
+
 def fulfill_block_number_for_pool(job, dex):
     result = []
     api = explorer_api[dex]["explorer"]
     keys = explorer_api[dex]["keys"]
     key = keys[job % len(keys)]
+
+    infura_key = setting.INFURA_API_KEYS[job % len(setting.INFURA_API_KEYS)]
+    infura_node_url = infura_api[dex]["node_url"]
+
     pool_creation_path = os.path.join(eval('path.{}_processed_path'.format(dex)), "pool_creation_info.csv")
     scam_pool_path = os.path.join(eval('path.{}_processed_path'.format(dex)), "filtered_simple_rp_pool.csv")
     output_path = os.path.join("data", f"{dex}_scam_pool_creation_with_block_number.csv")
@@ -87,12 +128,14 @@ def fulfill_block_number_for_pool(job, dex):
             print("SKIP", row["contractAddress"].lower())
             continue
         creation_tx = row["txHash"].lower()
-        blockNumber = api.get_tx_by_hash(creation_tx, key)["blockNumber"]
+        blockNumber = ut.hex_to_dec(api.get_tx_by_hash(creation_tx, key)["blockNumber"])
+        timestamp = ut.hex_to_dec(eth_getBlockByNumber(blockNumber, infura_node_url, infura_key)["result"]["timestamp"])
         data = {
             "pool": row["contractAddress"],
             "creator": row["contractCreator"],
             "creation_tx": creation_tx,
-            "block_number": ut.hex_to_dec(blockNumber)
+            "block_number": blockNumber,
+            "timestamp": timestamp
         }
         print(data)
         result.append(data)
@@ -116,6 +159,6 @@ def fulfill_block_number_for_pool(job, dex):
     print("DONE")
 
 if __name__ == '__main__':
-    job = 24
+    job = 23
     dex = 'panv2'
     fulfill_block_number_for_pool(job, dex)
